@@ -106,7 +106,7 @@ input,select{width:100%;background:var(--card);border:1.5px solid var(--bd);bord
 const E=window.F1E, D=window.F1D, CATS=D.CATS, NATS=D.NATS;
 const KEY='gridDynasty_v1';
 let G=null;
-const ui={screen:'start',name:'',nat:'GB',arch:'allround',startAge:7,tierSel:'',modal:null,sel:-1,train:null,acad:false,spin:null,wheelRes:null,wlist:null};
+const ui={screen:'start',name:'',nat:'GB',arch:'allround',startAge:7,tierSel:'',wealthSel:'',modal:null,sel:-1,train:null,acad:false,spin:null,wheelRes:null,wlist:null};
 const $=document.getElementById('app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=k=>k>=1000?'£'+(k/1000).toFixed(k>=10000?0:1)+'M':'£'+Math.round(k)+'k';
@@ -130,6 +130,7 @@ function vStart(){
   <div class="lab">Driving style</div><div class="arch">${ARCH.map(a=>`<div data-act="arch" data-v="${a[0]}" class="${ui.arch===a[0]?'on':''}"><b>${a[1]}</b><span>${a[2]}</span></div>`).join('')}</div>
   <div class="lab">Start point</div><div class="sel2"><div data-act="sa" data-v="7" class="${ui.startAge===7?'on':''}"><b>Full journey</b><span>Karting at age 7 (2026). The world evolves around you.</span></div><div data-act="sa" data-v="16" class="${ui.startAge===16?'on':''}"><b>Fast track</b><span>Join British F4 at 16 and race the real 2026 grids.</span></div></div>
   <div class="lab">Talent tier (testing)</div><div class="tsel"><div data-act="ts" data-v="" class="${ui.tierSel===''?'on':''}">🎲 Random (realistic odds)</div>${D.TIERS.map((t,i)=>`<div data-act="ts" data-v="${i}" class="${ui.tierSel===String(i)?'on':''}" style="${ui.tierSel===String(i)?'':'color:'+t.col}">${t.n}</div>`).join('')}</div>
+  <div class="lab">Family wealth (testing)</div><div class="tsel">${[['','🎲 Random'],['poor','Poor'],['middle','Middle class'],['rich','Rich parents'],['dynasty','Generational wealth']].map(([v,n])=>`<div data-act="ws" data-v="${v}" class="${ui.wealthSel===v?'on':''}">${n}</div>`).join('')}</div>
   <div class="lab">Nationality</div><select id="nat">${Object.keys(NATS).map(k=>`<option value="${k}" ${ui.nat===k?'selected':''}>${NATS[k].f} ${NATS[k].n}</option>`).join('')}</select>
   ${sv?`<button class="btn g" data-act="cont">Continue career</button>`:''}
   <button class="btn ${sv?'':'g'}" data-act="new">Start new career</button>
@@ -139,7 +140,7 @@ function vIntro(){
   const C=CATS[G.cat], ov=E.ovrOf(G.stats);
   return `<button class="btn back" data-act="home">‹ Menu</button><h1>Your story begins</h1><p class="sub">${G.age===7?'A 7-year-old '+esc(NATS[G.nat].n)+' karter with everything to prove.':'A 16-year-old '+esc(NATS[G.nat].n)+' F4 rookie in '+G.year+'.'}</p>
   <div class="card"><div class="pro"><div class="ovr">${ov}<small>OVR</small></div><div><h3>${esc(G.name)}</h3><div class="small">${NATS[G.nat].f} age ${G.age} · ${esc(G.team)}</div>${tierBadge(G.tier)}</div></div><p class="small" style="margin:0 0 8px">${esc(D.TIERS[G.tier].blurb)}</p>${bars(G.stats)}<p class="small cen" style="margin:10px 0 0">Talent tier is fixed for the whole career. Re-roll only reshuffles your attributes.</p></div>
-  <div class="card cen"><div class="small">You start out in</div><h2 style="margin:6px 0">${esc(C.name)}</h2><div class="small">${esc(G.team)} · seat ${money(G.deal.cost)}/yr · family funds <b style="color:var(--tx)">${money(G.family)}</b></div>
+  <div class="card cen"><div class="small">You start out in</div><h2 style="margin:6px 0">${esc(C.name)}</h2><div class="small">${esc(G.team)} · seat ${money(G.deal.cost)}/yr · family funds <b style="color:var(--tx)">${money(G.family)}</b> (${esc(E.WEALTH[G.wealth].n)})</div>
   <div class="row2" style="margin-top:14px"><button class="btn s" data-act="rs">🎲 Re-roll attributes</button><button class="btn s" data-act="rc">🔄 Re-roll club</button></div></div>
   <div class="fixed"><div><button class="btn g" data-act="begin">Begin Season 1</button></div></div>`;
 }
@@ -178,7 +179,16 @@ function vWrap(){
   <div class="card"><div class="lab">${esc(C.short)} · team power rankings</div>${N.rank.slice(0,10).map((t,i)=>`<div class="news"><span>${i+1}  <b style="color:var(--tx)">${esc(t.n)}</b>${t.you?'<span class="you">YOU</span>':''}</span><span>${t.r} <span class="${t.d>0?'up':t.d<0?'dn':''}">${t.d>0?'▲'+t.d:t.d<0?'▼'+Math.abs(t.d):'·'}</span></span></div>`).join('')}
   <div class="row2" style="margin-top:12px"><div><div class="lab">On the rise</div>${N.rising.map(t=>`<div>${esc(t.n)} <span class="up">▲${t.d}</span></div>`).join('')||'<span class="small">None</span>'}</div><div><div class="lab">Falling</div>${N.falling.map(t=>`<div>${esc(t.n)} <span class="dn">▼${Math.abs(t.d)}</span></div>`).join('')||'<span class="small">None</span>'}</div></div></div>
   <div class="card"><div class="lab">Championship top 10</div><div class="sc"><table>${N.table.map((d,i)=>`<tr class="${d.isPlayer?'me':''}"><td>${i+1}</td><td class="l">${esc(d.name)}<br><small class="small">${esc(d.team)}</small></td><td>${d.pts}</td></tr>`).join('')}</table></div></div>
-  <div class="fixed"><div><button class="btn g" data-act="plan">Plan your next move</button></div></div>`;
+  ${wrapAction()}`;
+}
+function wrapAction(){
+  const M=G.market, cc=E.canContinue(G);
+  const offers=M?M.options.filter(o=>!o.blocked&&o.kind!=='stay').length:0;
+  const promo=M?M.options.some(o=>o.kind==='promo'):false;
+  if(!cc) return `<div class="fixed"><div><button class="btn g" data-act="plan">Plan your next move</button></div></div>`;
+  const tr=D.STATS.map(k=>`<div data-act="train" data-k="${k}" class="${ui.train===k?'on':''}">${k}<b>${G.stats[k]}</b></div>`).join('');
+  return `<div class="card" style="margin-top:6px"><div class="lab">Contract · ${G.contract} year${G.contract>1?'s':''} left at ${esc(G.team)}</div><p class="small" style="margin:0 0 10px">${promo?'📞 You have a step-up offer on the table. ':offers?'You have '+offers+' other offer'+(offers>1?'s':'')+'. ':''}You can ride out your deal or open the transfer window.</p><div class="lab">Pre-season training · +2 to one attribute</div><div class="tg">${tr}</div></div>
+  <div class="fixed"><div><button class="btn g" data-act="cont2">Continue with ${esc(G.team)}</button><button class="btn" data-act="plan">${promo?'📞 See offers (step-up available)':'Look at offers anyway'}</button></div></div>`;
 }
 function offerHtml(o,i){
   const C=CATS[o.cat],cur=G.tr[G.cat][G.team];
@@ -209,7 +219,7 @@ function vRetired(){
   const T=G.tot,R=G.retire,tr=Object.entries(T.trophies).sort((a,b)=>b[1]-a[1]);
   const cost=G.history.reduce((a,h)=>a+(h.cost||0),0);
   const b=R.best;
-  return `${top()}<h1>${esc(G.name)} retires</h1><p class="sub">${R.age} years old · ${NATS[G.nat].f} ${esc(NATS[G.nat].n)} driver · ${R.seasons} seasons · ${R.label}</p><div class="cen" style="margin-bottom:12px">${tierBadge(G.tier)}</div>${R.cause?`<div class="note">${R.cause==='fatal'?'A tragic accident ended the career. The paddock mourns.':'A career-ending injury cut it short.'}</div>`:''}
+  return `${top()}<h1>${esc(G.name)} retires</h1><p class="sub">${R.age} years old · ${NATS[G.nat].f} ${esc(NATS[G.nat].n)} driver · ${R.seasons} seasons · ${R.label}</p><div class="cen" style="margin-bottom:12px">${tierBadge(G.tier)} <span class="tierb" style="color:var(--mu);border-color:var(--bd)">${esc(E.WEALTH[G.wealth].n)}</span></div>${R.cause?`<div class="note">${R.cause==='fatal'?'A tragic accident ended the career. The paddock mourns.':'A career-ending injury cut it short.'}</div>`:''}
   <div class="card"><div class="big">${T.wins}</div><div class="cen lab" style="font-size:15px;color:var(--tx)">Career wins</div>
   <div class="cen" style="font-size:42px;font-weight:900;color:var(--gd);margin:12px 0 2px">💰 ${money(T.earn)}</div><div class="cen lab">Career earnings</div>
   <div class="tro">${tr.map(([n,c])=>`<span>🏆 ${c}× ${esc(n)}</span>`).join('')||'<span>No major trophies</span>'}</div>
@@ -276,8 +286,9 @@ document.addEventListener('click',e=>{
     case 'arch': ui.arch=el.dataset.v; rerender(); return;
     case 'sa': ui.startAge=+el.dataset.v; rerender(); return;
     case 'ts': ui.tierSel=el.dataset.v; rerender(); return;
+    case 'ws': ui.wealthSel=el.dataset.v; rerender(); return;
     case 'mode': E.setMode(G,el.dataset.v); save(); rerender(); return;
-    case 'new': G=E.newGame({name:ui.name.trim()||'Driver',nat:ui.nat,arch:ui.arch,startAge:ui.startAge,tier:ui.tierSel===''?null:+ui.tierSel}); ui.screen='game'; ui.modal=null; save(); render(); return;
+    case 'new': G=E.newGame({name:ui.name.trim()||'Driver',nat:ui.nat,arch:ui.arch,startAge:ui.startAge,tier:ui.tierSel===''?null:+ui.tierSel,wealth:ui.wealthSel||null}); ui.screen='game'; ui.modal=null; save(); render(); return;
     case 'cont': G=load(); if(G){ui.screen='game';ui.modal=null; if(G.phase==='season')afterRound(); render();} return;
     case 'home': ui.screen='start'; ui.modal=null; render(); return;
     case 'rs': E.rerollStats(G); save(); rerender(); return;
@@ -294,8 +305,9 @@ document.addEventListener('click',e=>{
       setTimeout(()=>{ui.wheelRes=res;ui.spin=null;rerender();},1800); return; }
     case 'skipw': E.skipWheel(G); ui.modal=null; save(); rerender(); return;
     case 'wdone': ui.modal=null; ui.wheelRes=null; if(G.pendingEnd){E.endCareerNow(G);save();render();return;} rerender(); return;
-    case 'wrap': E.finishSeason(G); save(); render(); return;
-    case 'plan': E.buildMarket(G); ui.sel=-1; ui.train=null; ui.acad=false; save(); render(); return;
+    case 'wrap': ui.train=null; E.finishSeason(G); save(); render(); return;
+    case 'cont2': E.continueContract(G,ui.train); ui.sel=-1; ui.train=null; save(); render(); return;
+    case 'plan': G.phase='market'; ui.sel=-1; ui.train=null; ui.acad=false; save(); render(); return;
     case 'noop': return;
     case 'sel': ui.sel=el.dataset.i==='ret'?'ret':+el.dataset.i; rerender(); return;
     case 'acad': ui.acad=!ui.acad; rerender(); return;

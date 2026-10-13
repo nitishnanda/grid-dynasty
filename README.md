@@ -24,7 +24,10 @@ Keep `index.html`, `f1-data.js` and `f1-engine.js` in the same folder. Your care
 - Choose Push, Balance or Coast before each race: push is faster but riskier (worse if your racecraft is low), coast is steadier with fewer DNFs
 - F1 weekends include sprints and FP1 sessions, and FP1 results nudge your reputation
 - Family funds pay for seats in the junior series. If they run out, only a strong record keeps sponsors around
-- Red Bull juniors debut at Racing Bulls and can be promoted or demoted mid-season
+- Red Bull juniors debut at Racing Bulls. A mid-season promotion to Red Bull is rare, a demotion is common
+- Pick or randomise family wealth (poor, middle class, rich, generational wealth). Poor families can run out of money in karting unless you keep finishing top five
+- Contracts: sign for 1-4 years and press Continue at the end of a season instead of re-deciding every year
+- F1 rookies need time. Titles in your first two F1 seasons are very rare
 
 ## Files
 

@@ -29,13 +29,13 @@
   const R = n => Array.from({ length: n }, (_, i) => 'Round ' + (i + 1));
 
   const CATS = {
-    kart1: { id: 'kart1', name: 'Mini Kart · Regional', short: 'Regional Karting', tier: 0, lvl: 46, rounds: 8, rpr: 1, dpt: 3, pay: true, cost: [4, 12], titleName: 'Regional Karting Champion',
+    kart1: { id: 'kart1', name: 'Mini Kart · Regional', short: 'Regional Karting', tier: 0, lvl: 46, sigK: 1.1, eqK: 0.7, rounds: 8, rpr: 1, dpt: 3, pay: true, cost: [4, 12], titleName: 'Regional Karting Champion',
       rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: R(8), teams: kteams() },
-    kart2: { id: 'kart2', name: 'Cadet / Mini · National', short: 'National Karting', tier: 0, lvl: 55, rounds: 8, rpr: 1, dpt: 3, pay: true, cost: [10, 28], titleName: 'National Karting Champion',
+    kart2: { id: 'kart2', name: 'Cadet / Mini · National', short: 'National Karting', tier: 0, lvl: 55, sigK: 1.1, eqK: 0.7, rounds: 8, rpr: 1, dpt: 3, pay: true, cost: [10, 28], titleName: 'National Karting Champion',
       rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: R(8), teams: kteams() },
-    kart3: { id: 'kart3', name: 'OK-Junior · European / World', short: 'OK-Junior', tier: 0, lvl: 61, rounds: 6, rpr: 1, dpt: 3, pay: true, cost: [25, 70], titleName: 'Karting European Champion',
+    kart3: { id: 'kart3', name: 'OK-Junior · European / World', short: 'OK-Junior', tier: 0, lvl: 61, sigK: 1.1, eqK: 0.7, rounds: 6, rpr: 1, dpt: 3, pay: true, cost: [25, 70], titleName: 'Karting European Champion',
       rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: ['Euro R1', 'Euro R2', 'Euro R3', 'Euro R4', 'Euro R5', 'World Championship'], kartWC: true, teams: kteams() },
-    kart4: { id: 'kart4', name: 'OK · European / World', short: 'OK Karting', tier: 0, lvl: 67, rounds: 6, rpr: 1, dpt: 3, pay: true, cost: [40, 110], titleName: 'Karting European Champion',
+    kart4: { id: 'kart4', name: 'OK · European / World', short: 'OK Karting', tier: 0, lvl: 67, sigK: 1.1, eqK: 0.7, rounds: 6, rpr: 1, dpt: 3, pay: true, cost: [40, 110], titleName: 'Karting European Champion',
       rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: ['Euro R1', 'Euro R2', 'Euro R3', 'Euro R4', 'Euro R5', 'World Championship'], kartWC: true, teams: kteams() },
 
     f4: { id: 'f4', name: 'British F4', short: 'F4', tier: 1, lvl: 68, rounds: 8, rpr: 3, dpt: 4, pay: true, cost: [90, 230], titleName: 'F4 Champion',
@@ -84,7 +84,7 @@
     f1: { id: 'f1', name: 'Formula 1', short: 'F1', tier: 4, lvl: 84, rounds: 24, rpr: 1, dpt: 2, pay: false, sal: [700, 13000], titleName: 'F1 World Champion',
       rf: [{ n: 'Grand Prix', pts: PF1, grid: 'q' }],
       names: ['Australia', 'China', 'Japan', 'Bahrain', 'Saudi Arabia', 'Miami', 'Canada', 'Monaco', 'Barcelona', 'Austria', 'Great Britain', 'Belgium', 'Hungary', 'Netherlands', 'Italy', 'Madrid', 'Azerbaijan', 'Singapore', 'United States', 'Mexico City', 'Brazil', 'Las Vegas', 'Qatar', 'Abu Dhabi'],
-      special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.72, dnfK: 0.75, spread: 1.55,
+      special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.8, dnfK: 0.75, spread: 1.5, wS: 0.45,
       teams: [
         ['Mercedes', 7, 'George Russell|Kimi Antonelli'],
         ['McLaren', 5, 'Lando Norris|Oscar Piastri'],
@@ -267,10 +267,10 @@
   // bands: 7-11, 12-13, 14-15, 16-18, 19-22, 23+
   const TIERS = [
     { id: 'prospect', n: 'Prospect', p: 0.51, col: '#8b8fb0', adv: [2.5, 2.5, 2.5, -3.5, -7.5, -7], blurb: 'Below-average F1 ceiling. Podiums in karting, then a midfield grind.' },
-    { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [4, 4.5, 4.5, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
-    { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [-3, -1, 8, 5, 3.5, 3.5], blurb: 'Quiet early on, then dominant in the last karting years and the junior formulas.' },
-    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [6.5, 7, 7.5, 5, 6.5, 7.5], blurb: 'Wins early, wins often. A future title contender.' },
-    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [10, 11, 11, 9, 10.5, 10.5], blurb: 'Once in a generation. Dominates everything.' },
+    { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [3.5, 4, 4, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
+    { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [-2, 0, 7.5, 5, 3.5, 3.5], blurb: 'Quiet early on, then dominant in the last karting years and the junior formulas.' },
+    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [4.5, 5, 5.5, 5, 6.5, 7.5], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
+    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [6, 6.5, 6.5, 9, 10.5, 10.5], blurb: 'Once in a generation. Not a karting serial winner, but the drives get noticed. Dominates once the cars get serious.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];
