@@ -18,6 +18,14 @@ Keep `index.html`, `f1-data.js` and `f1-engine.js` in the same folder. Your care
 - Evolving F1/IndyCar/WEC/Formula E car cycles with regulation resets
 - Real 2026 lineups where available (F1, F2, F3, British F4, IndyCar, WEC, Formula E, Super Formula and more)
 
+## Gameplay notes
+
+- Pick a talent tier at the start (or leave it random) to test different career paths
+- Choose Push, Balance or Coast before each race: push is faster but riskier (worse if your racecraft is low), coast is steadier with fewer DNFs
+- F1 weekends include sprints and FP1 sessions, and FP1 results nudge your reputation
+- Family funds pay for seats in the junior series. If they run out, only a strong record keeps sponsors around
+- Red Bull juniors debut at Racing Bulls and can be promoted or demoted mid-season
+
 ## Files
 
 - `index.html`: UI and styling

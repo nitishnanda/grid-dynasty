@@ -84,7 +84,7 @@
     f1: { id: 'f1', name: 'Formula 1', short: 'F1', tier: 4, lvl: 84, rounds: 24, rpr: 1, dpt: 2, pay: false, sal: [700, 13000], titleName: 'F1 World Champion',
       rf: [{ n: 'Grand Prix', pts: PF1, grid: 'q' }],
       names: ['Australia', 'China', 'Japan', 'Bahrain', 'Saudi Arabia', 'Miami', 'Canada', 'Monaco', 'Barcelona', 'Austria', 'Great Britain', 'Belgium', 'Hungary', 'Netherlands', 'Italy', 'Madrid', 'Azerbaijan', 'Singapore', 'United States', 'Mexico City', 'Brazil', 'Las Vegas', 'Qatar', 'Abu Dhabi'],
-      special: { 7: 'Monaco GP win' },
+      special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.72, dnfK: 0.75, spread: 1.55,
       teams: [
         ['Mercedes', 7, 'George Russell|Kimi Antonelli'],
         ['McLaren', 5, 'Lando Norris|Oscar Piastri'],
@@ -268,9 +268,9 @@
   const TIERS = [
     { id: 'prospect', n: 'Prospect', p: 0.51, col: '#8b8fb0', adv: [2.5, 2.5, 2.5, -3.5, -7.5, -7], blurb: 'Below-average F1 ceiling. Podiums in karting, then a midfield grind.' },
     { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [4, 4.5, 4.5, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
-    { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [-3, -1, 8, 5, 2.5, 2], blurb: 'Quiet early on, then dominant in the last karting years and the junior formulas.' },
-    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [6.5, 7, 7.5, 5, 4.5, 4.5], blurb: 'Wins early, wins often. A future title contender.' },
-    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [10, 11, 11, 9, 9, 9], blurb: 'Once in a generation. Dominates everything.' },
+    { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [-3, -1, 8, 5, 3.5, 3.5], blurb: 'Quiet early on, then dominant in the last karting years and the junior formulas.' },
+    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [6.5, 7, 7.5, 5, 6.5, 7.5], blurb: 'Wins early, wins often. A future title contender.' },
+    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [10, 11, 11, 9, 10.5, 10.5], blurb: 'Once in a generation. Dominates everything.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];

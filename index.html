@@ -10,7 +10,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;min-height:100%}
 body{background:radial-gradient(900px 500px at 50% -10%,#0f2b1f 0,transparent 70%),var(--bg);background-attachment:fixed}
-#app{max-width:480px;margin:0 auto;padding:16px 16px 140px}
+#app{max-width:480px;margin:0 auto;padding:16px 16px 270px}
 h1{font-size:30px;margin:18px 0 6px;text-align:center;letter-spacing:-.5px}
 h2{font-size:20px;margin:0 0 10px}
 .sub{color:var(--mu);text-align:center;font-size:15px;line-height:1.4;margin:0 0 18px}
@@ -86,6 +86,14 @@ input,select{width:100%;background:var(--card);border:1.5px solid var(--bd);bord
 .lg i{width:12px;height:12px;border-radius:4px;margin-top:3px}.lg b{font-size:14px}.lg span{color:var(--mu);display:block;line-height:1.35}
 .tierb{display:inline-block;border-radius:999px;padding:6px 12px;font-weight:900;font-size:14px;border:1.5px solid}
 .sel2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.sel2 div{background:var(--card);border:1.5px solid var(--bd);border-radius:16px;padding:12px;cursor:pointer}.sel2 div.on{border-color:var(--gr);background:#0f2b1f}.sel2 b{display:block;margin-bottom:3px}.sel2 span{font-size:12px;color:var(--mu)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 8px}.seg div{background:var(--card2);border:1.5px solid var(--bd);border-radius:14px;padding:10px 4px;text-align:center;cursor:pointer;font-weight:800;font-size:14px}.seg div.on{border-color:var(--gr);background:#0f2b1f;color:var(--gr)}.seg div.on.push{border-color:var(--or);background:#2b160f;color:var(--or)}.seg div.on.coast{border-color:#4da3ff;background:#0f1d2b;color:#4da3ff}
+.segd{font-size:12px;color:var(--mu);text-align:center;margin:0 0 8px;line-height:1.35}
+.tsel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.tsel div{background:var(--card);border:1.5px solid var(--bd);border-radius:14px;padding:10px;cursor:pointer;font-weight:800;font-size:14px}.tsel div.on{border-color:var(--gr);background:#0f2b1f}
+.agent{display:flex;gap:12px;align-items:center;margin-bottom:12px}.av{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#5cc98a,#2f7a52);color:#04170d;font-weight:900;font-size:20px;display:flex;align-items:center;justify-content:center;flex:none}
+.bubble{background:#1e1f2e;border:1px solid var(--bd);border-radius:20px;padding:14px 16px;color:#a9acc8;line-height:1.55;font-size:15px}.bubble p{margin:0 0 10px}.bubble p:last-child{margin:0}
+.you{display:inline-block;background:var(--gr);color:#04170d;border-radius:8px;padding:2px 7px;font-size:11px;font-weight:900;margin-left:6px}
+.opt.blocked{opacity:.5;cursor:not-allowed;border-style:dotted}
+.ex{width:100%;font-size:14px;margin:0 0 12px}.ex td{padding:8px 4px}
 .fx{border-radius:14px;background:var(--card2);border:1px solid var(--bd);padding:12px 14px;font-size:14px;line-height:1.45;margin:0 0 14px;color:var(--mu)}.fx b{color:var(--tx)}
 </style>
 </head>
@@ -98,7 +106,7 @@ input,select{width:100%;background:var(--card);border:1.5px solid var(--bd);bord
 const E=window.F1E, D=window.F1D, CATS=D.CATS, NATS=D.NATS;
 const KEY='gridDynasty_v1';
 let G=null;
-const ui={screen:'start',name:'',nat:'GB',arch:'allround',startAge:7,modal:null,sel:-1,train:null,acad:false,spin:null,wheelRes:null,wlist:null};
+const ui={screen:'start',name:'',nat:'GB',arch:'allround',startAge:7,tierSel:'',modal:null,sel:-1,train:null,acad:false,spin:null,wheelRes:null,wlist:null};
 const $=document.getElementById('app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=k=>k>=1000?'£'+(k/1000).toFixed(k>=10000?0:1)+'M':'£'+Math.round(k)+'k';
@@ -121,6 +129,7 @@ function vStart(){
   <div class="lab">Driver name</div><input id="nm" placeholder="Your name" maxlength="24" value="${esc(ui.name)}">
   <div class="lab">Driving style</div><div class="arch">${ARCH.map(a=>`<div data-act="arch" data-v="${a[0]}" class="${ui.arch===a[0]?'on':''}"><b>${a[1]}</b><span>${a[2]}</span></div>`).join('')}</div>
   <div class="lab">Start point</div><div class="sel2"><div data-act="sa" data-v="7" class="${ui.startAge===7?'on':''}"><b>Full journey</b><span>Karting at age 7 (2026). The world evolves around you.</span></div><div data-act="sa" data-v="16" class="${ui.startAge===16?'on':''}"><b>Fast track</b><span>Join British F4 at 16 and race the real 2026 grids.</span></div></div>
+  <div class="lab">Talent tier (testing)</div><div class="tsel"><div data-act="ts" data-v="" class="${ui.tierSel===''?'on':''}">🎲 Random (realistic odds)</div>${D.TIERS.map((t,i)=>`<div data-act="ts" data-v="${i}" class="${ui.tierSel===String(i)?'on':''}" style="${ui.tierSel===String(i)?'':'color:'+t.col}">${t.n}</div>`).join('')}</div>
   <div class="lab">Nationality</div><select id="nat">${Object.keys(NATS).map(k=>`<option value="${k}" ${ui.nat===k?'selected':''}>${NATS[k].f} ${NATS[k].n}</option>`).join('')}</select>
   ${sv?`<button class="btn g" data-act="cont">Continue career</button>`:''}
   <button class="btn ${sv?'':'g'}" data-act="new">Start new career</button>
@@ -130,43 +139,56 @@ function vIntro(){
   const C=CATS[G.cat], ov=E.ovrOf(G.stats);
   return `<button class="btn back" data-act="home">‹ Menu</button><h1>Your story begins</h1><p class="sub">${G.age===7?'A 7-year-old '+esc(NATS[G.nat].n)+' karter with everything to prove.':'A 16-year-old '+esc(NATS[G.nat].n)+' F4 rookie in '+G.year+'.'}</p>
   <div class="card"><div class="pro"><div class="ovr">${ov}<small>OVR</small></div><div><h3>${esc(G.name)}</h3><div class="small">${NATS[G.nat].f} age ${G.age} · ${esc(G.team)}</div>${tierBadge(G.tier)}</div></div><p class="small" style="margin:0 0 8px">${esc(D.TIERS[G.tier].blurb)}</p>${bars(G.stats)}<p class="small cen" style="margin:10px 0 0">Talent tier is fixed for the whole career. Re-roll only reshuffles your attributes.</p></div>
-  <div class="card cen"><div class="small">You start out in</div><h2 style="margin:6px 0">${esc(C.name)}</h2><div class="small">${esc(G.team)} · seat funded by family · ${money(G.deal.cost)}/yr</div>
+  <div class="card cen"><div class="small">You start out in</div><h2 style="margin:6px 0">${esc(C.name)}</h2><div class="small">${esc(G.team)} · seat ${money(G.deal.cost)}/yr · family funds <b style="color:var(--tx)">${money(G.family)}</b></div>
   <div class="row2" style="margin-top:14px"><button class="btn s" data-act="rs">🎲 Re-roll attributes</button><button class="btn s" data-act="rc">🔄 Re-roll club</button></div></div>
   <div class="fixed"><div><button class="btn g" data-act="begin">Begin Season 1</button></div></div>`;
 }
 function vSeason(){
   const S=G.S,C=CATS[S.cat],P=E.player(G),tb=E.standings(G),pos=tb.indexOf(P)+1;
+  const modeLabel={push:'Push',balance:'Balance',coast:'Coast'};
   const logs=S.log.slice().reverse().map(l=>{
-    const rs=l.out?`<span class="badge x">OUT</span>`:l.races.map(r=>`<span class="badge ${r.dnf?'x':r.pos===1?'w':r.pos<=3?'p':''}">${r.dnf?'DNF':'P'+r.pos}</span>`).join(' ');
-    const d=l.out?'Missed through injury':`<b style="color:var(--tx)">Q P${l.qpos}</b>${l.pole?' 🏁 pole':''} · ${l.races.map(r=>`${esc(r.n)}: P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.dnf?'':' (+'+r.pts+')'}`).join(' · ')}${l.wet?' · 🌧️':''}`;
-    return `<div class="log"><span class="r">R${l.round}</span><span class="t">${esc(l.name)}</span><span style="display:flex;gap:6px">${rs}</span><span class="d">${d}</span></div>`;}).join('');
+    if(l.note) return `<div class="note">${esc(l.text)}</div>`;
+    const rs=l.out?`<span class="badge x">OUT</span>`:l.races.map(r=>`<span class="badge ${r.dnf?'x':r.pos===1&&!r.spr?'w':r.pos<=3?'p':''}" ${r.spr?'style="opacity:.8"':''}>${r.spr?'S ':''}${r.dnf?'DNF':'P'+r.pos}</span>`).join(' ');
+    const fp=l.fp?`FP1 P${l.fp.pos}${l.fp.rep?` (${l.fp.rep>0?'+':''}${l.fp.rep} rep)`:''} · `:'';
+    const d=l.out?'Missed through injury':`${fp}<b style="color:var(--tx)">Q P${l.qpos}</b>${l.pole?' 🏁 pole':''} · ${l.races.map(r=>`${esc(r.n)}: P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.dnf?'':' (+'+r.pts+')'}`).join(' · ')}${l.wet?' · 🌧️':''} · ${modeLabel[l.mode]||'Balance'}`;
+    return `<div class="log"><span class="r">R${l.round}</span><span class="t">${esc(l.name)}${l.sprint?' <small class="small">⚡ sprint</small>':''}</span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${rs}</span><span class="d">${d}</span></div>`;}).join('');
+  const mode=S.mode||'balance';
+  const modeDesc={push:'Push: more pace and better results, but more DNF risk (worse if your racecraft is low).',balance:'Balance: your normal form.',coast:'Coast: fewer DNFs and steadier mid-high finishes. A fast car lands P3–P6 with the odd win.'}[mode];
   return `<button class="btn back" data-act="home">‹ Menu</button>
   <div class="tiles"><div class="tile"><span>${G.year}</span><b>${G.season}</b><i>age ${G.age}</i></div><div class="tile"><span>Round</span><b>${S.round}/${C.rounds}</b><i>${C.rpr} race${C.rpr>1?'s':''}/rd</i></div><div class="tile"><span>Wins</span><b>${P.w}</b><i>${P.p} podiums</i></div><div class="tile"><span>Points</span><b>${P.pts}</b><i>${P.pole} poles</i></div></div>
-  <div class="chips"><span class="chip g"><b>${esc(G.team)}</b></span><span class="chip">${esc(C.short)}</span><span class="chip">Stage <b>${Math.min(3,S.spins+1)}/3</b></span><span class="chip">Pos <b>${S.round?pos:'-'}</b></span><span class="chip">Contract <b>${G.contract}yr</b></span>${G.academy?`<span class="chip">🎓 <b>${esc(G.academy.n.split(' ')[0]+' '+G.academy.n.split(' ')[1])}</b></span>`:''}</div>
+  <div class="chips"><span class="chip g"><b>${esc(G.team)}</b></span><span class="chip">${esc(C.short)}</span><span class="chip">Stage <b>${Math.min(3,S.spins+1)}/3</b></span><span class="chip">Pos <b>${S.round?pos:'-'}</b></span><span class="chip">Contract <b>${G.contract}yr</b></span><span class="chip">Family <b>${money(G.family)}</b></span>${G.academy?`<span class="chip">🎓 <b>${esc(G.academy.n.split(' ')[0]+' '+G.academy.n.split(' ')[1])}</b></span>`:''}</div>
   <div class="row2"><button class="btn" data-act="tbl">📊 Standings</button><button class="btn" data-act="drv">🧬 My driver</button></div>
   ${logs||'<p class="sub">Season ready. Hit race next round.</p>'}
-  <div class="fixed"><div>${S.over?`<button class="btn g" data-act="wrap">Season wrap-up</button>`:`<button class="btn g" data-act="next">Race next round</button><button class="btn" data-act="sim">Sim to season end</button>`}</div></div>${modal()}`;
+  <div class="fixed"><div>${S.over?`<button class="btn g" data-act="wrap">Season wrap-up</button>`:`<div class="seg">${['push','balance','coast'].map(m=>`<div data-act="mode" data-v="${m}" class="${mode===m?'on '+m:''}">${{push:'🔥 Push',balance:'⚖️ Balance',coast:'🧊 Coast'}[m]}</div>`).join('')}</div><div class="segd">${modeDesc}</div><button class="btn g" data-act="next">Race next round</button><button class="btn" data-act="sim">Sim to season end</button>`}</div></div>${modal()}`;
 }
 function vWrap(){
   const N=G.news,h=G.history[G.history.length-1],C=CATS[h.cat];
   const tro=h.trophies.length?h.trophies.map(t=>`<span class="rp">🏆 ${esc(t)}</span>`).join(''):'';
-  return `<h1>Season ${h.season} wrap</h1><p class="sub">The paddock at a glance</p>
+  const SM=N.summary, ini=(SM.agent||'AG').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  const tag={exceeded:'🚀 Exceeded expectations',met:'✅ Met expectations',below:'⚠️ Below expectations'}[SM.expect];
+  const ext={more:'🔧 Extracted more than your teammate',even:'🤝 Level with your teammate',less:'🔻 Left pace in the car'}[SM.extract];
+  const stk={soaring:'📈 Stock soaring',rising:'📈 Stock rising',steady:'➖ Stock steady',falling:'📉 Stock falling'}[SM.stock];
+  return `<h1>Season ${h.season} wrap</h1><p class="sub">${G.year} · the paddock at a glance</p>
+  <div class="card"><div class="agent"><div class="av">${esc(ini)}</div><div><b style="font-size:20px">${esc(SM.agent)}</b><div class="small">Your agent · just now</div></div></div>
+  <div class="bubble">${SM.para.map(p=>`<p>${esc(p)}</p>`).join('')}</div>
+  <div class="chips" style="margin:12px 0 0"><span class="chip">${tag}</span><span class="chip">${ext}</span><span class="chip">${stk} (${SM.dRep>0?'+':''}${SM.dRep} rep)</span></div></div>
   <div class="card"><div class="lab">Your season</div><h2>${ord(h.pos)} of ${h.N} in ${esc(C.short)}</h2><div class="small">${esc(h.team)} · ${h.pts} pts · ${h.wins}W ${h.podiums}P ${h.poles} poles${h.earn?` · earned ${money(h.earn)}`:''}</div><div style="margin-top:8px">${tro}</div></div>
   ${N.msgs.map(m=>`<div class="note">${esc(m)}</div>`).join('')}
   <div class="card"><div class="lab">Champions around the world</div>${N.champs.map(c=>`<div class="news"><span>${esc(c.cat)}</span><span>${esc(c.who)}<br><small class="small">${esc(c.team)}</small></span></div>`).join('')}</div>
-  <div class="card"><div class="lab">${esc(C.short)} · team power rankings</div>${N.rank.slice(0,10).map((t,i)=>`<div class="news"><span>${i+1}  <b style="color:var(--tx)">${esc(t.n)}</b></span><span>${t.r} <span class="${t.d>0?'up':t.d<0?'dn':''}">${t.d>0?'▲'+t.d:t.d<0?'▼'+Math.abs(t.d):'·'}</span></span></div>`).join('')}
+  <div class="card"><div class="lab">${esc(C.short)} · team power rankings</div>${N.rank.slice(0,10).map((t,i)=>`<div class="news"><span>${i+1}  <b style="color:var(--tx)">${esc(t.n)}</b>${t.you?'<span class="you">YOU</span>':''}</span><span>${t.r} <span class="${t.d>0?'up':t.d<0?'dn':''}">${t.d>0?'▲'+t.d:t.d<0?'▼'+Math.abs(t.d):'·'}</span></span></div>`).join('')}
   <div class="row2" style="margin-top:12px"><div><div class="lab">On the rise</div>${N.rising.map(t=>`<div>${esc(t.n)} <span class="up">▲${t.d}</span></div>`).join('')||'<span class="small">None</span>'}</div><div><div class="lab">Falling</div>${N.falling.map(t=>`<div>${esc(t.n)} <span class="dn">▼${Math.abs(t.d)}</span></div>`).join('')||'<span class="small">None</span>'}</div></div></div>
   <div class="card"><div class="lab">Championship top 10</div><div class="sc"><table>${N.table.map((d,i)=>`<tr class="${d.isPlayer?'me':''}"><td>${i+1}</td><td class="l">${esc(d.name)}<br><small class="small">${esc(d.team)}</small></td><td>${d.pts}</td></tr>`).join('')}</table></div></div>
   <div class="fixed"><div><button class="btn g" data-act="plan">Plan your next move</button></div></div>`;
 }
 function offerHtml(o,i){
   const C=CATS[o.cat],cur=G.tr[G.cat][G.team];
-  const kind={stay:'Re-sign',promo:'Step up',move:'Sideways',lateral:'Lateral move'}[o.kind]||'';
+  const kind=(o.skip?'⚡ Skips a rung':o.vacancy?'Seat opened':o.kind==='reserve'?'F1 reserve role':{stay:'Re-sign',promo:'Step up',move:'Sideways',lateral:'Lateral move'}[o.kind])||'';
   const d=o.cat===G.cat?Math.round(o.r-cur):null;
   const dl=d===null?(C.tier>CATS[G.cat].tier?'↑':'↔'):(d>0?'+'+d:d===0?'=':d);
   const pay=C.pay?`seat ${money(o.cost)}/yr${o.scholarship?' (scholarship)':''}`:`${money(o.sal)}/yr salary`;
   const lead=o.kind==='stay'?`Stay at ${esc(o.team)} ✓`:esc(o.team);
-  return `<div class="opt ${ui.sel===i?'on':''}" data-act="sel" data-i="${i}"><b class="t">${lead}</b><span class="dl ${d!==null&&d<0?'n':''}">${dl}</span><span class="m">${esc(C.short)} · ${kind} · rating ${o.r} · ${pay} · ${o.years}yr</span><span class="ro">Your role: <span class="rp">${o.role}</span> · mate ${esc(o.tm)}</span></div>`;
+  const extra=o.blocked?'<span class="ro" style="color:var(--rd)">🔒 Can\'t afford this seat. Family funds exhausted.</span>':o.rbRule?'<span class="ro">Red Bull juniors debut at Racing Bulls first.</span>':'';
+  return `<div class="opt ${ui.sel===i?'on':''} ${o.blocked?'blocked':''}" data-act="${o.blocked?'noop':'sel'}" data-i="${i}"><b class="t">${lead}</b><span class="dl ${d!==null&&d<0?'n':''}">${dl}</span><span class="m">${esc(C.short)} · ${kind} · rating ${o.r} · ${pay} · ${o.years}yr</span><span class="ro">Your role: <span class="rp">${o.role}</span> · mate ${esc(o.tm)}</span>${extra}</div>`;
 }
 function vMarket(){
   const M=G.market,last=G.history[G.history.length-1];
@@ -174,12 +196,12 @@ function vMarket(){
   const ac=M.academy?`<div class="opt ${ui.acad?'on':''}" data-act="acad"><b class="t">🎓 ${esc(M.academy.n)}</b><span class="dl">${ui.acad?'✓':''}</span><span class="m">Academy offer. Costs covered in F4–F2, development boosts. Tap to accept.</span></div>`:'';
   const ret=`<div class="opt ${ui.sel==='ret'?'on':''}" data-act="sel" data-i="ret"><b class="t">🏁 Retire</b><span class="m">Hang up the helmet at ${G.age}. Career ends.</span></div>`;
   const tr=D.STATS.map(k=>`<div data-act="train" data-k="${k}" class="${ui.train===k?'on':''}">${k}<b>${G.stats[k]}</b></div>`).join('');
-  const ok=ui.sel==='ret'||(ui.sel!==-1&&M.options[ui.sel]);
+  const ok=ui.sel==='ret'||(ui.sel!==-1&&M.options[ui.sel]&&!M.options[ui.sel].blocked);
   return `<h1>Summer plans</h1><p class="sub">Season ${last.season} done. Choose your seat and sharpen an attribute.</p>
   <div class="card"><div class="lab">Transfer window · reputation ${Math.round(G.rep)} · ${G.contract>0?G.contract+'yr left on your deal':'contract expired'}</div>
   <div class="note" style="display:flex;justify-content:space-between"><span>💰 Career earnings</span><b class="gold">${money(G.tot.earn)}</b></div>
-  <div class="small" style="margin-bottom:10px">Funding available for seats: <b style="color:var(--tx)">${money(E.funding(G))}</b>${G.academy?' · covered by academy':''}</div>
-  ${M.note?`<div class="note">${esc(M.note)}</div>`:''}${ac}${opts}${M.stuck||M.forced||true?ret:''}</div>
+  <div class="small" style="margin-bottom:10px">Sponsor funding: <b style="color:var(--tx)">${money(E.funding(G))}</b> · Family funds left: <b style="color:var(--tx)">${money(G.family)}</b>${G.academy?' · seats covered by academy':''}${G.reserve?' · F1 reserve for '+esc(G.reserve):''}</div>
+  ${(M.msgs||[]).map(m=>`<div class="note">${esc(m)}</div>`).join('')}${M.note?`<div class="note">${esc(M.note)}</div>`:''}${ac}${opts}${M.stuck||M.forced||true?ret:''}</div>
   <div class="card"><div class="lab">Pre-season training · +2 to one attribute</div><div class="tg">${tr}</div></div>
   <div class="fixed"><div><button class="btn g" data-act="go" ${ok?'':'disabled'}>${ui.sel==='ret'?'Retire':'Start Season '+(G.season+1)}</button></div></div>`;
 }
@@ -191,6 +213,7 @@ function vRetired(){
   <div class="card"><div class="big">${T.wins}</div><div class="cen lab" style="font-size:15px;color:var(--tx)">Career wins</div>
   <div class="cen" style="font-size:42px;font-weight:900;color:var(--gd);margin:12px 0 2px">💰 ${money(T.earn)}</div><div class="cen lab">Career earnings</div>
   <div class="tro">${tr.map(([n,c])=>`<span>🏆 ${c}× ${esc(n)}</span>`).join('')||'<span>No major trophies</span>'}</div>
+  <div class="tro" style="margin-top:0">${Object.entries(R.winsBy||{}).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span style="border-color:var(--bd)">${c} win${c>1?'s':''} · ${esc(n)}</span>`).join('')}</div>
   <div class="box3"><div>Races<b>${T.races}</b></div><div>Podiums<b>${T.podiums}</b></div><div>Poles<b>${T.poles}</b></div></div>
   <div class="box3"><div>Titles<b>${Object.values(T.titles).reduce((a,x)=>a+x,0)}</b></div><div>Peak OVR<b>${T.peak}</b></div><div>Seat costs<b style="font-size:18px">${money(cost)}</b></div></div>
   ${G.standIns.length?`<p class="cen">F1 stand-ins: <b>${G.standIns.reduce((a,x)=>a+x.n,0)} starts, ${G.standIns.reduce((a,x)=>a+x.pts,0)} pts</b></p>`:''}<p class="cen">Teams: <b>${R.teams.map(esc).join(' · ')}</b></p>
@@ -219,11 +242,11 @@ function modal(){
   if(m==='wheel'){
     const r=ui.wheelRes, L=ui.wlist||[];
     const stageName=G.S.spins===0?'Early-season break':'Late-season break';
-    if(r) return `<div class="modalbg"><div class="modal"><span class="wheel">${r.icon}</span><h2>${esc(r.title)}</h2><div class="fx"><b>What it does:</b> ${esc(r.fx)}</div><p class="sub" style="color:var(--tx)">${esc(r.desc)}</p><button class="btn g" data-act="wdone">Continue</button></div></div>`;
+    if(r) return `<div class="modalbg"><div class="modal"><span class="wheel">${r.icon}</span><h2>${esc(r.title)}</h2><div class="fx"><b>What it does:</b> ${esc(r.fx)}</div>${r.extra&&r.extra.kind==='standin'?`<table class="ex"><tr><th class="l">F1 grand prix</th><th>Result</th><th>Pts</th></tr>${r.extra.rows.map(x=>`<tr><td class="l">${esc(x.gp)}</td><td>${x.dnf?'DNF':'P'+x.pos}</td><td>${x.pts}</td></tr>`).join('')}</table>`:''}${r.extra&&r.extra.kind==='fp1'?`<table class="ex"><tr><th class="l">F1 FP1 · ${esc(r.extra.gp)}</th><th>Result</th><th>Rep</th></tr><tr><td class="l">Friday practice</td><td>P${r.extra.pos}</td><td>+${r.extra.rep}</td></tr></table>`:''}<p class="sub" style="color:var(--tx)">${esc(r.desc)}</p><button class="btn g" data-act="wdone">Continue</button></div></div>`;
     const tot=L.reduce((a,o)=>a+o.w,0);
     return `<div class="modalbg"><div class="modal"><h2>🎡 ${stageName}</h2><p class="sub" style="margin-bottom:6px">Stage ${G.S.spins+1} of 3 done. Spin for a random twist, or play on.</p>${pie(L)}
     <button class="btn g" data-act="spin" ${ui.spin?'disabled':''}>Spin the wheel</button><button class="btn" data-act="skipw" ${ui.spin?'disabled':''}>Play on</button>
-    <div class="lab" style="margin-top:6px">What each slice does</div><div class="lg">${L.map(o=>`<i style="background:${o.col}"></i><div><b>${o.ic} ${esc(o.t)} · ${(100*o.w/tot).toFixed(o.w<1?1:0)}%</b><span>${esc(o.fx)}</span></div>`).join('')}</div></div></div>`;
+    <div class="lab" style="margin-top:6px">What each slice does</div><div class="lg">${L.map(o=>`<i style="background:${o.col}"></i><div><b>${o.ic} ${esc(o.t)} · ${(100*o.w/tot).toFixed(o.w<1?1:0)}% <small style="color:${o.g>0?'var(--gr)':'var(--rd)'}">${o.g>0?'good':'bad'}</small></b><span>${esc(o.fx)}</span></div>`).join('')}</div></div></div>`;
   }
   return '';
 }
@@ -252,7 +275,9 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'arch': ui.arch=el.dataset.v; rerender(); return;
     case 'sa': ui.startAge=+el.dataset.v; rerender(); return;
-    case 'new': G=E.newGame({name:ui.name.trim()||'Driver',nat:ui.nat,arch:ui.arch,startAge:ui.startAge}); ui.screen='game'; ui.modal=null; save(); render(); return;
+    case 'ts': ui.tierSel=el.dataset.v; rerender(); return;
+    case 'mode': E.setMode(G,el.dataset.v); save(); rerender(); return;
+    case 'new': G=E.newGame({name:ui.name.trim()||'Driver',nat:ui.nat,arch:ui.arch,startAge:ui.startAge,tier:ui.tierSel===''?null:+ui.tierSel}); ui.screen='game'; ui.modal=null; save(); render(); return;
     case 'cont': G=load(); if(G){ui.screen='game';ui.modal=null; if(G.phase==='season')afterRound(); render();} return;
     case 'home': ui.screen='start'; ui.modal=null; render(); return;
     case 'rs': E.rerollStats(G); save(); rerender(); return;
@@ -271,6 +296,7 @@ document.addEventListener('click',e=>{
     case 'wdone': ui.modal=null; ui.wheelRes=null; if(G.pendingEnd){E.endCareerNow(G);save();render();return;} rerender(); return;
     case 'wrap': E.finishSeason(G); save(); render(); return;
     case 'plan': E.buildMarket(G); ui.sel=-1; ui.train=null; ui.acad=false; save(); render(); return;
+    case 'noop': return;
     case 'sel': ui.sel=el.dataset.i==='ret'?'ret':+el.dataset.i; rerender(); return;
     case 'acad': ui.acad=!ui.acad; rerender(); return;
     case 'train': ui.train=ui.train===el.dataset.k?null:el.dataset.k; rerender(); return;
