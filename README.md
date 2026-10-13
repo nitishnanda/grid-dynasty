@@ -18,6 +18,10 @@ Keep `index.html`, `f1-data.js` and `f1-engine.js` in the same folder. Your care
 - Evolving F1/IndyCar/WEC/Formula E car cycles with regulation resets
 - Real 2026 lineups where available (F1, F2, F3, British F4, IndyCar, WEC, Formula E, Super Formula and more)
 
+## Install on your phone
+
+Open the Pages link in Safari (iPhone) or Chrome (Android), then Share, Add to Home Screen. It runs fullscreen like an app and works offline.
+
 ## Gameplay notes
 
 - Pick a talent tier at the start (or leave it random) to test different career paths

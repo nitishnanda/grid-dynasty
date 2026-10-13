@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Grid Dynasty</title>
 <meta name="theme-color" content="#0b0c14">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Grid Dynasty">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{--bg:#0b0c14;--card:#151625;--card2:#1b1c30;--bd:#2a2c4a;--tx:#eceefb;--mu:#8b8fb0;--gr:#1fbf75;--gd:#ffd23f;--rd:#ff4d6d;--or:#ff8a5c;--pk:#ff6fae}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -319,6 +325,7 @@ document.addEventListener('click',e=>{
   }
 });
 render();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
 </body>
