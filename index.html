@@ -153,11 +153,12 @@ function vIntro(){
 function vSeason(){
   const S=G.S,C=CATS[S.cat],P=E.player(G),tb=E.standings(G),pos=tb.indexOf(P)+1;
   const modeLabel={push:'Push',balance:'Balance',coast:'Coast'};
+  const gp=(g,lead,laps,q)=>{ if(g==null) return ''; if(laps) return '+'+laps+' lap'+(laps>1?'s':''); const s=(q||g<10)?g.toFixed(3):g.toFixed(1); return lead?(q?'pole by '+s+'s':'won by '+s+'s'):'+'+s+'s'; };
   const logs=S.log.slice().reverse().map(l=>{
     if(l.note) return `<div class="note">${esc(l.text)}</div>`;
     const rs=l.out?`<span class="badge x">OUT</span>`:l.races.map(r=>`<span class="badge ${r.dnf?'x':r.pos===1&&!r.spr?'w':r.pos<=3?'p':''}" ${r.spr?'style="opacity:.8"':''}>${r.spr?'S ':''}${r.dnf?'DNF':'P'+r.pos}</span>`).join(' ');
     const fp=l.fp?`FP1 P${l.fp.pos}${l.fp.rep?` (${l.fp.rep>0?'+':''}${l.fp.rep} rep)`:''} · `:'';
-    const d=l.out?'Missed through injury':`${fp}<b style="color:var(--tx)">Q P${l.qpos}</b>${l.pole?' 🏁 pole':''} · ${l.races.map(r=>`${esc(r.n)}: P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.dnf?'':' (+'+r.pts+')'}`).join(' · ')}${l.wet?' · 🌧️':''} · ${modeLabel[l.mode]||'Balance'}`;
+    const d=l.out?'Missed through injury':`${fp}<b style="color:var(--tx)">Q P${l.qpos}</b>${l.qi?` <span style="color:var(--tx)">${l.pole?'🏁 '+gp(l.qi.gap,true,0,true):gp(l.qi.gap,false,0,true)}</span>`:''}<br>${l.races.map(r=>`${esc(r.n)}: P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.dnf?'':' (+'+r.pts+') <span style="color:var(--tx)">'+gp(r.gap,r.lead,r.laps,false)+'</span>'}`).join('<br>')}<br>${l.wet?'🌧️ wet · ':''}${modeLabel[l.mode]||'Balance'}`;
     return `<div class="log"><span class="r">R${l.round}</span><span class="t">${esc(l.name)}${l.sprint?' <small class="small">⚡ sprint</small>':''}</span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${rs}</span><span class="d">${d}</span></div>`;}).join('');
   const mode=S.mode||'balance';
   const modeDesc={push:'Push: more pace and better results, but more DNF risk (worse if your racecraft is low).',balance:'Balance: your normal form.',coast:'Coast: fewer DNFs and steadier mid-high finishes. A fast car lands P3–P6 with the odd win.'}[mode];

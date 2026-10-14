@@ -27,6 +27,8 @@ Open the Pages link in Safari (iPhone) or Chrome (Android), then Share, Add to H
 - Pick a talent tier at the start (or leave it random) to test different career paths
 - Choose Push, Balance or Coast before each race: push is faster but riskier (worse if your racecraft is low), coast is steadier with fewer DNFs
 - F1 weekends include sprints and FP1 sessions, and FP1 results nudge your reputation
+- Qualifying and races show time gaps (to the leader, or the margin over P2 if you win). Gaps are scaled per series from real-world spreads and vary by weekend, wet weather, safety cars and the regulation era
+- Karting weekends are a heat plus a final, over 10-11 rounds (the OK and OK-Junior seasons follow the WSK / European / World calendar)
 - Family funds pay for seats in the junior series. If they run out, only a strong record keeps sponsors around
 - Red Bull juniors debut at Racing Bulls. A mid-season promotion to Red Bull is rare, a demotion is common
 - Pick or randomise family wealth (poor, middle class, rich, generational wealth). Poor families can run out of money in karting unless you keep finishing top five

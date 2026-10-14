@@ -21,6 +21,9 @@
   const PSPR = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
   const PF2S = [10, 8, 6, 5, 4, 3, 2, 1];
   const PKART = [25, 20, 16, 13, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+  const PKARTH = [10, 8, 6, 5, 4, 3, 2, 1];
+  const KRF = [{ n: 'Heat', pts: PKARTH, grid: 'q' }, { n: 'Final', pts: PKART, grid: 'prev' }];
+  const WSK = ['WSK Champions Cup R1', 'WSK Champions Cup R2', 'Super Master R1', 'Super Master R2', 'Super Master R3', 'Super Master R4', 'Euro R1', 'Euro R2', 'Euro R3', 'Euro R4', 'World Championship'];
   const PIND = [50, 40, 35, 32, 30, 28, 26, 24, 22, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 5, 5, 5, 5, 5];
 
   const KB = ['Tony Kart Racing Team', 'Kart Republic', 'Birel ART Racing', 'CRG Racing', 'Parolin Motorsport', 'Ricciardo Kart', 'Exprit Racing', 'LN Kart Racing'];
@@ -29,16 +32,16 @@
   const R = n => Array.from({ length: n }, (_, i) => 'Round ' + (i + 1));
 
   const CATS = {
-    kart1: { id: 'kart1', name: 'Mini Kart · Regional', short: 'Regional Karting', tier: 0, lvl: 46, sigK: 1.1, eqK: 0.7, rounds: 8, rpr: 1, dpt: 3, pay: true, cost: [4, 12], titleName: 'Regional Karting Champion',
-      rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: R(8), teams: kteams() },
-    kart2: { id: 'kart2', name: 'Cadet / Mini · National', short: 'National Karting', tier: 0, lvl: 55, sigK: 1.1, eqK: 0.7, rounds: 8, rpr: 1, dpt: 3, pay: true, cost: [10, 28], titleName: 'National Karting Champion',
-      rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: R(8), teams: kteams() },
-    kart3: { id: 'kart3', name: 'OK-Junior · European / World', short: 'OK-Junior', tier: 0, lvl: 61, sigK: 1.1, eqK: 0.7, rounds: 6, rpr: 1, dpt: 3, pay: true, cost: [25, 70], titleName: 'Karting European Champion',
-      rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: ['Euro R1', 'Euro R2', 'Euro R3', 'Euro R4', 'Euro R5', 'World Championship'], kartWC: true, teams: kteams() },
-    kart4: { id: 'kart4', name: 'OK · European / World', short: 'OK Karting', tier: 0, lvl: 67, sigK: 1.1, eqK: 0.7, rounds: 6, rpr: 1, dpt: 3, pay: true, cost: [40, 110], titleName: 'Karting European Champion',
-      rf: [{ n: 'Final', pts: PKART, grid: 'q' }], names: ['Euro R1', 'Euro R2', 'Euro R3', 'Euro R4', 'Euro R5', 'World Championship'], kartWC: true, teams: kteams() },
+    kart1: { id: 'kart1', lap: 40, qK: 0.018, rK: 0.1261, name: 'Mini Kart · Regional', short: 'Regional Karting', tier: 0, lvl: 46, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [4, 12], titleName: 'Regional Karting Champion', sigK: 1.3, eqK: 0.7,
+      rf: KRF, names: R(10), teams: kteams() },
+    kart2: { id: 'kart2', lap: 42, qK: 0.0311, rK: 0.2013, name: 'Cadet / Mini · National', short: 'National Karting', tier: 0, lvl: 55, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [10, 28], titleName: 'National Karting Champion', sigK: 1.3, eqK: 0.7,
+      rf: KRF, names: R(10), teams: kteams() },
+    kart3: { id: 'kart3', lap: 46, qK: 0.0447, rK: 0.2856, name: 'OK-Junior · European / World', short: 'OK-Junior', tier: 0, lvl: 61, rounds: 11, rpr: 2, dpt: 3, pay: true, cost: [25, 70], titleName: 'Karting European Champion', sigK: 1.3, eqK: 0.7,
+      rf: KRF, names: WSK, kartWC: true, teams: kteams() },
+    kart4: { id: 'kart4', lap: 46, qK: 0.0566, rK: 0.308, name: 'OK · European / World', short: 'OK Karting', tier: 0, lvl: 67, rounds: 11, rpr: 2, dpt: 3, pay: true, cost: [40, 110], titleName: 'Karting European Champion', sigK: 1.3, eqK: 0.7,
+      rf: KRF, names: WSK, kartWC: true, teams: kteams() },
 
-    f4: { id: 'f4', name: 'British F4', short: 'F4', tier: 1, lvl: 68, rounds: 8, rpr: 3, dpt: 4, pay: true, cost: [90, 230], titleName: 'F4 Champion',
+    f4: { id: 'f4', lap: 75, qK: 0.1079, rK: 0.967, name: 'British F4', short: 'F4', tier: 1, lvl: 68, rounds: 8, rpr: 3, dpt: 4, pay: true, cost: [90, 230], titleName: 'F4 Champion',
       rf: [{ n: 'R1', pts: PF1, grid: 'q' }, { n: 'R2', pts: PF1, grid: 'rev6' }, { n: 'R3', pts: PF1, grid: 'prev' }],
       names: ['Donington Park', 'Brands Hatch Indy', 'Oulton Park', 'Thruxton', 'Snetterton', 'Silverstone', 'Croft', 'Brands Hatch GP'],
       teams: [
@@ -50,7 +53,7 @@
         ['Virtuosi Racing', -1.5, 'Joseph Smith|Jarrett Clark|George Proudford-Nalder'],
         ['Chris Dittmann Racing', -3.5, 'Tommy Harfield|Henry Mercier'],
       ] },
-    f3: { id: 'f3', name: 'FIA Formula 3', short: 'F3', tier: 2, lvl: 73, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [450, 950], titleName: 'F3 Champion',
+    f3: { id: 'f3', lap: 90, qK: 0.0909, rK: 1.382, name: 'FIA Formula 3', short: 'F3', tier: 2, lvl: 73, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [450, 950], titleName: 'F3 Champion',
       rf: [{ n: 'Sprint', pts: PSPR, grid: 'rev10' }, { n: 'Feature', pts: PF1, grid: 'q' }],
       names: ['Melbourne', 'Sakhir', 'Imola', 'Monaco', 'Barcelona', 'Spielberg', 'Silverstone', 'Spa', 'Budapest', 'Monza'],
       teams: [
@@ -65,7 +68,7 @@
         ['AIX Racing', -2.5, 'Brad Benavides|Fernando Barrichello|Yevan David'],
         ['DAMS', -3.5, ''],
       ] },
-    f2: { id: 'f2', name: 'FIA Formula 2', short: 'F2', tier: 3, lvl: 78, rounds: 14, rpr: 2, dpt: 2, pay: true, cost: [1400, 2900], titleName: 'F2 Champion',
+    f2: { id: 'f2', lap: 92, qK: 0.1054, rK: 1.8416, name: 'FIA Formula 2', short: 'F2', tier: 3, lvl: 78, rounds: 14, rpr: 2, dpt: 2, pay: true, cost: [1400, 2900], titleName: 'F2 Champion',
       rf: [{ n: 'Sprint', pts: PF2S, grid: 'rev10' }, { n: 'Feature', pts: PF1, grid: 'q' }],
       names: ['Melbourne', 'Sakhir', 'Jeddah', 'Imola', 'Monaco', 'Barcelona', 'Spielberg', 'Silverstone', 'Spa', 'Budapest', 'Monza', 'Baku', 'Lusail', 'Yas Marina'],
       teams: [
@@ -81,7 +84,7 @@
         ['AIX Racing', -2.5, 'Emerson Fittipaldi|Cian Shields'],
         ['Van Amersfoort Racing', -3.5, 'Nicolás Varrone|Rafael Villagómez'],
       ] },
-    f1: { id: 'f1', name: 'Formula 1', short: 'F1', tier: 4, lvl: 84, rounds: 24, rpr: 1, dpt: 2, pay: false, sal: [700, 13000], titleName: 'F1 World Champion',
+    f1: { id: 'f1', lap: 90, qK: 0.0746, rK: 4.2858, name: 'Formula 1', short: 'F1', tier: 4, lvl: 84, rounds: 24, rpr: 1, dpt: 2, pay: false, sal: [700, 13000], titleName: 'F1 World Champion',
       rf: [{ n: 'Grand Prix', pts: PF1, grid: 'q' }],
       names: ['Australia', 'China', 'Japan', 'Bahrain', 'Saudi Arabia', 'Miami', 'Canada', 'Monaco', 'Barcelona', 'Austria', 'Great Britain', 'Belgium', 'Hungary', 'Netherlands', 'Italy', 'Madrid', 'Azerbaijan', 'Singapore', 'United States', 'Mexico City', 'Brazil', 'Las Vegas', 'Qatar', 'Abu Dhabi'],
       special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.8, dnfK: 0.75, spread: 1.5, wS: 0.45,
@@ -101,7 +104,7 @@
     },
 
     /* lateral categories (real team names; drivers partly real, rest generated) */
-    frec: { id: 'frec', name: 'Formula Regional Europe', short: 'FRECA', tier: 1, lvl: 70, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [350, 720], titleName: 'FRECA Champion',
+    frec: { id: 'frec', lap: 85, qK: 0.1084, rK: 1.4363, name: 'Formula Regional Europe', short: 'FRECA', tier: 1, lvl: 70, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [350, 720], titleName: 'FRECA Champion',
       rf: [{ n: 'R1', pts: PF1, grid: 'q' }, { n: 'R2', pts: PF1, grid: 'rev6' }],
       names: ['Monza', 'Misano', 'Paul Ricard', 'Spa', 'Hungaroring', 'Imola', 'Zandvoort', 'Barcelona', 'Mugello', 'Red Bull Ring'],
       teams: [
@@ -116,7 +119,7 @@
         ['RPM', -2, 'Miguel Costa|Giovanni Maschio|Jan Przyrowski'],
         ['CL Motorsport', -3, ''],
       ] },
-    gt4: { id: 'gt4', name: 'GT4 European Series', short: 'GT4', tier: 1, lvl: 66, rounds: 12, rpr: 1, dpt: 2, pay: true, crew: true, cost: [90, 210], titleName: 'GT4 Champion',
+    gt4: { id: 'gt4', lap: 105, qK: 0.09, rK: 3.0, name: 'GT4 European Series', short: 'GT4', tier: 1, lvl: 66, rounds: 12, rpr: 1, dpt: 2, pay: true, crew: true, cost: [90, 210], titleName: 'GT4 Champion',
       rf: [{ n: 'Race', pts: PF1, grid: 'q' }], names: ['Monza', 'Misano', 'Spa', 'Paul Ricard', 'Hockenheim', 'Zandvoort', 'Nürburgring', 'Barcelona', 'Imola', 'Mugello', 'Hungaroring', 'Valencia'],
       teams: [
         ['SR Motorsport #111', 3, ''],
@@ -127,7 +130,7 @@
         ['NM Racing Team', -1, ''],
         ['Speedy Motorsport', -2.5, ''],
       ] },
-    sfl: { id: 'sfl', name: 'Super Formula Lights', short: 'SF Lights', tier: 2, lvl: 71, rounds: 14, rpr: 1, dpt: 2, pay: true, cost: [150, 360], titleName: 'Super Formula Lights Champion',
+    sfl: { id: 'sfl', lap: 78, qK: 0.0822, rK: 1.06, name: 'Super Formula Lights', short: 'SF Lights', tier: 2, lvl: 71, rounds: 14, rpr: 1, dpt: 2, pay: true, cost: [150, 360], titleName: 'Super Formula Lights Champion',
       rf: [{ n: 'Race', pts: PF1, grid: 'q' }], names: ['Fuji', 'Suzuka', 'Motegi', 'Autopolis', 'Sugo', 'Okayama', 'Suzuka II', 'Fuji II', 'Motegi II', 'Autopolis II', 'Sugo II', 'Okayama II', 'Fuji III', 'Suzuka III'],
       teams: [
         ['TOM\'S', 4, 'Kiyoshi Umegaki|Oscar Wurz|Akshay Bohra|Tokiya Suzuki', 4],
@@ -139,7 +142,7 @@
         ['Hitotsuyama Racing', -2, ''],
         ['Modulo Nakajima', -3, ''],
       ] },
-    nxt: { id: 'nxt', name: 'Indy NXT', short: 'Indy NXT', tier: 2, lvl: 73, rounds: 14, rpr: 1, dpt: 3, pay: true, cost: [500, 1150], titleName: 'Indy NXT Champion',
+    nxt: { id: 'nxt', lap: 62, qK: 0.0909, rK: 1.0606, name: 'Indy NXT', short: 'Indy NXT', tier: 2, lvl: 73, rounds: 14, rpr: 1, dpt: 3, pay: true, cost: [500, 1150], titleName: 'Indy NXT Champion',
       rf: [{ n: 'Race', pts: PF1, grid: 'q' }], names: ['St. Petersburg', 'Barber', 'Indianapolis GP', 'Road America', 'Mid-Ohio', 'Iowa', 'Toronto', 'Laguna Seca', 'Portland', 'Milwaukee', 'Nashville', 'Gateway', 'Detroit', 'Long Beach'],
       teams: [
         ['Andretti Global', 4, 'Max Taylor|Lochie Hughes|Seb Murray'],
@@ -150,7 +153,7 @@
         ['Juncos Hollinger Racing', -1.5, '', 2],
         ['Cape Motorsports', -2.5, 'Nikita Johnson', 2],
       ] },
-    gt3: { id: 'gt3', name: 'GT World Challenge Europe', short: 'GT3', tier: 2, lvl: 73, rounds: 12, rpr: 1, dpt: 3, pay: true, crew: true, cost: [200, 520], titleName: 'GT3 Champion',
+    gt3: { id: 'gt3', lap: 115, qK: 0.0889, rK: 3.3944, name: 'GT World Challenge Europe', short: 'GT3', tier: 2, lvl: 73, rounds: 12, rpr: 1, dpt: 3, pay: true, crew: true, cost: [200, 520], titleName: 'GT3 Champion',
       rf: [{ n: 'Race', pts: PF1, grid: 'q' }], names: ['Paul Ricard', 'Monza', 'Brands Hatch', 'Spa 24h', 'Nürburgring', 'Misano', 'Zandvoort', 'Barcelona', 'Hockenheim', 'Imola', 'Valencia', 'Mugello'],
       teams: [
         ['Team WRT #32', 4, 'Charles Weerts|Sheldon van der Linde|Kelvin Pepper'],
@@ -166,7 +169,7 @@
         ['Ecurie Ecosse Blackthorn', -2.5, 'Jonny Adam|Giacomo Petrobelli|Lorcan Hanafin'],
         ['JMW Motorsport', -3, 'Hunter Abbott|Rolf Ineichen|Tim Heinemann'],
       ] },
-    sf: { id: 'sf', name: 'Super Formula', short: 'Super Formula', tier: 3, lvl: 77, rounds: 9, rpr: 2, dpt: 2, pay: false, sal: [140, 480], titleName: 'Super Formula Champion',
+    sf: { id: 'sf', lap: 75, qK: 0.0895, rK: 1.8498, name: 'Super Formula', short: 'Super Formula', tier: 3, lvl: 77, rounds: 9, rpr: 2, dpt: 2, pay: false, sal: [140, 480], titleName: 'Super Formula Champion',
       rf: [{ n: 'R1', pts: PF1, grid: 'q' }, { n: 'R2', pts: PF1, grid: 'rev6' }], names: ['Motegi', 'Fuji', 'Suzuka', 'Autopolis', 'Sugo', 'Okayama', 'Fuji II', 'Motegi II', 'Suzuka II'],
       teams: [
         ['Team Mugen', 4, 'Ayumu Iwasa|Tomoki Nojiri'],
@@ -184,7 +187,7 @@
         ['Buzz MK Racing', -3, 'Roman Staněk', 1],
         ['DELiGHTWORKS Racing', -3.5, 'Nobuharu Matsushita', 1],
       ] },
-    indy: { id: 'indy', name: 'IndyCar Series', short: 'IndyCar', tier: 3, lvl: 79, rounds: 17, rpr: 1, dpt: 2, pay: false, sal: [300, 3000], titleName: 'IndyCar Champion',
+    indy: { id: 'indy', lap: 65, qK: 0.065, rK: 2.5366, name: 'IndyCar Series', short: 'IndyCar', tier: 3, lvl: 79, rounds: 17, rpr: 1, dpt: 2, pay: false, sal: [300, 3000], titleName: 'IndyCar Champion',
       rf: [{ n: 'Race', pts: PIND, grid: 'q' }], special: { 5: 'Indy 500 win' },
       names: ['St. Petersburg', 'Phoenix', 'Long Beach', 'Barber', 'Indianapolis GP', 'Indianapolis 500', 'Detroit', 'Road America', 'Mid-Ohio', 'Toronto', 'Iowa', 'Laguna Seca', 'Portland', 'Milwaukee', 'Nashville', 'Gateway', 'Markham'],
       teams: [
@@ -199,7 +202,7 @@
         ['A.J. Foyt Racing', -3, 'Santino Ferrucci|Caio Collet'],
         ['Dale Coyne Racing', -4, 'Romain Grosjean|Dennis Hauger'],
       ] },
-    wec: { id: 'wec', name: 'WEC Hypercar', short: 'WEC', tier: 3, lvl: 78, rounds: 8, rpr: 1, dpt: 3, pay: false, crew: true, sal: [200, 1400], titleName: 'WEC Hypercar Champion',
+    wec: { id: 'wec', lap: 200, qK: 0.1225, rK: 9.4395, name: 'WEC Hypercar', short: 'WEC', tier: 3, lvl: 78, rounds: 8, rpr: 1, dpt: 3, pay: false, crew: true, sal: [200, 1400], titleName: 'WEC Hypercar Champion',
       rf: [{ n: 'Race', pts: PF1, grid: 'q' }], special: { 3: '24 Hours of Le Mans win' },
       names: ['Qatar 1812km', 'Imola 6h', 'Spa 6h', '24 Hours of Le Mans', 'São Paulo 6h', 'COTA 6h', 'Fuji 6h', 'Bahrain 8h'],
       teams: [
@@ -220,7 +223,7 @@
         ['Aston Martin THOR Team #007', -1.5, 'Tom Gamble|Harry Tincknell|Ross Gunn'],
         ['Aston Martin THOR Team #009', -2, 'Alex Riberas|Marco Sørensen|Roman De Angelis'],
       ] },
-    fe: { id: 'fe', name: 'Formula E', short: 'Formula E', tier: 3, lvl: 78, rounds: 16, rpr: 1, dpt: 2, pay: false, sal: [250, 1900], titleName: 'Formula E Champion',
+    fe: { id: 'fe', lap: 70, qK: 0.0591, rK: 1.0787, name: 'Formula E', short: 'Formula E', tier: 3, lvl: 78, rounds: 16, rpr: 1, dpt: 2, pay: false, sal: [250, 1900], titleName: 'Formula E Champion',
       rf: [{ n: 'E-Prix', pts: PF1, grid: 'q' }],
       names: ['São Paulo', 'Mexico City', 'Miami', 'Jeddah', 'Madrid', 'Berlin', 'Monaco', 'Sanya', 'Shanghai', 'Tokyo', 'London', 'Portland', 'Misano', 'Jakarta', 'Seoul', 'Cape Town'],
       teams: [
@@ -268,9 +271,9 @@
   const TIERS = [
     { id: 'prospect', n: 'Prospect', p: 0.51, col: '#8b8fb0', adv: [2.5, 2.5, 2.5, -3.5, -7.5, -7], blurb: 'Below-average F1 ceiling. Podiums in karting, then a midfield grind.' },
     { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [3.5, 4, 4, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
-    { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [-2, 0, 7.5, 5, 3.5, 3.5], blurb: 'Quiet early on, then dominant in the last karting years and the junior formulas.' },
-    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [4.5, 5, 5.5, 5, 6.5, 7.5], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
-    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [6, 6.5, 6.5, 9, 10.5, 10.5], blurb: 'Once in a generation. Not a karting serial winner, but the drives get noticed. Dominates once the cars get serious.' },
+    { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [1.5, 2, 7.5, 5, 3.5, 3.5], blurb: 'Regular points and the odd podium early on, then winning and podiums in the final karting years and the junior formulas.' },
+    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [4, 4.5, 5, 5, 6.5, 7.5], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
+    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [5, 5.5, 5.5, 9, 10.5, 10.5], blurb: 'Once in a generation. Not a karting serial winner, but the drives get noticed. Dominates once the cars get serious.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];

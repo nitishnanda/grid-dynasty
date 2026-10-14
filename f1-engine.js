@@ -304,9 +304,15 @@
     units.forEach(u => { u.q += gauss() * (wet ? 3.6 : 2.2); });
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
     const qpos = out ? null : qOrder.indexOf(uP) + 1;
+    // weekend character: gaps breathe from one event to the next, bigger in the wet and in a dominant era
+    const wk = Math.exp(gauss() * 0.22), wetK = wet ? 1.35 : 1, eraK = (C.dyn && S.regime === 'dominant') ? 1.45 : 1;
+    const qScale = (C.qK || 0.05) * wk * wetK * eraK;
+    let qi = null;
+    if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, (qOrder[0].q - qOrder[1].q) * qScale), lead: true } : { pos: qpos, gap: Math.max(0.001, (qOrder[0].q - uP.q) * qScale), lead: false };
+    if (G.dbg) G.dbg.q.push(qOrder.map(u => qOrder[0].q - u.q));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
-    const entry = { round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
+    const entry = { round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
     let prev = qOrder;
     const run = (rf, grid, isSpr) => {
       const n = grid.length;
@@ -327,10 +333,15 @@
       });
       if (mode === 'coast' && uP && grid.includes(uP)) { const m = grid.reduce((a, u) => a + u.s, 0) / n; uP.s = 0.85 * uP.s + 0.15 * m; }
       const res = grid.filter(u => !u.crash).sort((a, b) => b.s - a.s).concat(grid.filter(u => u.crash));
+      const fin = res.filter(u => !u.crash);
+      const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
+      if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => fin[0].s - u.s));
       res.forEach((u, i) => u.members.forEach(d => { d.races++; if (u.crash) { d.dnf++; return; } d.pts += rf.pts[i] || 0; if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (!out) {
         const pos = res.indexOf(uP) + 1;
-        entry.races.push({ n: rf.n, grid: uP.grid, pos, dnf: uP.crash, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr });
+        let gap = null, lead = false, laps = 0;
+        if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (fin[0].s - fin[1].s) * rScale : (fin[0].s - uP.s) * rScale); if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
+        entry.races.push({ n: rf.n, grid: uP.grid, pos, dnf: uP.crash, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
         if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); if (C.kartWC && ri === C.rounds - 1) S.wcWin = true; }
       }
       return res;
@@ -350,7 +361,7 @@
     S.log.push(entry);
     S.round++;
     if (S.injured > 0) S.injured--;
-    if (C.kartWC && S.round === 5 && standings(G)[0].isPlayer) S.euro = true;
+    if (C.kartWC && S.round === C.rounds - 1 && standings(G)[0].isPlayer) S.euro = true;
     rbEvent(G);
     if (S.round >= C.rounds) S.over = true;
     else if (S.spins < 2 && S.round >= S.stageEnds[S.spins]) S.wheelDue = true;
