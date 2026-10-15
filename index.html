@@ -56,7 +56,7 @@ input,select{width:100%;font:inherit;font-size:16px;background:var(--paper2);col
 .strip div{padding:8px 6px;border-right:2.5px solid var(--ink);text-align:center}.strip div:last-child{border-right:0}
 .strip b{display:block;font-size:24px;line-height:1.1;font-family:var(--serif)}.strip span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
 .team{display:flex;align-items:stretch;border:2.5px solid var(--ink);background:var(--paper2);margin:0 0 10px}
-.team .sw{width:16px;flex:none;border-right:2.5px solid var(--ink)}.team .tx{padding:8px 10px;flex:1}.team .tx b{font-family:var(--serif);font-size:19px}.team .rn{padding:8px 10px;border-left:2.5px solid var(--ink);text-align:center;font-weight:800;background:var(--ink);color:var(--paper)}
+.team .sw{width:16px;flex:none;border-right:2.5px solid var(--ink)}.team .tx{padding:8px 10px;flex:1}.team .tx>b{font-family:var(--serif);font-size:19px}.team .tx .meta b{font-family:var(--mono);font-size:inherit}.team .rn{padding:8px 10px;border-left:2.5px solid var(--ink);text-align:center;font-weight:800;background:var(--ink);color:var(--paper)}
 .meta{font-size:11.5px;color:var(--ink2);margin:0 0 10px;display:flex;flex-wrap:wrap;gap:4px 12px}.meta b{color:var(--ink)}
 .rd{border:2.5px solid var(--ink);background:var(--paper2);margin:0 0 12px}
 .rdh{display:flex;gap:8px;align-items:baseline;background:var(--ink);color:var(--paper);padding:6px 10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase}.rdh b{font-size:15px;color:var(--yel)}.rdh em{margin-left:auto;font-style:normal;opacity:.85;font-size:10.5px}
@@ -97,6 +97,7 @@ table{width:100%;border-collapse:collapse}
 .kv{display:grid;grid-template-columns:repeat(3,1fr);border:2.5px solid var(--ink);margin:0 0 12px;background:var(--paper2)}.kv div{padding:8px 10px;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}.kv div:nth-child(3n){border-right:0}.kv div:nth-last-child(-n+3){border-bottom:0}.kv b{display:block;font-family:var(--serif);font-size:22px;color:var(--ink);letter-spacing:0;text-transform:none}
 .chip{display:inline-block;border:2px solid var(--ink);background:var(--paper2);padding:2px 8px;margin:0 6px 6px 0;font-size:12px;font-weight:700}
 .sc{overflow-x:auto}
+.tbl .sh td{background:var(--ink);color:var(--paper);text-align:left;border-bottom:0;padding:8px 8px}.tbl .sh small{color:#cfc7b3}.tbl tbody.sb{border-top:3px solid var(--ink)}.tbl td.gp{font-size:12px;color:var(--ink2)}.tbl tr.me td.gp{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -121,6 +122,14 @@ function load(){try{const s=localStorage.getItem(KEY);const g=s?JSON.parse(s):nu
 function clear(){try{localStorage.removeItem(KEY);}catch(e){}}
 const stamp=(txt,col)=>`<span class="stamp" style="color:${col};border-color:${col}">${esc(txt)}</span>`;
 const tierStamp=t=>{const T=D.TIERS[t];return stamp(T.n,T.id==='gen'?'#c2185b':T.id==='wonder'?'#a86f00':T.id==='late'?'#c24a00':T.id==='talented'?'#1f4bff':'#5a5244');};
+const fmtGap=c=>c.status==='next'?'':(c.lead?'+'+c.gap+' on P2':'−'+c.gap+' to P1');
+function compBlock(comp){
+  return `<div class="cap">Competitions this season</div><div class="sheet flat" style="padding:0"><table class="tbl"><tr><th class="l">Competition</th><th>Rds</th><th>Pos</th><th>Pts</th><th>Gap</th></tr>${comp.map(c=>`<tr class="${c.status==='live'?'me':''}"><td class="l">${esc(c.n)}${c.main?' ★':''}${c.status==='final'?' ✓':''}</td><td>${c.done}/${c.total}</td><td>${c.status==='next'?'–':c.pos+'/'+c.N}</td><td>${c.status==='next'?'–':c.pts}</td><td class="gp">${fmtGap(c)}</td></tr>`).join('')}</table></div>`;
+}
+function sponsorCards(){
+  const M=G.market; if(!M||!M.sponsors||!M.sponsors.length) return '';
+  return `<div class="cap">Sponsor approaches</div>`+M.sponsors.map((s,i)=>`<div class="offer" data-act="spon" data-i="${i}"><div class="oh"><b>${esc(s.name)}</b><em>Sponsor</em></div><div class="og"><div>cash now<b>${money(s.cash)}</b></div><div>funding<b>×${s.mult}</b></div><div>term<b>${s.years} yr</b></div></div><div class="ot">Tap to sign. Cash joins your family purse and sponsor funding rises while the deal lasts.</div></div>`).join('');
+}
 function bar(){return `<div class="bar"><b>Grid Dynasty</b><span>${G&&G.phase!=='retired'&&ui.screen!=='start'?`AGE ${G.age} · ${G.year} · REP ${Math.round(G.rep)}`:'career sim'}</span></div>`;}
 function meters(st){return D.STATS.map(k=>{const v=st[k],n=Math.round(v/10),cls=v>=85?'hi':v>=70?'mid':v<55?'lo':'';return `<div class="meter"><span>${k}</span><div class="bl ${cls}">${Array.from({length:10},(_,i)=>`<i class="${i<n?'f':''}"></i>`).join('')}</div><b>${v}</b></div>`;}).join('');}
 const sim=()=>D.STATS.map(k=>`<div data-act="train" data-k="${k}" class="${ui.train===k?'on':''}">${k}<b>${G.stats[k]}</b></div>`).join('');
@@ -161,13 +170,15 @@ function vSeason(){
       rows+=`<tr class="${l.pole?'w':''}"><td class="k">QUALI</td><td>P${l.qpos}${l.pole?' · pole':''}</td><td class="g">${l.qi?(l.pole?gp(l.qi.gap,true,0,true)+' to P2':gp(l.qi.gap,false,0,true)):''}</td><td></td></tr>`;
       rows+=l.races.map(r=>`<tr class="${r.dnf?'d':r.pos===1&&!r.spr?'w':''}"><td class="k">${esc(r.n).toUpperCase()}</td><td>P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}</td><td class="g">${r.dnf?'':gp(r.gap,r.lead,r.laps,false)+(r.lead?' to P2':'')}</td><td class="r">${r.dnf?'0':'+'+r.pts}</td></tr>`).join('');
     }
-    return `<div class="rd"><div class="rdh"><b>R${l.round}</b><span>${esc(l.name)}</span><em>${l.wet?'WET · ':''}${(modeName[l.mode]||'Balance').toUpperCase()}${l.sprint?' · SPRINT':''}</em></div><table class="ts">${rows}</table></div>`;}).join('');
+    return `<div class="rd"><div class="rdh"><b>R${l.round}</b><span>${esc(l.name)}</span><em>${C.events&&C.events[l.ev]?esc(C.events[l.ev].n.toUpperCase())+' · ':''}${l.wet?'WET · ':''}${(modeName[l.mode]||'Balance').toUpperCase()}${l.sprint?' · SPRINT':''}</em></div><table class="ts">${rows}</table></div>`;}).join('');
   const modeDesc={push:'Push: faster, but more DNF risk (worse if your racecraft is low).',balance:'Balance: your normal form.',coast:'Coast: fewer DNFs, steadier finishes. A quick car lands P3–P6 with the odd win.'}[mode];
   return `${bar()}
   <div class="team"><div class="sw" style="background:${teamColor(G.team)}"></div><div class="tx"><b>${esc(G.team)}</b><div class="meta" style="margin:2px 0 0"><span>${esc(C.name)}</span><span>${G.year}</span><span>age <b>${G.age}</b></span></div></div><div class="rn">R${S.round}/${C.rounds}</div></div>
   <div class="strip"><div><b>${S.round?pos:'–'}</b><span>Pos</span></div><div><b>${P.w}</b><span>Wins</span></div><div><b>${P.p}</b><span>Podiums</span></div><div><b>${P.pts}</b><span>Points</span></div></div>
   <div class="meta"><span>stage <b>${Math.min(3,S.spins+1)}/3</b></span><span>contract <b>${G.contract}y</b></span><span>poles <b>${P.pole}</b></span>${G.academy?`<span>academy <b>${esc(G.academy.n.split(' ')[0])}</b></span>`:''}</div>
   <div class="row" style="margin:0 0 14px"><button class="btn sm" data-act="tbl">Standings</button><button class="btn sm" data-act="drv">Driver file</button></div>
+  ${compBlock(E.compTable(G))}
+  <div class="cap">Round by round</div>
   ${logs||'<div class="note">Season loaded. Pick your approach below and send it.</div>'}
   <div class="dock"><div>${S.over?`<button class="btn go" data-act="wrap">Season debrief ▶</button>`:`<div class="modes">${['push','balance','coast'].map(m=>`<div data-act="mode" data-v="${m}" class="${mode===m?'on '+m:''}">${modeName[m]}</div>`).join('')}</div><div class="mdesc">${modeDesc}</div><div class="row"><button class="btn go" data-act="next">Race round ${S.round+1} ▶</button><button class="btn dark" data-act="sim">Sim to end</button></div>`}</div></div>${modal()}`;
 }
@@ -179,12 +190,12 @@ function vWrap(){
   return `${bar()}<h1>Season debrief</h1><p class="lede">${G.year} · ${esc(C.name)}</p>
   <div class="memo"><div class="hd">Memo · from ${esc(SM.agent)} (agent) · re: your season</div>${SM.para.map(p=>`<p>${esc(p)}</p>`).join('')}
   <div class="stamps">${stamp('Expectations: '+tag[0],tag[1])}${stamp(ext,'#5a5244')}${stamp(stk[0]+' ('+(SM.dRep>0?'+':'')+SM.dRep+')',stk[1])}</div></div>
-  <div class="sheet flat"><div class="cap">Final classification</div><h2>${ord(h.pos)} of ${h.N}</h2><div class="meta"><span>${esc(h.team)}</span><span><b>${h.pts}</b> pts</span><span><b>${h.wins}</b>W <b>${h.podiums}</b>P <b>${h.poles}</b> poles</span>${h.earn?`<span>earned <b>${money(h.earn)}</b></span>`:''}</div>${h.events?`<div class="cap" style="margin-top:10px">Tournaments</div><table class="tbl">${h.events.map(e=>`<tr class="${e.pos===1?'me':''}"><td class="l">${esc(e.n)}</td><td>${e.pos===1?'1st · winner':ord(e.pos)+' of '+e.N}</td></tr>`).join('')}</table><div style="height:8px"></div>`:''}${h.trophies.map(t=>`<span class="chip">🏆 ${esc(t)}</span>`).join('')}</div>
+  <div class="sheet flat"><div class="cap">Main championship${h.events&&h.events.find(e=>e.main)?' · '+esc(h.events.find(e=>e.main).n):''}</div><h2>${ord(h.pos)} of ${h.N}</h2><div class="meta"><span>${esc(h.team)}</span><span><b>${h.pts}</b> pts</span><span><b>${h.wins}</b>W <b>${h.podiums}</b>P <b>${h.poles}</b> poles</span>${h.earn?`<span>earned <b>${money(h.earn)}</b></span>`:''}</div>${h.events?`<div class="cap" style="margin-top:10px">Competitions</div><table class="tbl"><tr><th class="l">Competition</th><th>Pos</th><th>Pts</th><th>Gap</th></tr>${h.events.map(e=>`<tr class="${e.pos===1?'me':''}"><td class="l">${esc(e.n)}${e.main?' ★':''}</td><td>${e.pos===1?'1st':ord(e.pos)}</td><td>${e.pts}</td><td class="gp">${e.lead?'+'+e.gap+' on P2':'−'+e.gap+' to P1'}</td></tr>`).join('')}</table><div style="height:8px"></div>`:''}${h.trophies.map(t=>`<span class="chip">🏆 ${esc(t)}</span>`).join('')}</div>
   ${N.msgs.map(m=>`<div class="note">${esc(m)}</div>`).join('')}
   <div class="cap">Champions elsewhere</div><div class="sheet flat" style="padding:0"><table class="tbl">${N.champs.map(c=>`<tr><td class="l"><b>${esc(c.cat)}</b></td><td class="l">${esc(c.who)}<br><small>${esc(c.team)}</small></td></tr>`).join('')}</table></div>
   <div class="cap">${esc(C.short)} · car pecking order</div><div class="sheet flat" style="padding:0"><table class="tbl"><tr><th>#</th><th class="l">Team</th><th>Rating</th><th>Δ</th></tr>${N.rank.slice(0,10).map((t,i)=>`<tr class="${t.you?'me':''}"><td>${i+1}</td><td class="l">${esc(t.n)}${t.you?'<span class="you">YOU</span>':''}</td><td>${t.r}</td><td class="${t.d>0?'up':t.d<0?'dn':''}">${t.d>0?'▲'+t.d:t.d<0?'▼'+Math.abs(t.d):'·'}</td></tr>`).join('')}</table></div>
-  <div class="cap">Championship top 10</div><div class="sheet flat" style="padding:0"><table class="tbl">${N.table.map((d,i)=>`<tr class="${d.isPlayer?'me':''}"><td>${i+1}</td><td class="l">${esc(d.name)}<br><small>${esc(d.team)}</small></td><td>${d.pts}</td></tr>`).join('')}</table></div>
-  <div style="height:14px"></div>${wrapAction()}`;
+  <div class="cap">Main championship top 10</div><div class="sheet flat" style="padding:0"><table class="tbl">${N.table.map((d,i)=>`<tr class="${d.isPlayer?'me':''}"><td>${i+1}</td><td class="l">${esc(d.name)}<br><small>${esc(d.team)}</small></td><td>${d.pts}</td></tr>`).join('')}</table></div>
+  <div style="height:14px"></div>${sponsorCards()}${wrapAction()}`;
 }
 function wrapAction(){
   const M=G.market, cc=E.canContinue(G);
@@ -214,7 +225,8 @@ function vMarket(){
   return `${bar()}<h1>Contract desk</h1><p class="lede">Season ${last.season} is in the books. Pick a seat for next year and a simulator focus.</p>
   <div class="kv"><div>Reputation<b>${Math.round(G.rep)}</b></div><div>Deal<b>${G.contract>0?G.contract+' yr left':'expired'}</b></div><div>Earnings<b>${money(G.tot.earn)}</b></div><div>Sponsors<b>${money(E.funding(G))}</b></div><div>Family<b>${money(G.family)}</b></div><div>Status<b style="font-size:14px">${G.academy?'Academy':G.reserve?'Reserve':'Free'}</b></div></div>
   ${(M.msgs||[]).map(m=>`<div class="note">${esc(m)}</div>`).join('')}${M.note?`<div class="note">${esc(M.note)}</div>`:''}
-  ${ac}${opts}${ret}
+  ${(G.sponsorDeals||[]).length?`<div class="meta"><span>active sponsors:</span>${G.sponsorDeals.map(d=>`<span><b>${esc(d.name)}</b> (to ${d.until})</span>`).join('')}</div>`:''}
+  ${sponsorCards()}${ac}${opts}${ret}
   <div class="cap" style="margin-top:6px">Simulator block · +2 to one attribute</div><div class="sim">${sim()}</div>
   <div class="dock"><div><button class="btn go" data-act="go" ${ok?'':'disabled'}>${ui.sel==='ret'?'Retire':'Sign and start season '+(G.season+1)+' ▶'}</button></div></div>`;
 }
@@ -232,7 +244,7 @@ function vRetired(){
   ${G.standIns.length?`<p>F1 stand-ins: <b>${G.standIns.reduce((a,x)=>a+x.n,0)} starts, ${G.standIns.reduce((a,x)=>a+x.pts,0)} pts</b></p>`:''}
   <div class="cap">Teams</div><p>${R.teams.map(esc).join(' · ')}</p>
   ${b?`<div class="cap">Best season</div><p><b>${b.wins}W ${b.podiums}P</b> in ${esc(b.short)} for ${esc(b.team)}${b.champ?' · champion':''}</p>`:''}</div>
-  <div class="cap">Season by season</div><div class="sheet flat sc" style="padding:0"><table class="tbl"><tr><th>Year</th><th class="l">Series</th><th>R</th><th>W</th><th>Pos</th></tr>${G.history.map(h=>`<tr><td>${h.year}${h.champ?' 🏆':''}<br><small>age ${h.age}</small></td><td class="l">${esc(h.short)}<br><small>${esc(h.team)}${h.trophies.length?' · '+esc(h.trophies.join(', ')):''}</small>${h.events?`<br><small>${h.events.map(e=>esc(e.n)+' '+(e.pos===1?'1st':ord(e.pos))).join(' · ')}</small>`:''}</td><td>${h.races}</td><td>${h.wins}</td><td>${h.pos}</td></tr>`).join('')}</table></div>
+  <div class="cap">Season by season</div><div class="sheet flat sc" style="padding:0"><table class="tbl"><tr><th class="l">Competition</th><th>Pos</th><th>Pts</th><th>Gap</th></tr>${G.history.map(h=>{const ev=h.events&&h.events.length?h.events:[{n:'Championship',pos:h.pos,N:h.N,pts:h.pts,lead:h.pos===1,gap:0,main:true}];return `<tbody class="sb"><tr class="sh"><td colspan="4"><b>${h.year}</b> · age ${h.age} · ${esc(h.short)}${h.trophies.length?' 🏆':''}<br><small>${esc(h.team)} · ${h.races} races · ${h.wins}W ${h.podiums}P ${h.poles} poles</small></td></tr>${ev.map(e=>`<tr class="${e.pos===1?'me':''}"><td class="l">${esc(e.n)}${e.main?' ★':''}</td><td>${e.pos===1?'1st':ord(e.pos)}</td><td>${e.pts}</td><td class="gp">${e.lead?'+'+e.gap+' on P2':'−'+e.gap+' to P1'}</td></tr>`).join('')}${h.trophies.length?`<tr><td colspan="4" class="l"><small>🏆 ${esc(h.trophies.join(' · '))}</small></td></tr>`:''}</tbody>`;}).join('')}</table></div>
   <button class="btn go" data-act="again">Open a new driver file</button>`;
 }
 
@@ -245,9 +257,11 @@ function pie(L){
 function modal(){
   const m=ui.modal; if(!m)return '';
   if(m==='tbl'){
-    const tb=E.standings(G);const C=CATS[G.S.cat];
-    const rows=tb.map((d,i)=>({d,i})).filter(x=>x.i<15||x.d.isPlayer);
-    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="cap">Championship</div><h2>${esc(C.name)}</h2><table class="tbl"><tr><th>#</th><th class="l">Driver</th><th>W</th><th>Pts</th></tr>${rows.map(({d,i})=>`<tr class="${d.isPlayer?'me':''}"><td>${i+1}</td><td class="l">${esc(d.name)}<br><small>${esc(d.team)}</small></td><td>${d.w}</td><td>${d.pts}</td></tr>`).join('')}</table><div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
+    const C=CATS[G.S.cat];const evs=C.events||[{n:C.short+' championship',main:true}];
+    if(ui.stEv==null||ui.stEv>=evs.length) ui.stEv=Math.max(0,evs.findIndex(x=>x.main));
+    const rowsAll=E.standingsEv(G,C.events?ui.stEv:-1);
+    const rows=rowsAll.map((r,i)=>({r,i})).filter(x=>x.i<15||x.r.d.isPlayer);
+    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="cap">Standings</div><h2>${esc(C.name)}</h2>${evs.length>1?`<div class="tiles" style="margin-bottom:10px">${evs.map((x,i)=>`<div class="tile ${ui.stEv===i?'on':''}" data-act="stev" data-i="${i}" style="min-height:0;padding:8px"><b style="font-size:12px">${esc(x.n)}${x.main?' ★':''}</b></div>`).join('')}</div>`:''}<table class="tbl"><tr><th>#</th><th class="l">Driver</th><th>W</th><th>Pts</th></tr>${rows.map(({r,i})=>`<tr class="${r.d.isPlayer?'me':''}"><td>${i+1}</td><td class="l">${esc(r.d.name)}<br><small>${esc(r.d.team)}</small></td><td>${r.d.w}</td><td>${r.v}</td></tr>`).join('')}</table><div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
   }
   if(m==='drv'){
     const C=CATS[G.cat];
@@ -320,6 +334,8 @@ document.addEventListener('click',e=>{
     case 'cont2': E.continueContract(G,ui.train); ui.sel=-1; ui.train=null; save(); render(true); return;
     case 'plan': G.phase='market'; ui.sel=-1; ui.train=null; ui.acad=false; save(); render(true); return;
     case 'noop': return;
+    case 'stev': ui.stEv=+el.dataset.i; rerender(); return;
+    case 'spon': E.takeSponsor(G,+el.dataset.i); save(); rerender(); return;
     case 'sel': ui.sel=el.dataset.i==='ret'?'ret':+el.dataset.i; rerender(); return;
     case 'acad': ui.acad=!ui.acad; rerender(); return;
     case 'train': ui.train=ui.train===el.dataset.k?null:el.dataset.k; rerender(); return;

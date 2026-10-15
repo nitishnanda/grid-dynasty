@@ -54,7 +54,7 @@
       tier: (o.tier === undefined || o.tier === null || o.tier === '') ? rollTier() : +o.tier, shape: rollShape(o.arch), train: {}, stats: {}, rep: 0, sponsor: 1, academy: null, buzz: 0,
       cat: startAge === 16 ? 'f4' : 'kart1', team: null, contract: 0, seasonsInCat: 0, deal: { cost: 0, sal: 0 },
       history: [], standIns: [], tot: { races: 0, wins: 0, podiums: 0, poles: 0, earn: 0, peak: 0, trophies: {}, titles: {} },
-      tr: {}, trPrev: {}, gen: {}, names: {}, churn: {}, dyn: {}, f1: null, family: 0, wealth: 'middle', f1Years: 0, titleStreak: 0, reserve: null, demoted: false, agent: '', phase: 'intro', S: null, market: null, news: null, last: null,
+      tr: {}, trPrev: {}, gen: {}, names: {}, churn: {}, dyn: {}, f1: null, family: 0, wealth: 'middle', sponsorDeals: [], f1Years: 0, titleStreak: 0, reserve: null, demoted: false, agent: '', phase: 'intro', S: null, market: null, news: null, last: null,
     };
     { const r = rnd(); G.wealth = (o.wealth && WEALTH[o.wealth]) ? o.wealth : r < 0.27 ? 'poor' : r < 0.68 ? 'middle' : r < 0.92 ? 'rich' : 'dynasty';
       const W = WEALTH[G.wealth]; G.family = Math.round(W.base * Math.exp(gauss() * W.sd) * (startAge === 16 ? 0.7 : 1)); G.sponsor = W.sponsor; }
@@ -313,7 +313,7 @@
     if (G.dbg) G.dbg.q.push(qOrder.map(u => qOrder[0].q - u.q));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
-    const entry = { round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
+    const entry = { ev: evIdx, round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
     let prev = qOrder;
     const run = (rf, grid, isSpr) => {
       const n = grid.length;
@@ -369,6 +369,26 @@
   }
   function simToEnd(G) { while (!G.S.over && !G.S.wheelDue) playRound(G); }
   function setMode(G, m) { if (G.S) G.S.mode = m; }
+
+  // standings for one competition (index into the series' events, or -1 for the whole championship)
+  function standingsEv(G, i) {
+    const S = G.S, C = CATS[S.cat], val = d => (i < 0 || !C.events) ? d.pts : ((d.ev && d.ev[i]) || 0);
+    return S.drivers.slice().sort((a, b) => val(b) - val(a) || b.pts - a.pts || a.tb - b.tb).map(d => ({ d, v: val(d) }));
+  }
+  // one row per competition in the season: position, points and the points gap (lead over P2 if first, deficit to P1 otherwise)
+  function compTable(G) {
+    const S = G.S, C = CATS[S.cat], P = player(G);
+    const defs = C.events || [{ n: C.short + ' championship', from: 0, to: C.rounds - 1, main: true, title: C.titleName }];
+    return defs.map((ev, i) => {
+      const key = C.events ? i : -1, val = d => key < 0 ? d.pts : ((d.ev && d.ev[key]) || 0);
+      let rows = S.drivers.slice().sort((a, b) => val(b) - val(a) || b.pts - a.pts || a.tb - b.tb);
+      if (C.crew && key < 0) { const seen = [], teams = []; rows.forEach(d => { if (!seen.includes(d.team)) { seen.push(d.team); teams.push({ team: d.team, v: val(d) }); } }); const me = teams.findIndex(t => t.team === P.team); rows = teams; var pos = me + 1, mine = teams[me].v; }
+      else { var pos = rows.indexOf(P) + 1, mine = val(P); }
+      const v = r => r.v !== undefined ? r.v : val(r), lead = pos === 1, gap = lead ? mine - (rows[1] ? v(rows[1]) : 0) : v(rows[0]) - mine;
+      const total = ev.to - ev.from + 1, done = Math.max(0, Math.min(total, S.round - ev.from));
+      return { n: ev.n, pos, N: rows.length, pts: mine, lead, gap, main: !!ev.main, wc: !!ev.wc, title: ev.title || null, done, total, status: done === 0 ? 'next' : done >= total ? 'final' : 'live' };
+    });
+  }
 
   /* ---------- the wheel (3 stages -> 2 spins a season). good and bad outcomes carry equal total weight ---------- */
   function wheelList(G) {
@@ -482,12 +502,12 @@
 
   function finishSeason(G, partial) {
     const S = G.S, C = CATS[S.cat], P = player(G), tbl = standings(G);
-    let pos = tbl.indexOf(P) + 1, N = tbl.length;
-    if (C.crew) { const ts = []; tbl.forEach(d => { if (!ts.includes(d.team)) ts.push(d.team); }); pos = ts.indexOf(P.team) + 1; N = ts.length; }
+    const comp = compTable(G), mainC = comp.find(c => c.main) || comp[0];
+    const mainRows = standingsEv(G, C.events ? C.events.findIndex(x => x.main) : -1), lead0 = mainRows[0].d;
+    const pos = mainC.pos, N = mainC.N;
     const q = N > 1 ? 1 - (pos - 1) / (N - 1) : 1;
     const champ = pos === 1 && !partial, ovr = ovrOf(G.stats);
-    const tro = []; let evRes = null;
-    if (C.events) evRes = C.events.map((ev, i) => { const order = S.drivers.slice().sort((a, b) => ((b.ev && b.ev[i]) || 0) - ((a.ev && a.ev[i]) || 0) || b.pts - a.pts || a.tb - b.tb); return { n: ev.n, pos: order.indexOf(P) + 1, N: order.length, main: !!ev.main, wc: !!ev.wc, title: ev.title || null }; });
+    const tro = []; const evRes = C.events ? comp : null;
     if (!partial) {
       if (evRes) evRes.forEach(r => { if (r.pos === 1 && r.title) tro.push(r.title); });
       else if (champ) tro.push(C.titleName);
@@ -499,7 +519,7 @@
     const carRank = C.teams.map(t => t[0]).sort((a, b) => G.tr[S.cat][b] - G.tr[S.cat][a]).indexOf(S.teams[0]) + 1;
     const repBefore = G.rep;
     if (!partial) { const dRep = (C.tier === 0 ? kartRepW(G.age) : REP_W[C.tier]) * (q * 10 - 3.5) + (anyTitle ? 6 : 0) + Math.min(P.w, 10) * 0.15 + (C.tier === 0 ? FLAIR[G.tier] * (0.6 + 0.4 * q) : 0); G.rep = clamp(G.rep + dRep, 5, 100); }
-    const h = { season: G.season, year: G.year, age: G.age, cat: S.cat, catName: C.name, short: C.short, team: S.teams.join(' → '), races: P.races, wins: P.w, podiums: P.p, poles: P.pole, pts: P.pts, pos, N, ovr, trophies: tro, earn, champ: anyTitle, cost: G.deal.cost, partial: !!partial, events: evRes };
+    const h = { season: G.season, year: G.year, age: G.age, cat: S.cat, catName: C.name, short: C.short, team: S.teams.join(' → '), races: P.races, wins: P.w, podiums: P.p, poles: P.pole, pts: P.pts, pos, N, ovr, trophies: tro, earn, champ: anyTitle, cost: G.deal.cost, partial: !!partial, events: comp };
     G.history.push(h);
     const T = G.tot; T.races += P.races; T.wins += P.w; T.podiums += P.p; T.poles += P.pole; T.earn += earn; T.peak = Math.max(T.peak, ovr);
     tro.forEach(t => T.trophies[t] = (T.trophies[t] || 0) + 1);
@@ -531,10 +551,10 @@
       G.dyn[c]._champ = ct; evolveCat(G, c, ct);
     });
     const show = ['f1', 'f2', 'f3', 'f4', 'indy', 'wec', 'fe', 'sf'];
-    if (!show.includes(S.cat)) champs.push({ cat: C.short, who: tbl[0].name, team: tbl[0].team });
+    if (!show.includes(S.cat)) champs.push({ cat: C.short, who: lead0.name, team: lead0.team });
     show.forEach(c => {
       const CC = CATS[c];
-      if (c === S.cat) { champs.push({ cat: CC.short, who: tbl[0].name, team: tbl[0].team }); return; }
+      if (c === S.cat) { champs.push({ cat: CC.short, who: lead0.name, team: lead0.team }); return; }
       if (CC.dyn) {
         const ct = G.dyn[c]._champ; let who;
         if (c === 'f1') { const ds = G.f1.teams[ct].filter(d => !d.player); who = ds.sort((a, b) => b.ski - a.ski)[0].name; }
@@ -554,7 +574,7 @@
     const regs = Object.keys(G.dyn).filter(c => CATS[c].regYears.includes(G.year + 1)).map(c => CATS[c].short);
     if (regs.length) msgs.push('New regulations next season in ' + regs.join(', ') + '. Expect the order to shuffle.');
     retirees.forEach(r => msgs.push(r.dropped ? `${r.name} (${r.age}) loses their F1 seat.` : `${r.name} (${r.age}) retires from F1.`));
-    G.news = { champs, rank, rising, falling, msgs, summary, table: tbl.slice(0, 10).map(d => ({ name: d.name, team: d.team, pts: d.pts, w: d.w, isPlayer: d.isPlayer })) };
+    G.news = { champs, rank, rising, falling, msgs, summary, table: mainRows.slice(0, 10).map(r => ({ name: r.d.name, team: r.d.team, pts: r.v, w: r.d.w, isPlayer: r.d.isPlayer })) };
     G.phase = 'wrap';
     buildMarket(G, true);
     return h;
@@ -608,6 +628,28 @@
     return clamp(p * (mult || 1), 0, 1);
   }
 
+  const SPONSORS = ['Halden Motors', 'Brightline Energy', 'Corvane Tyres', 'Northgate Logistics', 'Kestrel Foods', 'Meridian Bank', 'Apex Racewear', 'Voltmark Batteries', 'Larkfield Homes', 'Quill Insurance', 'Redmere Telecom', 'Ostler Engineering'];
+  const CASH = [[12, 60], [70, 260], [250, 900], [900, 3200]];
+  function sponsorOffers(G, L, C) {
+    if (!C.pay || C.tier > 3 || (G.sponsorDeals || []).length >= 3) return [];
+    const p = clamp(0.06 + 0.3 * L.q + (L.champ ? 0.3 : 0) + (L.pos <= 3 ? 0.15 : 0) + FLAIR[G.tier] * 0.03 + G.rep / 100 * 0.2 + (G.wealth === 'poor' ? 0.08 : 0), 0.04, 0.95);
+    const out = [], n = rnd() < p ? (p > 0.75 && rnd() < 0.5 ? 2 : 1) : 0, used = (G.sponsorDeals || []).map(d => d.name);
+    const pool = SPONSORS.filter(s => !used.includes(s)).sort(() => rnd() - 0.5);
+    for (let i = 0; i < n; i++) {
+      const [lo, hi] = CASH[C.tier], big = clamp(0.25 + 0.6 * L.q + (L.champ ? 0.3 : 0), 0, 1);
+      out.push({ name: pool[i], cash: Math.round(lerp(lo, hi, big * (0.6 + rnd() * 0.4))), mult: R1(1.12 + 0.35 * big * rnd() + 0.1), years: 1 + Math.floor(rnd() * 3) });
+    }
+    return out;
+  }
+  function takeSponsor(G, i) {
+    const M = G.market, s = M && M.sponsors && M.sponsors[i]; if (!s) return false;
+    G.family += s.cash; G.sponsor = Math.min(3.5, G.sponsor * s.mult);
+    G.sponsorDeals.push({ name: s.name, mult: s.mult, until: G.year + s.years });
+    M.sponsors.splice(i, 1);
+    M.options.forEach(o => { if (o.blocked && !o.scholarship && affordable(G, o.cat, o.team)) o.blocked = false; });
+    M.broke = M.options.length > 0 && M.options.every(o => o.blocked);
+    return true;
+  }
   function buildMarket(G, keepPhase) {
     const L = G.last, C = CATS[G.cat], nextAge = G.age + 1, lh = G.history[G.history.length - 1];
     G._mk = []; G._rescued = false;
@@ -697,6 +739,7 @@
     }
     M.options = M.options.filter((o, i, a) => a.findIndex(x => x.cat === o.cat && x.team === o.team) === i);
     if (!G.academy && !M.forced && C.tier >= 1 && C.tier <= 3 && G.age <= 24 && L.q >= 0.75 && G.rep >= 40 && rnd() < 0.4) M.academy = pick(ACADEMIES);
+    M.sponsors = M.forced ? [] : sponsorOffers(G, L, C);
     M.broke = M.options.length > 0 && M.options.every(o => o.blocked);
     G.market = M; if (!keepPhase) G.phase = 'market';
     return M;
@@ -711,6 +754,8 @@
     if (acceptAcademy && M.academy) { G.academy = M.academy; G.rep = Math.min(100, G.rep + 4); }
     if (G.cat === 'f1' && (o.cat !== 'f1' || o.team !== G.team)) vacateF1(G);
     G.age++; G.season++; G.year++;
+    (G.sponsorDeals || []).filter(d => d.until < G.year).forEach(d => { G.sponsor = Math.max(0.35, G.sponsor / d.mult); });
+    G.sponsorDeals = (G.sponsorDeals || []).filter(d => d.until >= G.year);
     STATS.forEach(k => { if (G.train[k]) G.train[k] = R1(G.train[k] * 0.8); });
     if (trainStat) G.train[trainStat] = Math.min(4, (G.train[trainStat] || 0) + 2);
     if (G.academy) { const k = pick(STATS); G.train[k] = Math.min(4, (G.train[k] || 0) + 1); }
@@ -741,6 +786,6 @@
   }
   function endCareerNow(G) { finishSeason(G, true); return retire(G); }
 
-  const api = { canContinue, continueContract, WEALTH, setStats, CATS, TIERS, rnd, newGame, rerollStats, rerollClub, startSeason, playRound, simToEnd, setMode, wheelList, spinWheel, skipWheel, finishSeason, buildMarket, chooseOption, retire, endCareerNow, standings, player, ovrOf, potLabel, funding, costOf, salOf, kartCat, MAX_AGE, tierOf };
+  const api = { standingsEv, compTable, takeSponsor, canContinue, continueContract, WEALTH, setStats, CATS, TIERS, rnd, newGame, rerollStats, rerollClub, startSeason, playRound, simToEnd, setMode, wheelList, spinWheel, skipWheel, finishSeason, buildMarket, chooseOption, retire, endCareerNow, standings, player, ovrOf, potLabel, funding, costOf, salOf, kartCat, MAX_AGE, tierOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.F1E = api;
 })(typeof window !== 'undefined' ? window : globalThis);

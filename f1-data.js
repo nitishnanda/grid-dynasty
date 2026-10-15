@@ -32,9 +32,9 @@
   const R = n => Array.from({ length: n }, (_, i) => 'Round ' + (i + 1));
 
   const CATS = {
-    kart1: { id: 'kart1', lap: 40, qK: 0.052, rK: 0.1615, name: 'Mini Kart · Regional', short: 'Regional Karting', tier: 0, lvl: 46, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [4, 12], titleName: 'Regional Karting Champion', sigK: 1.3, eqK: 1.8, dnfK: 1.2, events: [{ n: 'Regional Championship', from: 0, to: 5, main: true, title: 'Regional Karting Champion' }, { n: 'Club Cup', from: 6, to: 7 }, { n: 'Winter Trophy', from: 8, to: 9 }],
+    kart1: { id: 'kart1', lap: 40, qK: 0.052, rK: 0.1615, name: 'Mini Kart · Regional', short: 'Regional Karting', tier: 0, lvl: 46, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [4, 12], titleName: 'Regional Karting Champion', sigK: 1.3, eqK: 1.8, dnfK: 1.2, events: [{ n: 'Regional Championship', from: 0, to: 5, main: true, title: 'Regional Karting Champion' }, { n: 'Club Cup', from: 6, to: 7, title: 'Club Cup winner' }, { n: 'Winter Trophy', from: 8, to: 9, title: 'Winter Trophy winner' }],
       rf: KRF, names: R(10), teams: kteams() },
-    kart2: { id: 'kart2', lap: 42, qK: 0.0866, rK: 0.2479, name: 'Cadet / Mini · National', short: 'National Karting', tier: 0, lvl: 55, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [10, 28], titleName: 'National Karting Champion', sigK: 1.3, eqK: 1.8, dnfK: 1.2, events: [{ n: 'National Championship', from: 0, to: 5, main: true, title: 'National Karting Champion' }, { n: 'Regional Cup', from: 6, to: 7 }, { n: 'Winter Cup', from: 8, to: 9 }],
+    kart2: { id: 'kart2', lap: 42, qK: 0.0866, rK: 0.2479, name: 'Cadet / Mini · National', short: 'National Karting', tier: 0, lvl: 55, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [10, 28], titleName: 'National Karting Champion', sigK: 1.3, eqK: 1.8, dnfK: 1.2, events: [{ n: 'National Championship', from: 0, to: 5, main: true, title: 'National Karting Champion' }, { n: 'Regional Cup', from: 6, to: 7, title: 'Regional Cup winner' }, { n: 'Winter Cup', from: 8, to: 9, title: 'Winter Cup winner' }],
       rf: KRF, names: R(10), teams: kteams() },
     kart3: { id: 'kart3', lap: 46, qK: 0.1302, rK: 0.254, name: 'OK-Junior · European / World', short: 'OK-Junior', tier: 0, lvl: 61, rounds: 11, rpr: 2, dpt: 3, pay: true, cost: [25, 70], titleName: 'Karting European Champion', sigK: 1.6, eqK: 1.8, dnfK: 1.7, events: [{ n: 'WSK Champions Cup', from: 0, to: 1, title: 'WSK Champions Cup winner' }, { n: 'WSK Super Master Series', from: 2, to: 5, title: 'WSK Super Master champion' }, { n: 'European Championship', from: 6, to: 9, main: true, title: 'Karting European Champion' }, { n: 'World Championship', from: 10, to: 10, wc: true, title: 'Karting World Champion' }],
       rf: KRF, names: WSK, kartWC: true, teams: kteams() },
@@ -273,7 +273,7 @@
     { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [7.5, 7, 7, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
     { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [3, 3.5, 12, 5, 3.5, 3.5], blurb: 'Regular points and the odd podium early on, then winning and podiums in the final karting years and the junior formulas.' },
     { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [10, 7, 7.5, 5, 6.5, 7.5], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
-    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [14, 5.5, 5, 9, 10.5, 10.5], blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
+    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 9, 10.5, 10.5], blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];
