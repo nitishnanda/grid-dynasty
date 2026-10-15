@@ -300,10 +300,10 @@
       const cs = S.drivers.map(d => d.car).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y - x);
       if (S.fg === undefined) { S.fg = cs[0] - cs[1]; S.dev = {}; S.dom = G.dyn.f1 && G.dyn.f1.regime === 'dominant'; S.domTeam = S.drivers.slice().sort((x, y) => y.car - x.car)[0].team; }
       const open = S.dom ? 0.35 : S.fg < 2.5 ? 1 : 0.55;
-      C.teams.slice(0, 11).forEach(t => { const n = t[0], top = G.tr.f1[n] >= cs[Math.min(3, cs.length - 1)]; if (top) S.dev[n] = Math.max(-1.6, Math.min(1.6, (S.dev[n] || 0) * 0.93 + gauss() * 0.22 * open)); });
+      C.teams.slice(0, 11).forEach(t => { const n = t[0], top = G.tr.f1[n] >= cs[Math.min(3, cs.length - 1)]; if (top) S.dev[n] = Math.max(-1.6, Math.min(1.6, (S.dev[n] || 0) * 0.93 + gauss() * 0.16 * open)); });
       const ranked = S.drivers.filter(d => d.pts > 0 || S.round > 2).slice().sort((x, y) => y.pts - x.pts), lead = ranked[0] ? ranked[0].pts : 0;
-      S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * 1.3; d.form = d.sf; });   // season-long form: some drivers click with the car, some don't
-      if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1.5 + rnd() * 2.5) : -rnd() * 0.8 } : false; }
+      S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * 0.7; d.form = d.sf; });   // season-long form: some drivers click with the car, some don't
+      if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1 + rnd() * 2) : -rnd() * 0.8 } : false; }
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
       // the season's title script, drawn to match real history: ~30% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~20% runaway (130+)
       if (!S.scr) { const w = S.dom ? [0.02, 0.08, 0.26, 0.64] : [0.40, 0.29, 0.25, 0.06], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
@@ -355,7 +355,7 @@
       if (o[1].team !== o[0].team || true) o[1][key] = c3 + (1 - 0.8 * shave(g2)) * (c2 - c3); };
     const spreadOf = (key, pv) => { units.forEach(u => { u[key] = mixOf(u, pv); }); capClose(units, key); const m = units.reduce((a, u) => a + u[key], 0) / units.length; units.forEach(u => { u[key] = m + K * (u[key] - m); }); };
     spreadOf('q', Dq);
-    units.forEach(u => { u.q += gauss() * (wet ? 3.6 : 2.2); });
+    units.forEach(u => { u.q += gauss() * (wet ? 2.6 : (C.id === 'f1' ? 1.1 : 2.2)) + (C.id === 'f1' && rnd() < 0.13 ? -(1.2 + rnd() * 3.2) : 0) + (S.dom && S.domTeam === u.team ? 1.5 : 0) - (C.id === 'f1' && ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.48) * 16), 0) : 0); });   // sustained pole streaks regress: nobody takes 19 of 24   // bad Saturdays (traffic, mistakes, red flags); a dominant car also qualifies further clear
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
     const qpos = out ? null : qOrder.indexOf(uP) + 1;
     // weekend character: gaps breathe from one event to the next, bigger in the wet and in a dominant era
@@ -371,6 +371,7 @@
     const qScale = (C.qMap ? 1 : (C.qK || 0.05)) * wk * wetK * eraK;
     let qi = null;
     if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, qg(qOrder[0].q - qOrder[1].q) * qScale * Math.exp(gauss() * 0.55)), lead: true } : { pos: qpos, gap: Math.max(0.001, qg(qOrder[0].q - uP.q) * qScale), lead: false };
+    if (G.dbg) (G.dbg.qt = G.dbg.qt || []).push([qOrder[0].team, qOrder[1] && qOrder[1].team]);
     if (G.dbg) G.dbg.q.push(qOrder.map(u => qg(qOrder[0].q - u.q) * qScale));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
