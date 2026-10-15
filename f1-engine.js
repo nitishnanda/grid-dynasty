@@ -305,8 +305,16 @@
       S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * 1.3; d.form = d.sf; });   // season-long form: some drivers click with the car, some don't
       if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1.5 + rnd() * 2.5) : -rnd() * 0.8 } : false; }
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
-      if (!S.dom && S.round >= 3) ranked.slice(1, 4).forEach(d => { const gap = lead - d.pts; if (gap < 90) d.form = Math.min(2, 0.02 * gap) * (S.fg < 1.5 ? 1 : S.fg < 2.5 ? 0.6 : 0.3); });
-      if (!S.dom && S.round >= 3 && ranked[0]) ranked[0].form = -(S.fg < 2.5 ? 0.35 : 0.15);
+      // the season's title script, drawn to match real history: ~30% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~20% runaway (130+)
+      if (!S.scr) { const w = S.dom ? [0.05, 0.15, 0.35, 0.45] : [0.38, 0.30, 0.22, 0.10], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
+        S.scr = { M: [rnd() * 10, 11 + rnd() * 59, 71 + rnd() * 59, 131 + rnd() * rnd() * 190][k] }; }
+      if (S.round >= 2 && ranked.length > 1) {
+        const R = C.rounds, a = ranked[0], b = ranked[1], m = a.pts - b.pts, tgt = S.scr.M * Math.pow(S.round / R, 0.85), err = tgt - m, g = Math.min(9, 0.12 * Math.abs(err) * (1 + 3 * S.round / R)) * Math.sign(err);
+        const hu = !a.isPlayer, ch = !b.isPlayer;   // never steer the player: only the AI side of the fight
+        if (g > 0) ranked.slice(1, 4).forEach(d => { if (!d.isPlayer) d.form -= g * (d === b ? 1 : 0.7); });   // fight too close for the script: everyone chasing falls back
+        else if (ch) b.form -= g;
+        if (hu) a.form += g * (hu && ch ? 0.5 : 1);
+      }
     }
     const wet = rnd() < 0.18, out = S.injured > 0;
     const evIdx = C.events ? C.events.findIndex(e => ri >= e.from && ri <= e.to) : -1;
@@ -389,6 +397,18 @@
       });
       if (mode === 'coast' && uP && grid.includes(uP)) { const m = grid.reduce((a, u) => a + u.s, 0) / n; uP.s = 0.85 * uP.s + 0.15 * m; }
       const res = grid.filter(u => !u.crash).sort((a, b) => b.s - a.s).concat(grid.filter(u => u.crash));
+      if (C.id === 'f1' && !isSpr && ri === C.rounds - 1 && S.scr) {   // finale: the real-life title script plays out through the top two's finishing places
+        const rk = S.drivers.filter(d => d.pts >= 0).slice().sort((x, y) => y.pts - x.pts), A = rk[0], B = rk[1], ua = res.find(u => u.members.includes(A)), ub = res.find(u => u.members.includes(B));
+        if (ua && ub && !ua.crash && !ub.crash && !(A.isPlayer && B.isPlayer)) {
+          const f0 = res.filter(u => !u.crash), P = rf.pts, lim = Math.min(12, f0.length), ca = f0.indexOf(ua), cb = f0.indexOf(ub), M = S.scr.M; let best = null;
+          for (let pa = 0; pa < lim; pa++) for (let pb = 0; pb < lim; pb++) {
+            if (pa === pb || (A.isPlayer && pa !== ca) || (B.isPlayer && pb !== cb)) continue;
+            const mg = (A.pts + (P[pa] || 0)) - (B.pts + (P[pb] || 0)), cost = Math.abs((M <= 10 ? Math.abs(mg) : mg) - M) + 0.4 * (Math.abs(pa - ca) + Math.abs(pb - cb)) + rnd() * 0.5;
+            if (!best || cost < best.cost) best = { cost, pa, pb };
+          }
+          if (best) { const rest = f0.filter(u => u !== ua && u !== ub), nf = []; for (let i = 0, r = 0; i < f0.length; i++) nf.push(i === best.pa ? ua : i === best.pb ? ub : rest[r++]); res.splice(0, res.length, ...nf, ...res.filter(u => u.crash)); }
+        }
+      }
       const fin = res.filter(u => !u.crash);
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => rg(fin[0].s - u.s) * rScale));
