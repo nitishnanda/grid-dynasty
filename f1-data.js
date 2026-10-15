@@ -1,4 +1,4 @@
-/* Grid Dynasty – static data: nationalities, categories, real teams/drivers (2026 snapshot) */
+/* Apex Ladder – static data: nationalities, categories, real teams/drivers (2026 snapshot) */
 (function (root) {
   const NATS = {
     GB: { f: '🇬🇧', n: 'England / GB', first: ['Oliver','Jack','Harry','Callum','Freddie','Theo','Luke','Max'], last: ['Hartley','Whitmore','Calloway','Prescott','Ashworth','Thornton','Barlow','Fenwick'] },

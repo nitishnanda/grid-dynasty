@@ -1,4 +1,4 @@
-/* Grid Dynasty – career engine (no DOM). Karting -> F4 -> F3 -> F2 -> F1 with lateral moves. */
+/* Apex Ladder – career engine (no DOM). Karting -> F4 -> F3 -> F2 -> F1 with lateral moves. */
 (function (root) {
   const D = typeof require !== 'undefined' && typeof module !== 'undefined' ? require('./f1-data.js') : root.F1D;
   const { CATS, NATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, SENIOR, STATS, TIERS, PROMO_P, F1P, ROOKIES, RETIRE_2028 } = D;
@@ -11,7 +11,7 @@
   const R1 = x => Math.round(x * 10) / 10;
 
   const MAX_AGE = 43, START_YEAR = 2026;
-  const WEALTH = { poor: { n: 'Poor', base: 150, sd: 0.35, sponsor: 0.7 }, middle: { n: 'Middle class', base: 900, sd: 0.4, sponsor: 1 }, rich: { n: 'Rich parents', base: 4500, sd: 0.4, sponsor: 1.15 }, dynasty: { n: 'Generational wealth', base: 25000, sd: 0.4, sponsor: 1.3 } };
+  const WEALTH = { poor: { n: 'Poor', base: 150, sd: 0.35, sponsor: 0.7 }, middle: { n: 'Middle class', base: 900, sd: 0.4, sponsor: 1 }, rich: { n: 'Rich parents', base: 4500, sd: 0.4, sponsor: 1.15 }, dynasty: { n: 'Old money', base: 25000, sd: 0.4, sponsor: 1.3 } };
   const W = { PAC: 0.2, QUA: 0.15, RAC: 0.2, CON: 0.15, WET: 0.07, TYR: 0.1, FIT: 0.05, MEN: 0.08 };
   const kartCat = age => age <= 8 ? 'kart1' : age <= 11 ? 'kart2' : age <= 13 ? 'kart3' : 'kart4';
   const ovrOf = s => Math.round(STATS.reduce((a, k) => a + W[k] * s[k], 0));

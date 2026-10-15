@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Grid Dynasty</title>
+<title>Apex Ladder</title>
 <meta name="theme-color" content="#14120e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Grid Dynasty">
+<meta name="apple-mobile-web-app-title" content="Apex Ladder">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 :root{--paper:#ece3cf;--paper2:#f8f1e1;--ink:#14120e;--ink2:#5a5244;--org:#ff5b1f;--blue:#1f4bff;--grn:#0d8a4f;--red:#d4183d;--yel:#ffcf33;
@@ -91,7 +91,7 @@ table{width:100%;border-collapse:collapse}
 .modalbg{position:fixed;inset:0;z-index:20;background:rgba(20,18,14,.7);display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto}
 .modal{background:var(--paper);border:3px solid var(--ink);box-shadow:7px 7px 0 var(--ink);padding:16px;width:100%;max-width:480px;margin:auto}
 .modal h2{font-size:26px}
-.pie{width:100%;max-width:290px;display:block;margin:6px auto 12px}
+.cards{display:flex;gap:10px;margin:12px 0}.pcard{flex:1;aspect-ratio:3/4;border:3px solid var(--ink);background:var(--ink);color:var(--paper);font:900 15px var(--mono);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:4px 4px 0 var(--org);cursor:pointer;transition:transform .5s}.pcard b{font-size:34px;color:var(--org)}.pcard.flip{transform:rotateY(180deg) scale(1.04)}.pcard:disabled{opacity:.7}
 .lg{margin:0 0 10px}.lg .it{display:grid;grid-template-columns:16px 1fr;gap:2px 10px;padding:7px 0;border-top:1px solid rgba(20,18,14,.3);font-size:12px}.lg i{width:14px;height:14px;border:2px solid var(--ink);margin-top:2px}.lg b{font-size:13px}.lg span{color:var(--ink2);display:block;line-height:1.35}.lg .gd{color:var(--grn)}.lg .bd{color:var(--red)}
 .big{font-family:var(--serif);font-size:96px;line-height:.95;font-weight:900;margin:2px 0}
 .kv{display:grid;grid-template-columns:repeat(3,1fr);border:2.5px solid var(--ink);margin:0 0 12px;background:var(--paper2)}.kv div{padding:8px 10px;border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}.kv div:nth-child(3n){border-right:0}.kv div:nth-last-child(-n+3){border-bottom:0}.kv b{display:block;font-family:var(--serif);font-size:22px;color:var(--ink);letter-spacing:0;text-transform:none}
@@ -107,7 +107,7 @@ table{width:100%;border-collapse:collapse}
 <script>
 (function(){
 const E=window.F1E, D=window.F1D, CATS=D.CATS, NATS=D.NATS;
-const KEY='gridDynasty_v1';
+const KEY='apexLadder_v1',OLDKEY='gridDynasty_v1';
 let G=null;
 const ui={screen:'start',name:'',nat:'GB',arch:'allround',startAge:7,tierSel:'',wealthSel:'',modal:null,sel:-1,train:null,acad:false,spin:null,wheelRes:null,wlist:null};
 const $=document.getElementById('app');
@@ -118,7 +118,7 @@ const ARCH=[['allround','All-rounder','Balanced across the board'],['qualifier',
 const teamColor=n=>{for(const [k,c] of D.TEAM_COLORS)if(String(n).includes(k))return c;let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;return `hsl(${h},70%,52%)`;};
 
 function save(){try{if(G)localStorage.setItem(KEY,JSON.stringify(G));}catch(e){}}
-function load(){try{const s=localStorage.getItem(KEY);const g=s?JSON.parse(s):null;return g&&g.v===2?(E.migrate?E.migrate(g):g):null;}catch(e){return null;}}
+function load(){try{let s=localStorage.getItem(KEY);if(!s){s=localStorage.getItem(OLDKEY);}const g=s?JSON.parse(s):null;return g&&g.v===2?(E.migrate?E.migrate(g):g):null;}catch(e){return null;}}
 function clear(){try{localStorage.removeItem(KEY);}catch(e){}}
 const stamp=(txt,col)=>`<span class="stamp" style="color:${col};border-color:${col}">${esc(txt)}</span>`;
 const tierStamp=t=>{const T=D.TIERS[t];return stamp(T.n,T.id==='gen'?'#c2185b':T.id==='wonder'?'#a86f00':T.id==='late'?'#c24a00':T.id==='talented'?'#1f4bff':'#5a5244');};
@@ -130,19 +130,19 @@ function sponsorCards(){
   const M=G.market; if(!M||!M.sponsors||!M.sponsors.length) return '';
   return `<div class="cap">Sponsor approaches</div>`+M.sponsors.map((s,i)=>`<div class="offer" data-act="spon" data-i="${i}"><div class="oh"><b>${esc(s.name)}</b><em>Sponsor</em></div><div class="og"><div>cash now<b>${money(s.cash)}</b></div><div>funding<b>×${s.mult}</b></div><div>term<b>${s.years} yr</b></div></div><div class="ot">Tap to sign. Cash joins your family purse and sponsor funding rises while the deal lasts.</div></div>`).join('');
 }
-function bar(){return `<div class="bar"><b>Grid Dynasty</b><span>${G&&G.phase!=='retired'&&ui.screen!=='start'?`AGE ${G.age} · ${G.year} · REP ${Math.round(G.rep)}`:'career sim'}</span></div>`;}
+function bar(){return `<div class="bar"><b>Apex Ladder</b><span>${G&&G.phase!=='retired'&&ui.screen!=='start'?`AGE ${G.age} · ${G.year} · REP ${Math.round(G.rep)}`:'career sim'}</span></div>`;}
 function meters(st){return D.STATS.map(k=>{const v=st[k],n=Math.round(v/10),cls=v>=85?'hi':v>=70?'mid':v<55?'lo':'';return `<div class="meter"><span>${k}</span><div class="bl ${cls}">${Array.from({length:10},(_,i)=>`<i class="${i<n?'f':''}"></i>`).join('')}</div><b>${v}</b></div>`;}).join('');}
 const sim=()=>D.STATS.map(k=>`<div data-act="train" data-k="${k}" class="${ui.train===k?'on':''}">${k}<b>${G.stats[k]}</b></div>`).join('');
 
 /* ---------- screens ---------- */
 function vStart(){
   const sv=load();
-  return `${bar()}<h1>Grid Dynasty</h1><p class="lede">Build a racing career from the karting paddock to a grand prix seat. Every result, contract and sponsor decision is yours.</p>
+  return `${bar()}<h1>Apex Ladder</h1><p class="lede">Build a racing career from the karting paddock to a grand prix seat. Every result, contract and sponsor decision is yours.</p>
   <div class="step"><i>01</i><b>Driver</b></div><input id="nm" placeholder="Driver name" maxlength="24" value="${esc(ui.name)}">
   <div class="step"><i>02</i><b>Driving style</b></div><div class="tiles">${ARCH.map(a=>`<div class="tile ${ui.arch===a[0]?'on':''}" data-act="arch" data-v="${a[0]}"><b>${a[1]}</b><span>${a[2]}</span></div>`).join('')}</div>
   <div class="step"><i>03</i><b>Start point</b></div><div class="tiles"><div class="tile ${ui.startAge===7?'on':''}" data-act="sa" data-v="7"><b>Full journey</b><span>Karting at age 7 (2026). The world evolves around you.</span></div><div class="tile ${ui.startAge===16?'on':''}" data-act="sa" data-v="16"><b>Fast track</b><span>British F4 at 16, real 2026 grids.</span></div></div>
   <div class="step"><i>04</i><b>Talent tier</b></div><div class="tiles">${[['','Random','Realistic odds']].concat(D.TIERS.map((t,i)=>[String(i),t.n,''])).map(([v,n,s])=>`<div class="tile ${ui.tierSel===v?'on':''}" data-act="ts" data-v="${v}"><b>${n}</b>${s?`<span>${s}</span>`:''}</div>`).join('')}</div>
-  <div class="step"><i>05</i><b>Family wealth</b></div><div class="tiles">${[['','Random'],['poor','Poor'],['middle','Middle class'],['rich','Rich parents'],['dynasty','Generational wealth']].map(([v,n])=>`<div class="tile ${ui.wealthSel===v?'on':''}" data-act="ws" data-v="${v}"><b>${n}</b></div>`).join('')}</div>
+  <div class="step"><i>05</i><b>Family wealth</b></div><div class="tiles">${[['','Random'],['poor','Poor'],['middle','Middle class'],['rich','Rich parents'],['dynasty','Old money']].map(([v,n])=>`<div class="tile ${ui.wealthSel===v?'on':''}" data-act="ws" data-v="${v}"><b>${n}</b></div>`).join('')}</div>
   <div class="step"><i>06</i><b>Nationality</b></div><select id="nat">${Object.keys(NATS).map(k=>`<option value="${k}" ${ui.nat===k?'selected':''}>${NATS[k].f} ${NATS[k].n}</option>`).join('')}</select>
   <div style="height:16px"></div>
   ${sv?`<button class="btn go" data-act="cont">Resume ${esc(sv.name)} · age ${sv.age} · ${esc(CATS[sv.cat].short)}</button>`:''}
@@ -151,7 +151,7 @@ function vStart(){
 function vIntro(){
   const C=CATS[G.cat], ov=E.ovrOf(G.stats);
   return `${bar()}<h1>Driver file</h1><p class="lede">${G.age===7?'Age 7. '+esc(NATS[G.nat].n)+'. A kart and a lot to prove.':'Age 16. '+esc(NATS[G.nat].n)+'. British F4 rookie, '+G.year+'.'}</p>
-  <div class="sheet"><div class="id"><div class="ovr">${ov}<small>OVR</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>${NATS[G.nat].f} age ${G.age}</span><span>${esc(E.WEALTH[G.wealth].n)}</span></div>${tierStamp(G.tier)}</div></div>
+  <div class="sheet"><div class="id"><div class="ovr">${ov}<small>RTG</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>${NATS[G.nat].f} age ${G.age}</span><span>${esc(E.WEALTH[G.wealth].n)}</span></div>${tierStamp(G.tier)}</div></div>
   <p class="meta" style="margin:0 0 10px">${esc(D.TIERS[G.tier].blurb)}</p>${meters(G.stats)}<p class="meta" style="margin:10px 0 0">Talent tier is locked for the whole career. Reshuffling only moves your attributes around.</p></div>
   <div class="sheet flat"><div class="cap">First seat</div><h2>${esc(G.team)}</h2><div class="meta"><span>${esc(C.name)}</span><span>seat <b>${money(G.deal.cost)}/yr</b></span><span>family funds <b>${money(G.family)}</b></span></div>
   <div class="row"><button class="btn sm" data-act="rs">Reshuffle attributes</button><button class="btn sm" data-act="rc">Swap team</button></div></div>
@@ -237,7 +237,7 @@ function vRetired(){
   ${R.cause?`<div class="note">${R.cause==='fatal'?'A tragic accident ended the career. The paddock mourns.':'A career-ending injury cut it short.'}</div>`:''}
   <div class="sheet"><div class="cap">Career wins</div><div class="big">${T.wins}</div>
   <div class="meta" style="margin:6px 0 12px">${Object.entries(R.winsBy||{}).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span><b>${c}</b> ${esc(n)}</span>`).join('')||'<span>No wins</span>'}</div>
-  <div class="kv"><div>Races<b>${T.races}</b></div><div>Podiums<b>${T.podiums}</b></div><div>Poles<b>${T.poles}</b></div><div>Titles<b>${Object.values(T.titles).reduce((a,x)=>a+x,0)}</b></div><div>Peak OVR<b>${T.peak}</b></div><div>Earned<b>${money(T.earn)}</b></div></div>
+  <div class="kv"><div>Races<b>${T.races}</b></div><div>Podiums<b>${T.podiums}</b></div><div>Poles<b>${T.poles}</b></div><div>Titles<b>${Object.values(T.titles).reduce((a,x)=>a+x,0)}</b></div><div>Peak rating<b>${T.peak}</b></div><div>Earned<b>${money(T.earn)}</b></div></div>
   <div class="cap">Seat costs paid</div><p>${money(cost)}</p>
   <div class="cap">Retirements (DNFs)</div><p><b>${(T.dnfR||0)+(T.dnfE||0)}</b> total · <b>${T.dnfR||0}</b> reliability · <b>${T.dnfE||0}</b> driver error</p>
   ${tr.length?`<div class="cap">Silverware</div><div>${tr.map(([n,c])=>`<span class="chip">🏆 ${c}× ${esc(n)}</span>`).join('')}</div>`:''}
@@ -248,12 +248,6 @@ function vRetired(){
   <button class="btn go" data-act="again">Open a new driver file</button>`;
 }
 
-function pie(L){
-  const tot=L.reduce((a,o)=>a+o.w,0);let a0=0;const R=100,cx=110,cy=110;
-  const pt=d=>{const r=(d-90)*Math.PI/180;return [cx+R*Math.cos(r),cy+R*Math.sin(r)];};
-  const sl=L.map(o=>{const a1=a0+o.w/tot*360;const [x0,y0]=pt(a0),[x1,y1]=pt(a1);o._mid=(a0+a1)/2;const big=a1-a0>180?1:0;const d=`M${cx},${cy} L${x0.toFixed(2)},${y0.toFixed(2)} A${R},${R} 0 ${big} 1 ${x1.toFixed(2)},${y1.toFixed(2)} Z`;a0=a1;return `<path d="${d}" fill="${o.col}" stroke="#14120e" stroke-width="2"/>`;}).join('');
-  return `<svg viewBox="0 -14 220 234" class="pie"><g id="wg" style="transform-origin:110px 110px;transition:transform 1.6s cubic-bezier(.15,.7,.15,1)">${sl}</g><circle cx="110" cy="110" r="12" fill="#f8f1e1" stroke="#14120e" stroke-width="3"/><path d="M110,12 L98,-10 L122,-10 Z" fill="#ff5b1f" stroke="#14120e" stroke-width="2.5"/></svg>`;
-}
 function modal(){
   const m=ui.modal; if(!m)return '';
   if(m==='tbl'){
@@ -265,16 +259,16 @@ function modal(){
   }
   if(m==='drv'){
     const C=CATS[G.cat];
-    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="id"><div class="ovr">${E.ovrOf(G.stats)}<small>OVR</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>age ${G.age}</span><span>${C.pay?money(G.deal.cost)+' seat':money(G.deal.sal)+'/yr'}</span></div>${tierStamp(G.tier)}</div></div>${meters(G.stats)}<div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
+    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="id"><div class="ovr">${E.ovrOf(G.stats)}<small>RTG</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>age ${G.age}</span><span>${C.pay?money(G.deal.cost)+' seat':money(G.deal.sal)+'/yr'}</span></div>${tierStamp(G.tier)}</div></div>${meters(G.stats)}<div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
   }
   if(m==='wheel'){
     const r=ui.wheelRes, L=ui.wlist||[];
-    const stageName=G.S.spins===0?'Early-season wheel':'Late-season wheel';
+    const stageName=G.S.spins===0?'Early-season briefing':'Late-season briefing';
     if(r) return `<div class="modalbg"><div class="modal"><div class="cap">${r.good>0?'Good news':'Bad news'}</div><h2>${r.icon} ${esc(r.title)}</h2><div class="note"><b>Effect:</b> ${esc(r.fx)}</div>${r.extra&&r.extra.kind==='standin'?`<table class="tbl"><tr><th class="l">F1 grand prix</th><th>Result</th><th>Pts</th></tr>${r.extra.rows.map(x=>`<tr><td class="l">${esc(x.gp)}</td><td>${x.dnf?'DNF':'P'+x.pos}</td><td>${x.pts}</td></tr>`).join('')}</table><div style="height:10px"></div>`:''}${r.extra&&r.extra.kind==='fp1'?`<table class="tbl"><tr><th class="l">F1 FP1 · ${esc(r.extra.gp)}</th><th>Result</th><th>Rep</th></tr><tr><td class="l">Friday practice</td><td>P${r.extra.pos}</td><td>+${r.extra.rep}</td></tr></table><div style="height:10px"></div>`:''}<p>${esc(r.desc)}</p><button class="btn go" data-act="wdone">Back to the paddock ▶</button></div></div>`;
     const tot=L.reduce((a,o)=>a+o.w,0);
-    return `<div class="modalbg"><div class="modal"><div class="cap">Stage ${G.S.spins+1} of 3 complete</div><h2>${stageName}</h2><p class="lede" style="margin-bottom:0">Spin for a random twist or skip it. Good and bad outcomes carry equal weight.</p>${pie(L)}
-    <button class="btn go" data-act="spin" ${ui.spin?'disabled':''}>Spin</button><button class="btn" data-act="skipw" ${ui.spin?'disabled':''}>Skip</button>
-    <div class="cap" style="margin-top:8px">What each slice does</div><div class="lg">${L.map(o=>`<div class="it"><i style="background:${o.col}"></i><div><b>${o.ic} ${esc(o.t)} · ${(100*o.w/tot).toFixed(o.w<1?1:0)}% <small class="${o.g>0?'gd':'bd'}">${o.g>0?'GOOD':'BAD'}</small></b><span>${esc(o.fx)}</span></div></div>`).join('')}</div></div></div>`;
+    return `<div class="modalbg"><div class="modal"><div class="cap">Stage ${G.S.spins+1} of 3 complete</div><h2>${stageName}</h2><p class="lede" style="margin-bottom:0">Draw one of three sealed cards for a random twist, or skip it. Good and bad outcomes carry equal weight.</p><div class="cards">${['Radio','Garage','Paddock'].map((n,k)=>`<button class="pcard ${ui.spin===k?'flip':''}" data-act="spin" data-k="${k}" ${ui.spin!=null&&ui.spin!==false?'disabled':''}><b>?</b>${n}</button>`).join('')}</div>
+    <button class="btn" data-act="skipw" ${ui.spin!=null&&ui.spin!==false?'disabled':''}>Skip</button>
+    <div class="cap" style="margin-top:8px">What the cards can hold</div><div class="lg">${L.map(o=>`<div class="it"><i style="background:${o.col}"></i><div><b>${o.ic} ${esc(o.t)} · ${(100*o.w/tot).toFixed(o.w<1?1:0)}% <small class="${o.g>0?'gd':'bd'}">${o.g>0?'GOOD':'BAD'}</small></b><span>${esc(o.fx)}</span></div></div>`).join('')}</div></div></div>`;
   }
   return '';
 }
@@ -324,10 +318,8 @@ document.addEventListener('click',e=>{
     case 'next': E.playRound(G); afterRound(); save(); render(); return;
     case 'sim': E.simToEnd(G); afterRound(); save(); render(); return;
     case 'spin': {
-      const res=E.spinWheel(G); ui.spin=true; save(); rerender();
-      const L=ui.wlist, mid=L[res.idx]._mid;
-      setTimeout(()=>{const g=document.getElementById('wg'); if(g) g.style.transform='rotate('+(360*5-mid)+'deg)';},40);
-      setTimeout(()=>{ui.wheelRes=res;ui.spin=null;rerender();},1800); return; }
+      const res=E.spinWheel(G); ui.spin=+(el.dataset.k||0); save(); rerender();
+      setTimeout(()=>{ui.wheelRes=res;ui.spin=null;rerender();},900); return; }
     case 'skipw': E.skipWheel(G); ui.modal=null; save(); rerender(); return;
     case 'wdone': ui.modal=null; ui.wheelRes=null; if(G.pendingEnd){E.endCareerNow(G);save();render(true);return;} rerender(); return;
     case 'wrap': ui.train=null; E.finishSeason(G); save(); render(true); return;

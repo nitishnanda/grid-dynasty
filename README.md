@@ -1,4 +1,4 @@
-# Grid Dynasty
+# Apex Ladder
 
 An F1 career simulator. Start in karting at 7 (or join British F4 at 16 with the real 2026 grids) and climb F4, F3, F2 and F1, with lateral moves into IndyCar, WEC, Formula E, Super Formula, GT and more.
 
@@ -14,7 +14,7 @@ Keep `index.html`, `f1-data.js` and `f1-engine.js` in the same folder. Your care
 
 - 5 talent tiers (Prospect, Talented, Late bloomer, Wonderkid, Generational) that shape your career curve
 - Probabilistic promotion, retirements, academy deals and a driver market
-- Two mid-season wheel spins per year with real career effects
+- Two mid-season paddock briefings (card draws) per year with real career effects
 - Evolving F1/IndyCar/WEC/Formula E car cycles with regulation resets
 - Real 2026 lineups where available (F1, F2, F3, British F4, IndyCar, WEC, Formula E, Super Formula and more)
 
