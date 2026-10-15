@@ -103,12 +103,12 @@
       // a reset shuffles the order, but the established powerhouses keep most of their edge
       names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] = clamp((el ? 0.85 : 0.5) * base + gauss() * (el ? 1.8 : 2.8), -(C.sMax || 8), C.sMax || 8); d.trend[n] = (el ? -0.08 : -0.2) * d.str[n] + gauss() * 0.7; });
       d.streak = 0; d.last = null;
-      d.regime = rnd() < 0.22 ? 'dominant' : 'close';
+      d.regime = rnd() < 0.28 ? 'dominant' : 'close';
       d.relEra = 1.7; d.gapEra = c === 'f1' ? 1.45 : 1.55; names.forEach(n => { d.relTeam[n] = clamp(1 + gauss() * 0.3, 0.6, 1.8); });
       if (d.regime === 'close') compressTop(d, names, 4, 0.4);
-      else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += 2.5; }
+      else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += 2.8; }
     } else {
-      if (d.regime === 'dominant' && rnd() < 0.4) d.regime = 'close';
+      if (d.regime === 'dominant' && rnd() < 0.3) d.regime = 'close';
       d.relEra = 1 + (d.relEra - 1) * 0.6; { const lastReg = Math.max(...C.regYears.filter(y => y <= ny), 2026), age = ny - lastReg, tgt = age <= 2 ? 1 : age === 3 ? 0.9 : age === 4 ? 0.8 : 0.72; d.gapEra = tgt + (d.gapEra - tgt) * 0.72; }   // fields converge the longer the rules stay stable
       names.forEach(n => { d.relTeam[n] = clamp(1 + (d.relTeam[n] - 1) * 0.7 + gauss() * 0.08, 0.6, 1.8); });
       names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] += d.trend[n] + gauss() * (el ? 0.8 : 1.1) + 0.15 * ((el ? 0.85 : 0.6) * base - d.str[n]); d.trend[n] *= 0.8; });
@@ -295,6 +295,19 @@
     const S = G.S, C = CATS[S.cat];
     if (S.round >= C.rounds) return null;
     const st = G.stats, P = player(G), ri = S.round;
+    // F1 in-season swings: upgrade races between the top cars, and form that gives the chaser a push when the title is close
+    if (C.id === 'f1') {
+      const cs = S.drivers.map(d => d.car).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y - x);
+      if (S.fg === undefined) { S.fg = cs[0] - cs[1]; S.dev = {}; S.dom = G.dyn.f1 && G.dyn.f1.regime === 'dominant'; S.domTeam = S.drivers.slice().sort((x, y) => y.car - x.car)[0].team; }
+      const open = S.dom ? 0.35 : S.fg < 2.5 ? 1 : 0.55;
+      C.teams.slice(0, 11).forEach(t => { const n = t[0], top = G.tr.f1[n] >= cs[Math.min(3, cs.length - 1)]; if (top) S.dev[n] = Math.max(-1.6, Math.min(1.6, (S.dev[n] || 0) * 0.93 + gauss() * 0.22 * open)); });
+      const ranked = S.drivers.filter(d => d.pts > 0 || S.round > 2).slice().sort((x, y) => y.pts - x.pts), lead = ranked[0] ? ranked[0].pts : 0;
+      S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * 1.3; d.form = d.sf; });   // season-long form: some drivers click with the car, some don't
+      if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1.5 + rnd() * 2.5) : -rnd() * 0.8 } : false; }
+      if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
+      if (!S.dom && S.round >= 3) ranked.slice(1, 4).forEach(d => { const gap = lead - d.pts; if (gap < 90) d.form = Math.min(2, 0.02 * gap) * (S.fg < 1.5 ? 1 : S.fg < 2.5 ? 0.6 : 0.3); });
+      if (!S.dom && S.round >= 3 && ranked[0]) ranked[0].form = -(S.fg < 2.5 ? 0.35 : 0.15);
+    }
     const wet = rnd() < 0.18, out = S.injured > 0;
     const evIdx = C.events ? C.events.findIndex(e => ri >= e.from && ri <= e.to) : -1;
     const tmp = S.round < S.tmpUntil ? S.tmp : 0;
@@ -303,15 +316,15 @@
     const wetAdj = wet ? (st.WET - 60) * 0.3 : 0;
     if (S.fit === undefined) S.fit = gauss() * (C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
     const bonus = S.boost + tmp + S.fit - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
-    const mode = S.mode || 'balance', RAC = st.RAC, sigK = C.sigK || 1, dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
+    const mode = S.mode || 'balance', RAC = st.RAC, sigK = (C.sigK || 1) * (S.dom ? 0.92 : 1), dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
     const active = S.drivers.filter(d => !(d.isPlayer && out));
     // units: one per driver, or one per car in crew series (WEC / GT): crew-mates share the result
     const units = [];
     if (C.crew) { const m = {}; active.forEach(d => { (m[d.team] = m[d.team] || { members: [], team: d.team, car: d.car }).members.push(d); }); Object.values(m).forEach(u => units.push(u)); }
     else active.forEach(d => units.push({ members: [d], team: d.team, car: d.car }));
     units.forEach(u => { u.hasP = u.members.some(d => d.isPlayer); });
-    const uSkill = (u, pv) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetAdj : d.skill), 0) / u.members.length;
-    const uCar = u => u.car + (u.hasP ? S.carMod : 0);
+    const uSkill = (u, pv) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetAdj : d.skill) + (d.form || 0), 0) / u.members.length;
+    const uCar = u => u.car + (u.hasP ? S.carMod : 0) + (S.dev ? (S.dev[u.team] || 0) : 0) + (S.dom && S.domTeam === u.team ? 0 : 0);
     const uP = units.find(u => u.hasP);
     // car/driver interplay: in a poor car the car caps what the driver can do; in a good car talent is what separates the cars
     const cMean = units.reduce((t, u) => t + uCar(u), 0) / units.length, cSd = Math.sqrt(units.reduce((t, u) => t + (uCar(u) - cMean) ** 2, 0) / units.length) || 1;
@@ -330,7 +343,7 @@
     const capClose = (arr, key) => { if (!C.dyn) return; const o = arr.slice().sort((a, b) => b[key] - a[key]); if (o.length < 3) return; const c1 = o[0][key], c2 = o[1][key], c3 = o[2][key];
       const shave = gap => 0.75 * Math.max(0, 1 - Math.max(0, gap - 0.4) / 4.2);
       const g1 = Math.max(0, o[0].car - Math.max(o[1].car, o[2].car)), g2 = Math.max(0, Math.max(o[1].car, o[2].car) - o[3 % o.length].car);
-      o[0][key] = c2 + (1 - shave(S.regime === 'dominant' ? g1 * 1.4 : g1)) * (c1 - c2);
+      o[0][key] = c2 + (1 - shave(S.regime === 'dominant' ? g1 * 2.4 : g1)) * (c1 - c2);
       if (o[1].team !== o[0].team || true) o[1][key] = c3 + (1 - 0.8 * shave(g2)) * (c2 - c3); };
     const spreadOf = (key, pv) => { units.forEach(u => { u[key] = mixOf(u, pv); }); capClose(units, key); const m = units.reduce((a, u) => a + u[key], 0) / units.length; units.forEach(u => { u[key] = m + K * (u[key] - m); }); };
     spreadOf('q', Dq);
