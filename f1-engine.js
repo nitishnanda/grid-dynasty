@@ -300,20 +300,25 @@
       const cs = S.drivers.map(d => d.car).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y - x);
       if (S.fg === undefined) { S.fg = cs[0] - cs[1]; S.dev = {}; S.dom = G.dyn.f1 && G.dyn.f1.regime === 'dominant'; S.domTeam = S.drivers.slice().sort((x, y) => y.car - x.car)[0].team; }
       const open = S.dom ? 0.35 : S.fg < 2.5 ? 1 : 0.55;
-      C.teams.slice(0, 11).forEach(t => { const n = t[0], top = G.tr.f1[n] >= cs[Math.min(3, cs.length - 1)]; if (top) S.dev[n] = Math.max(-1.6, Math.min(1.6, (S.dev[n] || 0) * 0.93 + gauss() * 0.16 * open)); });
+      C.teams.slice(0, 11).forEach(t => { const n = t[0], k = cs.indexOf(G.tr.f1[n]); if (k >= 0 && k <= 3) S.dev[n] = Math.max(-1.6, Math.min(k <= 1 ? 1.6 : 0.5, (S.dev[n] || 0) * 0.93 + gauss() * 0.16 * open)); });
       const ranked = S.drivers.filter(d => d.pts > 0 || S.round > 2).slice().sort((x, y) => y.pts - x.pts), lead = ranked[0] ? ranked[0].pts : 0;
-      S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * 0.85; d.form = d.sf; });   // season-long form: some drivers click with the car, some don't
+      const cf = d => { const k = cs.indexOf(d.car); return k <= 1 ? 1 : k === 2 ? 0.3 : 0.08; };   // talent can't drag a third-best-or-worse car to a title: only the two fastest cars give a driver full upside
+      S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * 0.85; d.form = d.sf > 0 ? d.sf * cf(d) : d.sf; });   // season-long form: some drivers click with the car, some don't
       if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1 + rnd() * 2) : -rnd() * 0.8 } : false; }
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
       // the season's title script, drawn to match real history: ~30% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~20% runaway (130+)
       if (!S.scr) { const w = S.dom ? [0.02, 0.08, 0.26, 0.64] : [0.40, 0.29, 0.25, 0.06], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
         S.scr = { k, M: [rnd() * 10, 11 + rnd() * 52, 80 + rnd() * 50, 139 + rnd() * rnd() * 170][k] }; }
+      if (S.round >= Math.floor(C.rounds / 2) && ranked[0] && cs.indexOf(ranked[0].car) >= 2) {   // a title leader outside the two fastest cars gets reeled in
+        const top2 = ranked.filter(d => cs.indexOf(d.car) <= 1 && !d.isPlayer)[0];
+        if (top2 && ranked[0].pts - top2.pts < 80 && !ranked[0].isPlayer) { top2.form += 1.6; ranked[0].form -= 1.0; }
+      }
       if (S.round >= 2 && ranked.length > 1) {
         const R = C.rounds, a = ranked[0], b = ranked[1], m = a.pts - b.pts, tgt = S.scr.M * Math.pow(S.round / R, 0.85), err = tgt - m, g = Math.min(S.scr.k === 3 ? 16 : 9, 0.12 * Math.abs(err) * (1 + 3 * S.round / R)) * Math.sign(err);
         const hu = !a.isPlayer, ch = !b.isPlayer;   // never steer the player: only the AI side of the fight
         if (g > 0) ranked.slice(1, 4).forEach(d => { if (!d.isPlayer) d.form -= g * (d === b ? 1 : 0.7); });   // fight too close for the script: everyone chasing falls back
-        else if (ch) b.form -= g;
-        if (hu) a.form += g * (g > 0 ? 0.1 : 1);
+        else if (ch) b.form -= g * (g < 0 ? cf(b) : 1);
+        if (hu) a.form += g * (g > 0 ? 0.1 * cf(a) : 1);
       }
     }
     const wet = rnd() < 0.18, out = S.injured > 0;
@@ -332,20 +337,16 @@
     else active.forEach(d => units.push({ members: [d], team: d.team, car: d.car }));
     units.forEach(u => { u.hasP = u.members.some(d => d.isPlayer); });
     const uSkill = (u, pv) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetAdj : d.skill) + (d.form || 0), 0) / u.members.length;
-    const uCar = u => u.car + (u.hasP ? S.carMod : 0) + (S.dev ? (S.dev[u.team] || 0) : 0) + (S.dom && S.domTeam === u.team ? 0 : 0);
+    const carRankK = c => C.id === 'f1' ? S.drivers.map(d => d.car).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y - x).indexOf(c) : -1;
+    const uCar = u => u.car + (u.hasP ? S.carMod : 0) + (S.dev ? (S.dev[u.team] || 0) + (carRankK(u.car) === 0 ? 1.1 : carRankK(u.car) === 1 ? 0.5 : carRankK(u.car) === 2 ? -0.6 : carRankK(u.car) === 3 ? -1.0 : 0) : 0) + (S.dom && S.domTeam === u.team ? 0 : 0);
     const uP = units.find(u => u.hasP);
     // car/driver interplay: in a poor car the car caps what the driver can do; in a good car talent is what separates the cars
     const cMean = units.reduce((t, u) => t + uCar(u), 0) / units.length, cSd = Math.sqrt(units.reduce((t, u) => t + (uCar(u) - cMean) ** 2, 0) / units.length) || 1;
-    const wOf = u => wS * (0.6 + 0.8 / (1 + Math.exp(-1.6 * (uCar(u) - cMean) / cSd)));
+    const carRank = C.id === 'f1' ? units.map(u => u.car).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y - x) : null;
+    const wOf = u => wS * (0.6 + 0.8 / (1 + Math.exp(-1.6 * (uCar(u) - cMean) / cSd))) * (carRank ? (carRank.indexOf(u.car) <= 1 ? 1 : carRank.indexOf(u.car) === 2 ? 0.78 : 0.62) : 1);   // outside the two fastest cars the machinery caps what talent can do
     const mixOf = (u, pv) => { const w = wOf(u); return w * uSkill(u, pv) + (1 - w) * uCar(u); };
 
-    // FP1: practice position nudges reputation a little
-    let fp = null;
-    if (C.tier >= 1 && !out) {
-      units.forEach(u => { u.fp = 0.5 * uSkill(u, Dq) + 0.5 * uCar(u) + gauss() * 3.6; });
-      const fpos = units.slice().sort((a, b) => b.fp - a.fp).indexOf(uP) + 1, d = (units.length / 2 - fpos) / units.length * 0.3;
-      G.rep = clamp(G.rep + d, 5, 100); fp = { pos: fpos, rep: Math.round(d * 100) / 100 };
-    }
+    const fp = null;
     // in a close era nobody runs away with it: the best pace is shaved back towards the next best
     // title fights follow the car gap: ~1pt between the best cars = three-way fight, ~2pts = a two-way fight if the other driver is good, 4+ = a runaway
     const capClose = (arr, key) => { if (!C.dyn) return; const o = arr.slice().sort((a, b) => b[key] - a[key]); if (o.length < 3) return; const c1 = o[0][key], c2 = o[1][key], c3 = o[2][key];

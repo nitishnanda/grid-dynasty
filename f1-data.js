@@ -84,10 +84,10 @@
         ['AIX Racing', -2.5, 'Emerson Fittipaldi|Cian Shields'],
         ['Van Amersfoort Racing', -3.5, 'Nicolás Varrone|Rafael Villagómez'],
       ] },
-    f1: { id: 'f1', lap: 90, qK: 0.0857, qMap: [[0, 0], [2.5, 0.29], [6.8, 0.61], [15.5, 0.91], [29.4, 2.44]], rK: 3.15, name: 'Formula 1', short: 'F1', tier: 4, lvl: 84, rounds: 24, rpr: 1, dpt: 2, pay: false, sal: [700, 13000], titleName: 'F1 World Champion',
+    f1: { id: 'f1', lap: 90, qK: 0.0857, qMap: [[0, 0], [2.5, 0.21], [6.8, 0.5], [15.5, 0.82], [29.4, 2.25]], rK: 3.15, name: 'Formula 1', short: 'F1', tier: 4, lvl: 84, rounds: 24, rpr: 1, dpt: 2, pay: false, sal: [700, 13000], titleName: 'F1 World Champion',
       rf: [{ n: 'Grand Prix', pts: PF1, grid: 'q' }],
       names: ['Australia', 'China', 'Japan', 'Bahrain', 'Saudi Arabia', 'Miami', 'Canada', 'Monaco', 'Barcelona', 'Austria', 'Great Britain', 'Belgium', 'Hungary', 'Netherlands', 'Italy', 'Madrid', 'Azerbaijan', 'Singapore', 'United States', 'Mexico City', 'Brazil', 'Las Vegas', 'Qatar', 'Abu Dhabi'],
-      special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.8, dnfK: 0.75, spread: 1.65, wS: 0.3, sMax: 13,
+      special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.8, dnfK: 0.75, spread: 1.65, wS: 0.26, sMax: 13,
       teams: [
         ['Mercedes', 7, 'George Russell|Kimi Antonelli'],
         ['McLaren', 3, 'Lando Norris|Oscar Piastri'],

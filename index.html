@@ -166,7 +166,6 @@ function vSeason(){
     let rows='';
     if(l.out) rows=`<tr class="d"><td class="k">—</td><td colspan="3">Did not take part (injury / sidelined)</td></tr>`;
     else{
-      if(l.fp) rows+=`<tr><td class="k">FP1</td><td>P${l.fp.pos}</td><td class="g"></td><td class="r g">${l.fp.rep>0?'+':''}${l.fp.rep} rep</td></tr>`;
       rows+=`<tr class="${l.pole?'w':''}"><td class="k">QUALI</td><td>P${l.qpos}${l.pole?' · pole':''}</td><td class="g">${l.qi?(l.pole?gp(l.qi.gap,true,0,true)+' to P2':gp(l.qi.gap,false,0,true)):''}</td><td></td></tr>`;
       rows+=l.races.map(r=>`<tr class="${r.dnf?'d':r.pos===1&&!r.spr?'w':''}"><td class="k">${esc(r.n).toUpperCase()}</td><td>P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.dnf?`<br><small>${r.cause==='error'?'driver error':'reliability'}</small>`:''}</td><td class="g">${r.dnf?'':gp(r.gap,r.lead,r.laps,false)+(r.lead?' to P2':'')}</td><td class="r">${r.dnf?'0':'+'+r.pts}</td></tr>`).join('');
     }
