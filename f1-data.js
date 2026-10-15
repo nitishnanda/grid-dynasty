@@ -279,8 +279,8 @@
     { id: 'prospect', n: 'Prospect', p: 0.51, col: '#8b8fb0', adv: [5, 5, 5, -3.5, -7.5, -7], blurb: 'Below-average F1 ceiling. Podiums in karting, then a midfield grind.' },
     { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [7.5, 7, 7, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
     { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [3, 3.5, 12, 5, 3.5, 3.5], blurb: 'Regular points and the odd podium early on, then winning and podiums in the final karting years and the junior formulas.' },
-    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [10, 7, 7.5, 5, 6.5, 7.5], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
-    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 9, 10.5, 10.5], blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
+    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [9, 6.5, 6.5, 4, 5, 5.5], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
+    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 10, 12.5, 12.5], blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];
