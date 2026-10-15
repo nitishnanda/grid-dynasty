@@ -115,7 +115,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const money=k=>k>=1000?'£'+(k/1000).toFixed(k>=10000?0:1)+'M':'£'+Math.round(k)+'k';
 const ord=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
 const ARCH=[['allround','All-rounder','Balanced across the board'],['qualifier','Qualifier','One-lap pace'],['racer','Racer','Racecraft, tyre care'],['wet','Rain master','Wet-weather specialist']];
-const teamColor=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;return `hsl(${h},70%,52%)`;};
+const teamColor=n=>{for(const [k,c] of D.TEAM_COLORS)if(String(n).includes(k))return c;let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;return `hsl(${h},70%,52%)`;};
 
 function save(){try{if(G)localStorage.setItem(KEY,JSON.stringify(G));}catch(e){}}
 function load(){try{const s=localStorage.getItem(KEY);const g=s?JSON.parse(s):null;return g&&g.v===2?g:null;}catch(e){return null;}}

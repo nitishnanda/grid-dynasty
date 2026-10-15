@@ -62,7 +62,7 @@
     G.rep = startAge === 16 ? [46, 52, 56, 62, 72][G.tier] + gauss() * 3 : 12 + rnd() * 8;
     Object.values(CATS).forEach(C => {
       G.tr[C.id] = {};
-      if (C.dyn) { G.dyn[C.id] = { str: {}, trend: {}, streak: 0, last: null, regime: C.id === 'f1' ? 'dominant' : 'close' }; C.teams.forEach(t => { G.dyn[C.id].str[t[0]] = t[1]; G.dyn[C.id].trend[t[0]] = 0; }); }
+      if (C.dyn) { G.dyn[C.id] = { str: {}, trend: {}, streak: 0, last: null, regime: C.id === 'f1' ? 'dominant' : 'close', relEra: C.id === 'f1' ? 1.7 : 1, gapEra: C.id === 'f1' ? 1.55 : 1, relTeam: {} }; C.teams.forEach(t => { G.dyn[C.id].str[t[0]] = t[1]; G.dyn[C.id].trend[t[0]] = 0; G.dyn[C.id].relTeam[t[0]] = C.id === 'f1' ? clamp(1 + gauss() * 0.3, 0.6, 1.8) : 1; }); }
       setTR(G, C.id);
     });
     initF1(G);
@@ -94,30 +94,42 @@
     const sorted = names.slice().sort((a, b) => d.str[b] - d.str[a]), top = sorted.slice(0, k), m = top.reduce((a, n) => a + d.str[n], 0) / k;
     top.forEach(n => { d.str[n] = m + f * (d.str[n] - m); });
     // the chasing pack sits clearly behind the contenders, so the title is a fight between 2-3 teams
-    const floor = Math.min(...top.map(n => d.str[n])) - 3;
+    const floor = Math.min(...top.map(n => d.str[n])) - 2.5;
     sorted.slice(k).forEach(n => { if (d.str[n] > floor) d.str[n] = floor - Math.random() * 0.8; });
   }
   function evolveCat(G, c, champ) {
     const C = CATS[c], d = G.dyn[c], ny = G.year + 1, reg = C.regYears.includes(ny), names = C.teams.map(t => t[0]);
     if (reg) {
-      names.forEach(n => { const base = teamDef(c, n)[1]; d.str[n] = clamp(0.6 * base + gauss() * 3.2, -8, 8); d.trend[n] = -0.2 * d.str[n] + gauss() * 0.7; });
+      // a reset shuffles the order, but the established powerhouses keep most of their edge
+      names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] = clamp((el ? 0.85 : 0.5) * base + gauss() * (el ? 1.8 : 2.8), -8, 8); d.trend[n] = (el ? -0.08 : -0.2) * d.str[n] + gauss() * 0.7; });
       d.streak = 0; d.last = null;
       d.regime = rnd() < 0.22 ? 'dominant' : 'close';
-      if (d.regime === 'close') compressTop(d, names, 3, 0.3);
+      d.relEra = 1.7; d.gapEra = 1.55; names.forEach(n => { d.relTeam[n] = clamp(1 + gauss() * 0.3, 0.6, 1.8); });
+      if (d.regime === 'close') compressTop(d, names, 4, 0.4);
       else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += 2.5; }
     } else {
       if (d.regime === 'dominant' && rnd() < 0.4) d.regime = 'close';
-      names.forEach(n => { const base = teamDef(c, n)[1]; d.str[n] += d.trend[n] + gauss() * 1.1 + 0.15 * (0.6 * base - d.str[n]); d.trend[n] *= 0.8; });
+      d.relEra = 1 + (d.relEra - 1) * 0.6; d.gapEra = 1 + (d.gapEra - 1) * 0.72;
+      names.forEach(n => { d.relTeam[n] = clamp(1 + (d.relTeam[n] - 1) * 0.7 + gauss() * 0.08, 0.6, 1.8); });
+      names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] += d.trend[n] + gauss() * (el ? 0.8 : 1.1) + 0.15 * ((el ? 0.85 : 0.6) * base - d.str[n]); d.trend[n] *= 0.8; });
       if (champ) {
         d.streak = d.last === champ ? d.streak + 1 : 1; d.last = champ;
         const el = isElite(G, c, champ);
         if (d.streak === 1) d.str[champ] += 0.9; else if (d.streak === 2) d.str[champ] -= el ? 0.4 : 1.8; else d.str[champ] -= el ? 1.8 : 3.2;
         if (d.streak >= 2) names.filter(n => n !== champ).sort((a, b) => d.str[b] - d.str[a]).slice(0, 3).forEach(n => d.str[n] += 1.0);
       }
-      if (d.regime !== 'dominant') compressTop(d, names, 3, 0.8);
+      if (d.regime !== 'dominant') compressTop(d, names, 4, 0.85);
       names.forEach(n => d.str[n] = clamp(R1(d.str[n]), -9, 9));
     }
+    enforceFloors(G, c);
     setTR(G, c);
+  }
+  function enforceFloors(G, c) {
+    const C = CATS[c], d = G.dyn[c], names = C.teams.map(t => t[0]);
+    (C.floors || []).forEach(([team, floor]) => {
+      const order = names.slice().sort((a, b) => d.str[b] - d.str[a]);
+      if (order.indexOf(team) + 1 > floor && rnd() < 0.96) d.str[team] = R1(d.str[order[floor - 1]] + 0.05);
+    });
   }
 
   /* ---------- helpers ---------- */
@@ -130,7 +142,15 @@
     return mx === mn ? 0.5 : (teamDef(cat, name)[1] - mn) / (mx - mn);
   };
   const costOf = (G, cat, name) => { const C = CATS[cat]; return C.pay ? Math.round(lerp(C.cost[0], C.cost[1], pf(G, cat, name))) : 0; };
-  const salOf = (G, cat, name) => { const C = CATS[cat]; return C.pay ? 0 : Math.round(lerp(C.sal[0], C.sal[1], Math.pow(pf(G, cat, name), 1.8)) * (0.35 + G.rep / 160)); };
+  const salOf = (G, cat, name) => {
+    const C = CATS[cat];
+    if (cat === 'f1') {
+      const rank = C.teams.map(t => t[0]).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]).indexOf(name), frac = 1 - rank / (C.teams.length - 1);
+      const titles = Math.min(5, (G.tot.trophies['F1 World Champion'] || 0));
+      return Math.round(lerp(1500, 35000, Math.pow(frac, 1.2)) * (0.45 + 1.2 * Math.pow(G.rep / 100, 2) + 0.18 * titles));
+    }
+    return C.pay ? 0 : Math.round(lerp(C.sal[0], C.sal[1], Math.pow(pf(G, cat, name), 1.8)) * (0.35 + G.rep / 160));
+  };
   const funding = G => 8 * Math.exp(0.075 * G.rep) * G.sponsor;
   const coverNeeded = (G, cat, name) => { const c = costOf(G, cat, name); return Math.max(0, c - Math.min(c, funding(G) * 0.6)); };
   const affordable = (G, cat, name) => { const C = CATS[cat]; return !C.pay || (G.academy && C.tier >= 1 && C.tier <= 3) || coverNeeded(G, cat, name) <= G.family; };
@@ -306,10 +326,18 @@
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
     const qpos = out ? null : qOrder.indexOf(uP) + 1;
     // weekend character: gaps breathe from one event to the next, bigger in the wet and in a dominant era
-    const wk = Math.exp(gauss() * 0.22), wetK = wet ? 1.35 : 1, eraK = (C.dyn && S.regime === 'dominant') ? 1.45 : 1;
-    const qScale = (C.qK || 0.05) * wk * wetK * eraK;
+    const dynS = C.dyn ? G.dyn[S.cat] : null, relOf = u => dynS ? (dynS.relEra || 1) * ((dynS.relTeam && dynS.relTeam[u.team]) || 1) : 1;
+    const wk = Math.exp(gauss() * 0.22), wetK = wet ? 1.35 : 1, eraK = dynS ? (dynS.gapEra || 1) * (S.regime === 'dominant' ? 1.1 : 1) : 1;
+    // composite pace difference -> seconds. Some series use anchor points (pace gap at P3, P10, last) interpolated linearly.
+    const qg = D => {
+      D = Math.max(D, 0); const M = C.qMap;
+      if (!M) return Math.pow(D, C.qG || 1);
+      for (let i = 1; i < M.length; i++) if (D <= M[i][0]) return M[i - 1][1] + (M[i][1] - M[i - 1][1]) * (D - M[i - 1][0]) / (M[i][0] - M[i - 1][0]);
+      const a = M[M.length - 2], b = M[M.length - 1]; return b[1] + (b[1] - a[1]) / (b[0] - a[0]) * (D - b[0]);
+    }, rg = D => Math.pow(Math.max(D, 0), C.rG || 1);
+    const qScale = (C.qMap ? 1 : (C.qK || 0.05)) * wk * wetK * eraK;
     let qi = null;
-    if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, (qOrder[0].q - qOrder[1].q) * qScale * Math.exp(gauss() * 0.55)), lead: true } : { pos: qpos, gap: Math.max(0.001, (qOrder[0].q - uP.q) * qScale), lead: false };
+    if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, qg(qOrder[0].q - qOrder[1].q) * qScale * Math.exp(gauss() * 0.55)), lead: true } : { pos: qpos, gap: Math.max(0.001, qg(qOrder[0].q - uP.q) * qScale), lead: false };
     if (G.dbg) G.dbg.q.push(qOrder.map(u => qOrder[0].q - u.q));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
@@ -325,7 +353,7 @@
         let sig = (u.hasP ? clamp(5.6 - st.CON / 38, 3, 5) : 4.2) * sigK;
         const sprK = isSpr ? 0.5 : 1;
         let pe = (u.hasP ? clamp(0.045 - (st.CON - 60) * 0.00055, 0.012, 0.06) : 0.036) * dnfK * sprK * (wet ? 1.35 : 1);   // driver error
-        let pr = 0.024 * clamp(1 + (C.lvl - uCar(u)) / (C.dyn ? 14 : 10), 0.6, 1.9) * dnfK * sprK;                          // reliability: weaker cars fail more
+        let pr = 0.024 * clamp(1 + (C.lvl - uCar(u)) / (C.dyn ? 14 : 10), 0.6, 1.9) * dnfK * sprK * relOf(u);                // reliability: weaker cars and fresh regulations fail more
         let bias = 0;
         if (u.hasP) {
           if (mode === 'push') { bias = 1.2 + (RAC - 60) * 0.025; sig *= 1.25; pe *= clamp(1.6 + (60 - RAC) * 0.03, 1.15, 3.4); pr *= 1.15; }
@@ -343,7 +371,7 @@
       if (!out) {
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
-        if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55) : (fin[0].s - uP.s) * rScale); if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
+        if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? rg(fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55) : rg(fin[0].s - uP.s) * rScale); if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
         entry.races.push({ n: rf.n, grid: uP.grid, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
         if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); }
       }
@@ -477,15 +505,20 @@
   const REP_W = [1.4, 1.25, 1.25, 1.3, 1.4];
   const kartRepW = age => age >= 14 ? 2.0 : 1.3;
   const FLAIR = [0, 1.5, 1.0, 2.6, 4]; // rep earned for the drives themselves, by talent tier (karting only)
+  const E_standings = (G, i) => standingsEv(G, i);
   function makeSummary(G, h, C, P, tbl, pos, N, tr, dRep, debut) {
-    const T = C.teams.length, exp = C.crew ? tr : (N / T) * (tr - 0.5), rel = (exp - pos) / N;
+    const T = C.teams.length;
     const mate = tbl.find(d => d.team === G.team && !d.isPlayer);
     const comp = h.events || [], main = comp.find(c => c.main) || comp[0] || { n: C.short + ' championship', pos, N, pts: P.pts, lead: pos === 1, gap: 0 };
     const champ = !!h.champ, wr = P.races ? P.w / P.races : 0, topKit = tr <= Math.max(2, Math.ceil(T / 4)), poorKit = tr > Math.ceil(T * 0.6);
     const sameCat = G.history.slice(0, -1).filter(x => x.cat === h.cat), lastSame = sameCat[sameCat.length - 1];
     const titlesHere = sameCat.filter(x => x.champ).length + (champ ? 1 : 0);
     const pk = a => a[Math.floor(rnd() * a.length)];
-    let expect = rel > (debut ? 0.05 : 0.12) ? 'exceeded' : rel < (debut ? -0.4 : -0.12) ? 'below' : 'met';
+    // expected finish: the fastest car is P1/P2 (P2 fine if the teammate is P1), the second fastest P3/P4, and so on
+    const mi = C.events ? C.events.findIndex(x => x.main) : -1, rows = E_standings(G, mi), mem = rows.filter(r => r.d.team === G.team), jj = Math.max(1, mem.findIndex(r => r.d.isPlayer) + 1), sz = Math.max(1, mem.length);
+    const expPos = C.crew ? tr : sz * (tr - 1) + jj, diff = expPos - pos, good = h.ovr >= C.lvl + 5;
+    const lo = good ? -1 : -2, hi = good ? 2 : 1;   // very good drivers: 2 ahead to 1 behind is "met"; average drivers: 1 ahead to 2 behind
+    let expect = diff > hi ? 'exceeded' : diff < lo ? 'below' : 'met';
     if (champ) expect = topKit ? 'met' : 'exceeded';
     let extract = 'even';
     if (mate && !C.crew) extract = P.pts > mate.pts * 1.15 + 2 ? 'more' : P.pts < mate.pts * 0.85 - 2 ? 'less' : 'even';
@@ -520,13 +553,13 @@
     else if (champ && topKit) para.push(`You had top-two equipment, so now the pressure is to prove it when the kit is level.`);
     else if (!champ && topKit && pos > 3) para.push(`${G.team} ranked ${ordStr(tr)} on pace and you still finished ${ordStr(pos)}. That one is on you.`);
     else if (!champ) para.push((debut ? {
-      exceeded: `A standout rookie year: ${G.team} ranked ${ordStr(tr)} on pace and you finished ahead of where the car sits.`,
-      met: `${G.team} ranked ${ordStr(tr)} on pace, so ${ordStr(pos)} is a solid first season.`,
-      below: `${G.team} ranked ${ordStr(tr)} on pace, so ${ordStr(pos)} is below what the car allows, but first seasons are about learning.`,
+      exceeded: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is ${diff} place${diff > 1 ? 's' : ''} better: a standout rookie year.`,
+      met: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is right where it should be for a rookie.`,
+      below: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is ${-diff} place${-diff > 1 ? 's' : ''} short, but first seasons are about learning.`,
     } : {
-      exceeded: `${G.team} ranked ${ordStr(tr)} on pace, so you beat expectations by a distance.`,
-      met: `${G.team} ranked ${ordStr(tr)} on pace and you finished right about where the car deserved.`,
-      below: `${G.team} ranked ${ordStr(tr)} on pace, so this fell short of what the car could do.`,
+      exceeded: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is ${diff} place${diff > 1 ? 's' : ''} better: you exceeded expectations.`,
+      met: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} meets expectations.`,
+      below: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is ${-diff} place${-diff > 1 ? 's' : ''} short: you underperformed.`,
     })[expect]);
     // 4. teammate and reliability
     if (mate && !C.crew) para.push(debut ? ({ more: `You out-scored ${mate.name} (${P.pts} to ${mate.pts}) in your rookie year, which says a lot.`, less: `${mate.name} knows the place better, so trailing them (${mate.pts} to ${P.pts}) is normal for a rookie.`, even: `You matched ${mate.name} (${P.pts} to ${mate.pts}) as a rookie. Strong start.` })[extract] : ({ more: `You beat ${mate.name} (${P.pts} to ${mate.pts}), so you clearly extracted more from the car.`, less: `${mate.name} out-scored you (${mate.pts} to ${P.pts}), so you left something in the car.`, even: `You and ${mate.name} were evenly matched (${P.pts} to ${mate.pts}).` })[extract]);
@@ -636,9 +669,29 @@
     const years = C.tier === 0 ? 1 : C.tier >= 3 ? 1 + Math.floor(rnd() * 4) : 1 + Math.floor(rnd() * 3);
     return Object.assign({ kind, cat: catId, team, r: Math.round(r), cost: costOf(G, catId, team), sal: salOf(G, catId, team), years, role, tm, tier: C.tier }, extra || {});
   }
+  // dominated every category you raced in (F4, F3, F2): the only way to walk into a top team on debut
+  const dominatedAll = G => {
+    const last = {}; G.history.forEach(h => { if (['f4', 'f3', 'f2'].includes(h.cat)) last[h.cat] = h; });
+    const cs = Object.keys(last); return cs.length >= 2 && cs.every(c => last[c].champ);
+  };
   function offersFor(G, catId, A, n, excludeTeam) {
     const C = CATS[catId], res = [];
     if (catId === 'f1' && isRB(G)) return [makeOffer(G, 'move', 'f1', 'Racing Bulls', { rbRule: true })]; // Red Bull juniors debut at Racing Bulls
+    if (catId === 'f1' && !G.history.some(h => h.cat === 'f1')) {   // F1 debut: top-four seats are almost never on offer
+      const rank = C.teams.map(t => t[0]).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]), top4 = rank.slice(0, 4), dom = dominatedAll(G), out = [];
+      if (G.academy) {
+        out.push(G.academy.feeder);   // Ferrari -> Haas, Mercedes/McLaren -> Williams, Red Bull -> Racing Bulls
+        G.academy.f1.forEach(t => { if (!out.includes(t) && (!top4.includes(t) || (dom && rnd() < 0.4))) out.push(t); });
+      }
+      C.teams.forEach(t => {
+        const nm = t[0]; if (out.includes(nm) || (nm === excludeTeam && catId === G.cat)) return;
+        if (top4.includes(nm)) { if (dom && rnd() < 0.25) out.push(nm); return; }
+        if (A + gauss() * 7 >= 100 * pf(G, catId, nm) - 5) out.push(nm);
+      });
+      const fd = G.academy && G.academy.feeder, ordered = out.sort((a, b) => pf(G, catId, b) - pf(G, catId, a)).slice(0, n);
+      if (fd && !ordered.includes(fd)) ordered[ordered.length - 1 > 0 ? ordered.length - 1 : 0] = fd;
+      return (ordered.length ? ordered : [rank[rank.length - 1]]).map(nm => makeOffer(G, 'move', catId, nm));
+    }
     const pass = () => { const r = []; C.teams.forEach(t => {
       const name = t[0]; if (name === excludeTeam && catId === G.cat) return;
       const P = 100 * pf(G, catId, name);
@@ -749,6 +802,7 @@
       if (cat !== 'f1' && nextAge <= 34 && G.f1.vac && G.f1.vac.length && (cat === 'f2' || TIER3_SIDE.includes(cat)) && !M.options.some(o => o.cat === 'f1')) {
         for (const t of [...new Set(G.f1.vac)]) {
           if (isRB(G) && t !== 'Racing Bulls') continue;
+          if (!G.history.some(h => h.cat === 'f1') && Object.keys(G.tr.f1).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]).slice(0, 4).includes(t) && !dominatedAll(G) && !(G.reserve === t && rnd() < 0.35)) continue;
           let p = 0;
           if (G.reserve === t) p = clamp(0.2 + 0.55 * L.q, 0, 0.75);
           else if (G.academy && G.academy.f1.includes(t)) p = cat === 'f2' ? 0.12 + 0.35 * L.q : 0.05;
