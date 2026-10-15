@@ -103,10 +103,10 @@
       // a reset shuffles the order, but the established powerhouses keep most of their edge
       names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] = clamp((el ? 0.85 : 0.5) * base + gauss() * (el ? 1.8 : 2.8), -(C.sMax || 8), C.sMax || 8); d.trend[n] = (el ? -0.08 : -0.2) * d.str[n] + gauss() * 0.7; });
       d.streak = 0; d.last = null;
-      d.regime = rnd() < 0.28 ? 'dominant' : 'close';
+      d.regime = rnd() < 0.25 ? 'dominant' : 'close';
       d.relEra = 1.7; d.gapEra = c === 'f1' ? 1.45 : 1.55; names.forEach(n => { d.relTeam[n] = clamp(1 + gauss() * 0.3, 0.6, 1.8); });
       if (d.regime === 'close') compressTop(d, names, 4, 0.4);
-      else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += 2.8; }
+      else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += 2.2; }
     } else {
       if (d.regime === 'dominant' && rnd() < 0.3) d.regime = 'close';
       d.relEra = 1 + (d.relEra - 1) * 0.6; { const lastReg = Math.max(...C.regYears.filter(y => y <= ny), 2026), age = ny - lastReg, tgt = age <= 2 ? 1 : age === 3 ? 0.9 : age === 4 ? 0.8 : 0.72; d.gapEra = tgt + (d.gapEra - tgt) * 0.72; }   // fields converge the longer the rules stay stable
@@ -306,14 +306,14 @@
       if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1.5 + rnd() * 2.5) : -rnd() * 0.8 } : false; }
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
       // the season's title script, drawn to match real history: ~30% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~20% runaway (130+)
-      if (!S.scr) { const w = S.dom ? [0.05, 0.15, 0.35, 0.45] : [0.38, 0.30, 0.22, 0.10], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
-        S.scr = { M: [rnd() * 10, 11 + rnd() * 59, 71 + rnd() * 59, 131 + rnd() * rnd() * 190][k] }; }
+      if (!S.scr) { const w = S.dom ? [0.02, 0.08, 0.26, 0.64] : [0.40, 0.29, 0.25, 0.06], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
+        S.scr = { k, M: [rnd() * 10, 11 + rnd() * 52, 80 + rnd() * 50, 139 + rnd() * rnd() * 170][k] }; }
       if (S.round >= 2 && ranked.length > 1) {
-        const R = C.rounds, a = ranked[0], b = ranked[1], m = a.pts - b.pts, tgt = S.scr.M * Math.pow(S.round / R, 0.85), err = tgt - m, g = Math.min(9, 0.12 * Math.abs(err) * (1 + 3 * S.round / R)) * Math.sign(err);
+        const R = C.rounds, a = ranked[0], b = ranked[1], m = a.pts - b.pts, tgt = S.scr.M * Math.pow(S.round / R, 0.85), err = tgt - m, g = Math.min(S.scr.k === 3 ? 16 : 9, 0.12 * Math.abs(err) * (1 + 3 * S.round / R)) * Math.sign(err);
         const hu = !a.isPlayer, ch = !b.isPlayer;   // never steer the player: only the AI side of the fight
         if (g > 0) ranked.slice(1, 4).forEach(d => { if (!d.isPlayer) d.form -= g * (d === b ? 1 : 0.7); });   // fight too close for the script: everyone chasing falls back
         else if (ch) b.form -= g;
-        if (hu) a.form += g * (hu && ch ? 0.5 : 1);
+        if (hu) a.form += g * (g > 0 ? 0.1 : 1);
       }
     }
     const wet = rnd() < 0.18, out = S.injured > 0;
@@ -324,7 +324,7 @@
     const wetAdj = wet ? (st.WET - 60) * 0.3 : 0;
     if (S.fit === undefined) S.fit = gauss() * (C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
     const bonus = S.boost + tmp + S.fit - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
-    const mode = S.mode || 'balance', RAC = st.RAC, sigK = (C.sigK || 1) * (S.dom ? 0.92 : 1), dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
+    const mode = S.mode || 'balance', RAC = st.RAC, sigK = (C.sigK || 1) * (S.dom ? 1 : 1), dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
     const active = S.drivers.filter(d => !(d.isPlayer && out));
     // units: one per driver, or one per car in crew series (WEC / GT): crew-mates share the result
     const units = [];
