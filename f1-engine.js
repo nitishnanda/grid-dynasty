@@ -62,7 +62,7 @@
     G.rep = startAge === 16 ? [46, 52, 56, 62, 72][G.tier] + gauss() * 3 : 12 + rnd() * 8;
     Object.values(CATS).forEach(C => {
       G.tr[C.id] = {};
-      if (C.dyn) { G.dyn[C.id] = { str: {}, trend: {}, streak: 0, last: null, regime: C.id === 'f1' ? 'dominant' : 'close', relEra: C.id === 'f1' ? 1.7 : 1, gapEra: C.id === 'f1' ? 1.55 : 1, relTeam: {} }; C.teams.forEach(t => { G.dyn[C.id].str[t[0]] = t[1]; G.dyn[C.id].trend[t[0]] = 0; G.dyn[C.id].relTeam[t[0]] = C.id === 'f1' ? clamp(1 + gauss() * 0.3, 0.6, 1.8) : 1; }); }
+      if (C.dyn) { G.dyn[C.id] = { str: {}, trend: {}, streak: 0, last: null, regime: C.id === 'f1' ? 'dominant' : 'close', relEra: C.id === 'f1' ? 1.7 : 1, gapEra: C.id === 'f1' ? 1.45 : 1, relTeam: {} }; C.teams.forEach(t => { G.dyn[C.id].str[t[0]] = t[1]; G.dyn[C.id].trend[t[0]] = 0; G.dyn[C.id].relTeam[t[0]] = C.id === 'f1' ? clamp(1 + gauss() * 0.3, 0.6, 1.8) : 1; }); }
       setTR(G, C.id);
     });
     initF1(G);
@@ -101,15 +101,15 @@
     const C = CATS[c], d = G.dyn[c], ny = G.year + 1, reg = C.regYears.includes(ny), names = C.teams.map(t => t[0]);
     if (reg) {
       // a reset shuffles the order, but the established powerhouses keep most of their edge
-      names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] = clamp((el ? 0.85 : 0.5) * base + gauss() * (el ? 1.8 : 2.8), -8, 8); d.trend[n] = (el ? -0.08 : -0.2) * d.str[n] + gauss() * 0.7; });
+      names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] = clamp((el ? 0.85 : 0.5) * base + gauss() * (el ? 1.8 : 2.8), -(C.sMax || 8), C.sMax || 8); d.trend[n] = (el ? -0.08 : -0.2) * d.str[n] + gauss() * 0.7; });
       d.streak = 0; d.last = null;
       d.regime = rnd() < 0.22 ? 'dominant' : 'close';
-      d.relEra = 1.7; d.gapEra = 1.55; names.forEach(n => { d.relTeam[n] = clamp(1 + gauss() * 0.3, 0.6, 1.8); });
+      d.relEra = 1.7; d.gapEra = c === 'f1' ? 1.45 : 1.55; names.forEach(n => { d.relTeam[n] = clamp(1 + gauss() * 0.3, 0.6, 1.8); });
       if (d.regime === 'close') compressTop(d, names, 4, 0.4);
       else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += 2.5; }
     } else {
       if (d.regime === 'dominant' && rnd() < 0.4) d.regime = 'close';
-      d.relEra = 1 + (d.relEra - 1) * 0.6; d.gapEra = 1 + (d.gapEra - 1) * 0.72;
+      d.relEra = 1 + (d.relEra - 1) * 0.6; { const lastReg = Math.max(...C.regYears.filter(y => y <= ny), 2026), age = ny - lastReg, tgt = age <= 2 ? 1 : age === 3 ? 0.9 : age === 4 ? 0.8 : 0.72; d.gapEra = tgt + (d.gapEra - tgt) * 0.72; }   // fields converge the longer the rules stay stable
       names.forEach(n => { d.relTeam[n] = clamp(1 + (d.relTeam[n] - 1) * 0.7 + gauss() * 0.08, 0.6, 1.8); });
       names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] += d.trend[n] + gauss() * (el ? 0.8 : 1.1) + 0.15 * ((el ? 0.85 : 0.6) * base - d.str[n]); d.trend[n] *= 0.8; });
       if (champ) {
@@ -119,7 +119,7 @@
         if (d.streak >= 2) names.filter(n => n !== champ).sort((a, b) => d.str[b] - d.str[a]).slice(0, 3).forEach(n => d.str[n] += 1.0);
       }
       if (d.regime !== 'dominant') compressTop(d, names, 4, 0.85);
-      names.forEach(n => d.str[n] = clamp(R1(d.str[n]), -9, 9));
+      names.forEach(n => d.str[n] = clamp(R1(d.str[n]), -(C.sMax || 8) - 1, (C.sMax || 8) + 1));
     }
     enforceFloors(G, c);
     setTR(G, c);
@@ -350,7 +350,7 @@
     const qScale = (C.qMap ? 1 : (C.qK || 0.05)) * wk * wetK * eraK;
     let qi = null;
     if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, qg(qOrder[0].q - qOrder[1].q) * qScale * Math.exp(gauss() * 0.55)), lead: true } : { pos: qpos, gap: Math.max(0.001, qg(qOrder[0].q - uP.q) * qScale), lead: false };
-    if (G.dbg) G.dbg.q.push(qOrder.map(u => qOrder[0].q - u.q));
+    if (G.dbg) G.dbg.q.push(qOrder.map(u => qg(qOrder[0].q - u.q) * qScale));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
     const entry = { ev: evIdx, round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
@@ -378,7 +378,7 @@
       const res = grid.filter(u => !u.crash).sort((a, b) => b.s - a.s).concat(grid.filter(u => u.crash));
       const fin = res.filter(u => !u.crash);
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
-      if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => fin[0].s - u.s));
+      if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => rg(fin[0].s - u.s) * rScale));
       res.forEach((u, i) => u.members.forEach(d => { d.races++; if (u.crash) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (!out) {
         const pos = res.indexOf(uP) + 1;
