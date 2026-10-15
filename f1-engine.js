@@ -355,7 +355,8 @@
       if (o[1].team !== o[0].team || true) o[1][key] = c3 + (1 - 0.8 * shave(g2)) * (c2 - c3); };
     const spreadOf = (key, pv) => { units.forEach(u => { u[key] = mixOf(u, pv); }); capClose(units, key); const m = units.reduce((a, u) => a + u[key], 0) / units.length; units.forEach(u => { u[key] = m + K * (u[key] - m); }); };
     spreadOf('q', Dq);
-    units.forEach(u => { u.q += gauss() * (wet ? 2.6 : (C.id === 'f1' ? 1.1 : 2.2)) + (C.id === 'f1' && rnd() < 0.13 ? -(1.2 + rnd() * 3.2) : 0) + (S.dom && S.domTeam === u.team ? 1.5 : 0) - (C.id === 'f1' && ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.48) * 16), 0) : 0); });   // sustained pole streaks regress: nobody takes 19 of 24   // bad Saturdays (traffic, mistakes, red flags); a dominant car also qualifies further clear
+    if (C.id === 'f1') { const tq = {}; units.forEach(u => { (tq[u.team] = tq[u.team] || []).push(u); }); Object.values(tq).forEach(g => { const m = g.reduce((t, u) => t + u.q, 0) / g.length; g.forEach(u => { u.q = m + 0.5 * (u.q - m); }); }); }   // same car: teammates' one-lap pace sits closer than their race pace
+    units.forEach(u => { u.q += gauss() * (wet ? 2.6 : (C.id === 'f1' ? 1.1 : 2.2)) + (C.id === 'f1' && rnd() < 0.13 ? -(1.2 + rnd() * 3.2) : 0) + (S.dom && S.domTeam === u.team ? 1.9 : 0) - (C.id === 'f1' && ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.63) * 14), 0) : 0); });   // sustained pole streaks regress: nobody takes 19 of 24   // bad Saturdays (traffic, mistakes, red flags); a dominant car also qualifies further clear
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
     const qpos = out ? null : qOrder.indexOf(uP) + 1;
     // weekend character: gaps breathe from one event to the next, bigger in the wet and in a dominant era
