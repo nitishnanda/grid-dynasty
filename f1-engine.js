@@ -671,10 +671,11 @@
     const tm = ros.filter(n => n !== G.name)[0] || ros[0];
     const tmSkill = C.lvl + 0.4 * (r - C.lvl), ovr = ovrOf(G.stats);
     const role = ovr >= tmSkill + 2 ? 'Lead driver' : ovr >= tmSkill - 3 ? 'Equal status' : 'Second driver';
-    const years = C.tier === 0 ? 1 : C.tier >= 3 ? 1 + Math.floor(rnd() * 4) : 1 + Math.floor(rnd() * 3);
+    const years = C.tier === 0 || JR1.includes(catId) ? 1 : C.tier >= 3 ? 1 + Math.floor(rnd() * 4) : 1 + Math.floor(rnd() * 3);
     return Object.assign({ kind, cat: catId, team, r: Math.round(r), cost: costOf(G, catId, team), sal: salOf(G, catId, team), years, role, tm, tier: C.tier }, extra || {});
   }
   // dominated every category you raced in (F4, F3, F2): the only way to walk into a top team on debut
+  const JR1 = ['f4', 'f3', 'f2', 'frec'];   // junior single-seater deals are one-year
   const dominatedAll = G => {
     const last = {}; G.history.forEach(h => { if (['f4', 'f3', 'f2'].includes(h.cat)) last[h.cat] = h; });
     const cs = Object.keys(last); return cs.length >= 2 && cs.every(c => last[c].champ);
@@ -757,7 +758,7 @@
     const L = G.last, C = CATS[G.cat], nextAge = G.age + 1, lh = G.history[G.history.length - 1];
     G._mk = []; G._rescued = false;
     const M = { options: [], stuck: false, forced: false, academy: null, nextAge, note: '', roll: null, msgs: G._mk, broke: false };
-    const stay = () => { const o = makeOffer(G, 'stay', G.cat, G.team); o.years = G.contract > 0 ? G.contract : (C.tier === 0 ? 1 : 1 + Math.floor(rnd() * 2)); if (C.pay && C.tier >= 1 && !affordable(G, G.cat, G.team)) o.blocked = true; return o; };
+    const stay = () => { const o = makeOffer(G, 'stay', G.cat, G.team); o.years = G.contract > 0 ? G.contract : (C.tier === 0 || JR1.includes(G.cat) ? 1 : 1 + Math.floor(rnd() * 2)); if (C.pay && C.tier >= 1 && !affordable(G, G.cat, G.team)) o.blocked = true; return o; };
     const lat = (cats, A, k, kind) => cats.forEach(lc => offersFor(G, lc, A(lc), k, null).forEach(o => M.options.push(Object.assign(o, { kind: kind || 'lateral' }))));
     let quit = false;
     if (C.tier === 0 && G.wealth === 'poor') {
