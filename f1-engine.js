@@ -323,26 +323,28 @@
       grid.forEach((u, gi) => {
         u.grid = gi + 1;
         let sig = (u.hasP ? clamp(5.6 - st.CON / 38, 3, 5) : 4.2) * sigK;
-        let pd = (u.hasP ? clamp(0.075 - (st.CON - 60) * 0.0009, 0.02, 0.1) : 0.06) * dnfK * (isSpr ? 0.5 : 1);
+        const sprK = isSpr ? 0.5 : 1;
+        let pe = (u.hasP ? clamp(0.045 - (st.CON - 60) * 0.00055, 0.012, 0.06) : 0.036) * dnfK * sprK * (wet ? 1.35 : 1);   // driver error
+        let pr = 0.024 * clamp(1 + (C.lvl - uCar(u)) / (C.dyn ? 14 : 10), 0.6, 1.9) * dnfK * sprK;                          // reliability: weaker cars fail more
         let bias = 0;
         if (u.hasP) {
-          if (mode === 'push') { bias = 1.2 + (RAC - 60) * 0.025; sig *= 1.25; pd *= clamp(1.6 + (60 - RAC) * 0.03, 1.15, 3.4); }
-          else if (mode === 'coast') { bias = -0.3; sig *= 0.55; pd *= 0.4; }
+          if (mode === 'push') { bias = 1.2 + (RAC - 60) * 0.025; sig *= 1.25; pe *= clamp(1.6 + (60 - RAC) * 0.03, 1.15, 3.4); pr *= 1.15; }
+          else if (mode === 'coast') { bias = -0.3; sig *= 0.55; pe *= 0.4; pr *= 0.8; }
         }
         u.s = rm + K * (u.cb - rm) + (n / 2 - gi) * 0.16 + bias + gauss() * (sig + (wet ? 1.5 * sigK : 0));
-        u.crash = rnd() < pd;
+        u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null;
       });
       if (mode === 'coast' && uP && grid.includes(uP)) { const m = grid.reduce((a, u) => a + u.s, 0) / n; uP.s = 0.85 * uP.s + 0.15 * m; }
       const res = grid.filter(u => !u.crash).sort((a, b) => b.s - a.s).concat(grid.filter(u => u.crash));
       const fin = res.filter(u => !u.crash);
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => fin[0].s - u.s));
-      res.forEach((u, i) => u.members.forEach(d => { d.races++; if (u.crash) { d.dnf++; return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
+      res.forEach((u, i) => u.members.forEach(d => { d.races++; if (u.crash) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (!out) {
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
         if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55) : (fin[0].s - uP.s) * rScale); if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
-        entry.races.push({ n: rf.n, grid: uP.grid, pos, dnf: uP.crash, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
+        entry.races.push({ n: rf.n, grid: uP.grid, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
         if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); }
       }
       return res;
@@ -528,7 +530,9 @@
     })[expect]);
     // 4. teammate and reliability
     if (mate && !C.crew) para.push(debut ? ({ more: `You out-scored ${mate.name} (${P.pts} to ${mate.pts}) in your rookie year, which says a lot.`, less: `${mate.name} knows the place better, so trailing them (${mate.pts} to ${P.pts}) is normal for a rookie.`, even: `You matched ${mate.name} (${P.pts} to ${mate.pts}) as a rookie. Strong start.` })[extract] : ({ more: `You beat ${mate.name} (${P.pts} to ${mate.pts}), so you clearly extracted more from the car.`, less: `${mate.name} out-scored you (${mate.pts} to ${P.pts}), so you left something in the car.`, even: `You and ${mate.name} were evenly matched (${P.pts} to ${mate.pts}).` })[extract]);
-    if (P.races >= 10 && P.dnf >= 3) para.push(`${P.dnf} DNFs cost you real points. Tidy that up.`);
+    const dE = P.dnfE || 0, dR = P.dnfR || 0;
+    if (P.races >= 10 && P.dnf >= 3) para.push(dE >= dR * 2 ? `${P.dnf} DNFs, ${dE} of them your own errors. That is where the points went.` : dR >= dE * 2 ? `${P.dnf} DNFs, but ${dR} were reliability, not driver error. Bad luck, not bad driving.` : `${P.dnf} DNFs: ${dR} reliability and ${dE} driver error. Half of that is on the team, half on you.`);
+    else if (P.races >= 10 && P.dnf > 0 && dE === 0) para.push(`${P.dnf} DNF${P.dnf > 1 ? 's' : ''}, all mechanical. No driver errors all year.`);
     else if (P.races >= 10 && P.dnf === 0) para.push('Not a single DNF all year. Bulletproof.');
     // 5. stock and contract
     para.push(({ soaring: 'Your stock is soaring and people are circling.', rising: 'Your stock is rising. People are noticing.', steady: 'Your stock is steady.', falling: 'Your stock is falling. People are starting to doubt you.' })[stock] + (G.contract > 0 ? ` You have ${G.contract} year${G.contract > 1 ? 's' : ''} left at ${G.team}. Let's plan the summer.` : " Your deal is up, so let's plan the summer."));
@@ -555,9 +559,9 @@
     const carRank = C.teams.map(t => t[0]).sort((a, b) => G.tr[S.cat][b] - G.tr[S.cat][a]).indexOf(S.teams[0]) + 1;
     const repBefore = G.rep;
     if (!partial) { const dRep = (C.tier === 0 ? kartRepW(G.age) : REP_W[C.tier]) * (q * 10 - 3.5) + (anyTitle ? 6 : 0) + Math.min(P.w, 10) * 0.15 + (C.tier === 0 ? FLAIR[G.tier] * (0.6 + 0.4 * q) : 0); G.rep = clamp(G.rep + dRep, 5, 100); }
-    const h = { season: G.season, year: G.year, age: G.age, cat: S.cat, catName: C.name, short: C.short, team: S.teams.join(' → '), races: P.races, wins: P.w, podiums: P.p, poles: P.pole, pts: P.pts, pos, N, ovr, trophies: tro, earn, champ: anyTitle, cost: G.deal.cost, partial: !!partial, events: comp };
+    const h = { season: G.season, year: G.year, age: G.age, cat: S.cat, catName: C.name, short: C.short, team: S.teams.join(' → '), races: P.races, wins: P.w, podiums: P.p, poles: P.pole, pts: P.pts, pos, N, ovr, trophies: tro, earn, champ: anyTitle, cost: G.deal.cost, partial: !!partial, events: comp, dnfE: P.dnfE || 0, dnfR: P.dnfR || 0 };
     G.history.push(h);
-    const T = G.tot; T.races += P.races; T.wins += P.w; T.podiums += P.p; T.poles += P.pole; T.earn += earn; T.peak = Math.max(T.peak, ovr);
+    const T = G.tot; T.dnfE = (T.dnfE || 0) + (P.dnfE || 0); T.dnfR = (T.dnfR || 0) + (P.dnfR || 0); T.races += P.races; T.wins += P.w; T.podiums += P.p; T.poles += P.pole; T.earn += earn; T.peak = Math.max(T.peak, ovr);
     tro.forEach(t => T.trophies[t] = (T.trophies[t] || 0) + 1);
     if (anyTitle) T.titles[S.cat] = (T.titles[S.cat] || 0) + 1;
     if (partial) return h;
