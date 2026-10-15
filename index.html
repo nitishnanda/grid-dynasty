@@ -121,7 +121,7 @@ function load(){try{const s=localStorage.getItem(KEY);const g=s?JSON.parse(s):nu
 function clear(){try{localStorage.removeItem(KEY);}catch(e){}}
 const stamp=(txt,col)=>`<span class="stamp" style="color:${col};border-color:${col}">${esc(txt)}</span>`;
 const tierStamp=t=>{const T=D.TIERS[t];return stamp(T.n,T.id==='gen'?'#c2185b':T.id==='wonder'?'#a86f00':T.id==='late'?'#c24a00':T.id==='talented'?'#1f4bff':'#5a5244');};
-function bar(){return `<div class="bar"><b>Grid Dynasty</b><span>${G&&G.phase!=='retired'?`REP ${Math.round(G.rep)} · ${money(G.family)} family`:'career sim'}</span></div>`;}
+function bar(){return `<div class="bar"><b>Grid Dynasty</b><span>${G&&G.phase!=='retired'&&ui.screen!=='start'?`AGE ${G.age} · ${G.year} · REP ${Math.round(G.rep)}`:'career sim'}</span></div>`;}
 function meters(st){return D.STATS.map(k=>{const v=st[k],n=Math.round(v/10),cls=v>=85?'hi':v>=70?'mid':v<55?'lo':'';return `<div class="meter"><span>${k}</span><div class="bl ${cls}">${Array.from({length:10},(_,i)=>`<i class="${i<n?'f':''}"></i>`).join('')}</div><b>${v}</b></div>`;}).join('');}
 const sim=()=>D.STATS.map(k=>`<div data-act="train" data-k="${k}" class="${ui.train===k?'on':''}">${k}<b>${G.stats[k]}</b></div>`).join('');
 
@@ -164,9 +164,9 @@ function vSeason(){
     return `<div class="rd"><div class="rdh"><b>R${l.round}</b><span>${esc(l.name)}</span><em>${l.wet?'WET · ':''}${(modeName[l.mode]||'Balance').toUpperCase()}${l.sprint?' · SPRINT':''}</em></div><table class="ts">${rows}</table></div>`;}).join('');
   const modeDesc={push:'Push: faster, but more DNF risk (worse if your racecraft is low).',balance:'Balance: your normal form.',coast:'Coast: fewer DNFs, steadier finishes. A quick car lands P3–P6 with the odd win.'}[mode];
   return `${bar()}
-  <div class="team"><div class="sw" style="background:${teamColor(G.team)}"></div><div class="tx"><b>${esc(G.team)}</b><div class="meta" style="margin:2px 0 0"><span>${esc(C.name)}</span><span>${G.year}</span></div></div><div class="rn">R${S.round}/${C.rounds}</div></div>
+  <div class="team"><div class="sw" style="background:${teamColor(G.team)}"></div><div class="tx"><b>${esc(G.team)}</b><div class="meta" style="margin:2px 0 0"><span>${esc(C.name)}</span><span>${G.year}</span><span>age <b>${G.age}</b></span></div></div><div class="rn">R${S.round}/${C.rounds}</div></div>
   <div class="strip"><div><b>${S.round?pos:'–'}</b><span>Pos</span></div><div><b>${P.w}</b><span>Wins</span></div><div><b>${P.p}</b><span>Podiums</span></div><div><b>${P.pts}</b><span>Points</span></div></div>
-  <div class="meta"><span>stage <b>${Math.min(3,S.spins+1)}/3</b></span><span>contract <b>${G.contract}y</b></span><span>poles <b>${P.pole}</b></span><span>age <b>${G.age}</b></span>${G.academy?`<span>academy <b>${esc(G.academy.n.split(' ')[0])}</b></span>`:''}</div>
+  <div class="meta"><span>stage <b>${Math.min(3,S.spins+1)}/3</b></span><span>contract <b>${G.contract}y</b></span><span>poles <b>${P.pole}</b></span>${G.academy?`<span>academy <b>${esc(G.academy.n.split(' ')[0])}</b></span>`:''}</div>
   <div class="row" style="margin:0 0 14px"><button class="btn sm" data-act="tbl">Standings</button><button class="btn sm" data-act="drv">Driver file</button></div>
   ${logs||'<div class="note">Season loaded. Pick your approach below and send it.</div>'}
   <div class="dock"><div>${S.over?`<button class="btn go" data-act="wrap">Season debrief ▶</button>`:`<div class="modes">${['push','balance','coast'].map(m=>`<div data-act="mode" data-v="${m}" class="${mode===m?'on '+m:''}">${modeName[m]}</div>`).join('')}</div><div class="mdesc">${modeDesc}</div><div class="row"><button class="btn go" data-act="next">Race round ${S.round+1} ▶</button><button class="btn dark" data-act="sim">Sim to end</button></div>`}</div></div>${modal()}`;
@@ -179,7 +179,7 @@ function vWrap(){
   return `${bar()}<h1>Season debrief</h1><p class="lede">${G.year} · ${esc(C.name)}</p>
   <div class="memo"><div class="hd">Memo · from ${esc(SM.agent)} (agent) · re: your season</div>${SM.para.map(p=>`<p>${esc(p)}</p>`).join('')}
   <div class="stamps">${stamp('Expectations: '+tag[0],tag[1])}${stamp(ext,'#5a5244')}${stamp(stk[0]+' ('+(SM.dRep>0?'+':'')+SM.dRep+')',stk[1])}</div></div>
-  <div class="sheet flat"><div class="cap">Final classification</div><h2>${ord(h.pos)} of ${h.N}</h2><div class="meta"><span>${esc(h.team)}</span><span><b>${h.pts}</b> pts</span><span><b>${h.wins}</b>W <b>${h.podiums}</b>P <b>${h.poles}</b> poles</span>${h.earn?`<span>earned <b>${money(h.earn)}</b></span>`:''}</div>${h.trophies.map(t=>`<span class="chip">🏆 ${esc(t)}</span>`).join('')}</div>
+  <div class="sheet flat"><div class="cap">Final classification</div><h2>${ord(h.pos)} of ${h.N}</h2><div class="meta"><span>${esc(h.team)}</span><span><b>${h.pts}</b> pts</span><span><b>${h.wins}</b>W <b>${h.podiums}</b>P <b>${h.poles}</b> poles</span>${h.earn?`<span>earned <b>${money(h.earn)}</b></span>`:''}</div>${h.events?`<div class="cap" style="margin-top:10px">Tournaments</div><table class="tbl">${h.events.map(e=>`<tr class="${e.pos===1?'me':''}"><td class="l">${esc(e.n)}</td><td>${e.pos===1?'1st · winner':ord(e.pos)+' of '+e.N}</td></tr>`).join('')}</table><div style="height:8px"></div>`:''}${h.trophies.map(t=>`<span class="chip">🏆 ${esc(t)}</span>`).join('')}</div>
   ${N.msgs.map(m=>`<div class="note">${esc(m)}</div>`).join('')}
   <div class="cap">Champions elsewhere</div><div class="sheet flat" style="padding:0"><table class="tbl">${N.champs.map(c=>`<tr><td class="l"><b>${esc(c.cat)}</b></td><td class="l">${esc(c.who)}<br><small>${esc(c.team)}</small></td></tr>`).join('')}</table></div>
   <div class="cap">${esc(C.short)} · car pecking order</div><div class="sheet flat" style="padding:0"><table class="tbl"><tr><th>#</th><th class="l">Team</th><th>Rating</th><th>Δ</th></tr>${N.rank.slice(0,10).map((t,i)=>`<tr class="${t.you?'me':''}"><td>${i+1}</td><td class="l">${esc(t.n)}${t.you?'<span class="you">YOU</span>':''}</td><td>${t.r}</td><td class="${t.d>0?'up':t.d<0?'dn':''}">${t.d>0?'▲'+t.d:t.d<0?'▼'+Math.abs(t.d):'·'}</td></tr>`).join('')}</table></div>
@@ -232,7 +232,7 @@ function vRetired(){
   ${G.standIns.length?`<p>F1 stand-ins: <b>${G.standIns.reduce((a,x)=>a+x.n,0)} starts, ${G.standIns.reduce((a,x)=>a+x.pts,0)} pts</b></p>`:''}
   <div class="cap">Teams</div><p>${R.teams.map(esc).join(' · ')}</p>
   ${b?`<div class="cap">Best season</div><p><b>${b.wins}W ${b.podiums}P</b> in ${esc(b.short)} for ${esc(b.team)}${b.champ?' · champion':''}</p>`:''}</div>
-  <div class="cap">Season by season</div><div class="sheet flat sc" style="padding:0"><table class="tbl"><tr><th>Year</th><th class="l">Series</th><th>R</th><th>W</th><th>Pos</th></tr>${G.history.map(h=>`<tr><td>${h.year}${h.champ?' 🏆':''}<br><small>age ${h.age}</small></td><td class="l">${esc(h.short)}<br><small>${esc(h.team)}${h.trophies.length?' · '+esc(h.trophies.join(', ')):''}</small></td><td>${h.races}</td><td>${h.wins}</td><td>${h.pos}</td></tr>`).join('')}</table></div>
+  <div class="cap">Season by season</div><div class="sheet flat sc" style="padding:0"><table class="tbl"><tr><th>Year</th><th class="l">Series</th><th>R</th><th>W</th><th>Pos</th></tr>${G.history.map(h=>`<tr><td>${h.year}${h.champ?' 🏆':''}<br><small>age ${h.age}</small></td><td class="l">${esc(h.short)}<br><small>${esc(h.team)}${h.trophies.length?' · '+esc(h.trophies.join(', ')):''}</small>${h.events?`<br><small>${h.events.map(e=>esc(e.n)+' '+(e.pos===1?'1st':ord(e.pos))).join(' · ')}</small>`:''}</td><td>${h.races}</td><td>${h.wins}</td><td>${h.pos}</td></tr>`).join('')}</table></div>
   <button class="btn go" data-act="again">Open a new driver file</button>`;
 }
 

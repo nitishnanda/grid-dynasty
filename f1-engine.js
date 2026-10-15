@@ -274,6 +274,7 @@
     if (S.round >= C.rounds) return null;
     const st = G.stats, P = player(G), ri = S.round;
     const wet = rnd() < 0.18, out = S.injured > 0;
+    const evIdx = C.events ? C.events.findIndex(e => ri >= e.from && ri <= e.to) : -1;
     const tmp = S.round < S.tmpUntil ? S.tmp : 0;
     const Dq = 0.35 * st.PAC + 0.45 * st.QUA + 0.1 * st.MEN + 0.1 * st.CON;
     const Dr = 0.28 * st.PAC + 0.28 * st.RAC + 0.14 * st.CON + 0.14 * st.TYR + 0.08 * st.MEN + 0.08 * st.FIT;
@@ -308,7 +309,7 @@
     const wk = Math.exp(gauss() * 0.22), wetK = wet ? 1.35 : 1, eraK = (C.dyn && S.regime === 'dominant') ? 1.45 : 1;
     const qScale = (C.qK || 0.05) * wk * wetK * eraK;
     let qi = null;
-    if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, (qOrder[0].q - qOrder[1].q) * qScale), lead: true } : { pos: qpos, gap: Math.max(0.001, (qOrder[0].q - uP.q) * qScale), lead: false };
+    if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, (qOrder[0].q - qOrder[1].q) * qScale * Math.exp(gauss() * 0.55)), lead: true } : { pos: qpos, gap: Math.max(0.001, (qOrder[0].q - uP.q) * qScale), lead: false };
     if (G.dbg) G.dbg.q.push(qOrder.map(u => qOrder[0].q - u.q));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
@@ -336,13 +337,13 @@
       const fin = res.filter(u => !u.crash);
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => fin[0].s - u.s));
-      res.forEach((u, i) => u.members.forEach(d => { d.races++; if (u.crash) { d.dnf++; return; } d.pts += rf.pts[i] || 0; if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
+      res.forEach((u, i) => u.members.forEach(d => { d.races++; if (u.crash) { d.dnf++; return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (!out) {
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
-        if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (fin[0].s - fin[1].s) * rScale : (fin[0].s - uP.s) * rScale); if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
+        if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55) : (fin[0].s - uP.s) * rScale); if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
         entry.races.push({ n: rf.n, grid: uP.grid, pos, dnf: uP.crash, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
-        if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); if (C.kartWC && ri === C.rounds - 1) S.wcWin = true; }
+        if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); }
       }
       return res;
     };
@@ -361,7 +362,6 @@
     S.log.push(entry);
     S.round++;
     if (S.injured > 0) S.injured--;
-    if (C.kartWC && S.round === C.rounds - 1 && standings(G)[0].isPlayer) S.euro = true;
     rbEvent(G);
     if (S.round >= C.rounds) S.over = true;
     else if (S.spins < 2 && S.round >= S.stageEnds[S.spins]) S.wheelDue = true;
@@ -386,7 +386,7 @@
       { id: 'academy', g: 1, w: 9, ok: !G.academy && G.rep >= 40 && C.tier >= 1 && C.tier <= 3 && G.age <= 24, ic: '🎓', t: 'Academy signing', fx: 'A manufacturer academy pays your seat in F4–F2, +4 rep, yearly development boost and priority from its F1 team. It can drop you after a bad year (Red Bull drops far more often).' },
       { id: 'standIn', g: 1, w: G.reserve ? 14 : 4, ok: f1Path, ic: '🚨', t: 'F1 stand-in', fx: 'You replace an injured F1 driver for 1–4 grands prix (you miss 1–2 rounds here). Your F1 results show up, then you return to your series. Points boost rep and F1 interest.' },
       { id: 'fp1', g: 1, w: 8, ok: !!G.academy && C.tier >= 1 && C.tier <= 3, ic: '🏎️', t: 'FP1 outing', fx: 'Your academy puts you in an F1 car for Friday practice. Where you finish decides how much rep you earn (+1 to +3).' },
-      { id: 'crash', g: -1, w: 11, ic: '💥', t: 'Heavy crash', fx: 'Miss the next 1–2 rounds (0 points) and lose 1 Fitness.' },
+      { id: 'crash', g: -1, w: 3, ic: '💥', t: 'Heavy crash', fx: 'A big shunt. You miss the next round (very rarely two) and lose 1 Fitness. Rare in real life, so the slice is small.' },
       { id: 'sponsorLost', g: -1, w: 9, ok: C.pay && C.tier <= 3, ic: '📉', t: 'Sponsor backs out', fx: 'Funding −30% for good. Pay-to-drive series get pricier to afford, so next summer you see fewer or weaker seats.' },
       { id: 'badup', g: -1, w: 7, ok: C.tier >= 1, ic: '🛠️', t: 'Reliability woes', fx: 'A bad development path: car −2 rating for the rest of the season.' },
       { id: 'slump', g: -1, w: 5, ic: '🥶', t: 'Confidence slump', fx: '−2 pace for the rest of the season and −1 Mentality.' },
@@ -407,7 +407,7 @@
     for (let i = 0; i < L.length; i++) { t -= L[i].w; if (t <= 0) { idx = i; break; } }
     const o = L[idx]; let desc = '', ended = false, extra = null;
     switch (o.id) {
-      case 'crash': S.injured = Math.max(S.injured, C.tier === 0 ? 1 : 1 + Math.floor(rnd() * 2)); st.FIT = Math.max(30, st.FIT - 1); desc = `You miss the next ${S.injured} round${S.injured > 1 ? 's' : ''}.`; break;
+      case 'crash': S.injured = Math.max(S.injured, C.tier === 0 || rnd() < 0.85 ? 1 : 2); st.FIT = Math.max(30, st.FIT - 1); desc = `You miss the next ${S.injured} round${S.injured > 1 ? 's' : ''}.`; break;
       case 'academy': G.academy = pick(ACADEMIES); G.rep = Math.min(100, G.rep + 4); desc = `${G.academy.n} signs you. Seat costs are covered from now on.`; break;
       case 'sponsorLost': G.sponsor = Math.max(0.35, G.sponsor * 0.7); desc = 'Funding is down 30%. Expect tighter seat options next summer.'; break;
       case 'sponsorNew': G.sponsor = Math.min(3, G.sponsor * 1.35); desc = 'Funding is up 35%. Bigger seats are in reach.'; break;
@@ -486,19 +486,20 @@
     if (C.crew) { const ts = []; tbl.forEach(d => { if (!ts.includes(d.team)) ts.push(d.team); }); pos = ts.indexOf(P.team) + 1; N = ts.length; }
     const q = N > 1 ? 1 - (pos - 1) / (N - 1) : 1;
     const champ = pos === 1 && !partial, ovr = ovrOf(G.stats);
-    const tro = [];
+    const tro = []; let evRes = null;
+    if (C.events) evRes = C.events.map((ev, i) => { const order = S.drivers.slice().sort((a, b) => ((b.ev && b.ev[i]) || 0) - ((a.ev && a.ev[i]) || 0) || b.pts - a.pts || a.tb - b.tb); return { n: ev.n, pos: order.indexOf(P) + 1, N: order.length, main: !!ev.main, wc: !!ev.wc, title: ev.title || null }; });
     if (!partial) {
-      if (C.kartWC) { if (S.euro) tro.push('Karting European Champion'); if (S.wcWin) tro.push('Karting World Champion'); }
+      if (evRes) evRes.forEach(r => { if (r.pos === 1 && r.title) tro.push(r.title); });
       else if (champ) tro.push(C.titleName);
       S.trophies.forEach(t => tro.push(t));
     }
-    const anyTitle = champ || (!partial && C.kartWC && (S.euro || S.wcWin));
+    const anyTitle = evRes ? (!partial && evRes.some(r => r.pos === 1 && (r.main || r.wc))) : champ;
     let earn = 0;
     if (!C.pay) earn = Math.round(salOf(G, S.cat, G.team) * (0.9 + q * 0.25) + P.w * salOf(G, S.cat, G.team) * 0.02);
     const carRank = C.teams.map(t => t[0]).sort((a, b) => G.tr[S.cat][b] - G.tr[S.cat][a]).indexOf(S.teams[0]) + 1;
     const repBefore = G.rep;
     if (!partial) { const dRep = (C.tier === 0 ? kartRepW(G.age) : REP_W[C.tier]) * (q * 10 - 3.5) + (anyTitle ? 6 : 0) + Math.min(P.w, 10) * 0.15 + (C.tier === 0 ? FLAIR[G.tier] * (0.6 + 0.4 * q) : 0); G.rep = clamp(G.rep + dRep, 5, 100); }
-    const h = { season: G.season, year: G.year, age: G.age, cat: S.cat, catName: C.name, short: C.short, team: S.teams.join(' → '), races: P.races, wins: P.w, podiums: P.p, poles: P.pole, pts: P.pts, pos, N, ovr, trophies: tro, earn, champ: anyTitle, cost: G.deal.cost, partial: !!partial };
+    const h = { season: G.season, year: G.year, age: G.age, cat: S.cat, catName: C.name, short: C.short, team: S.teams.join(' → '), races: P.races, wins: P.w, podiums: P.p, poles: P.pole, pts: P.pts, pos, N, ovr, trophies: tro, earn, champ: anyTitle, cost: G.deal.cost, partial: !!partial, events: evRes };
     G.history.push(h);
     const T = G.tot; T.races += P.races; T.wins += P.w; T.podiums += P.p; T.poles += P.pole; T.earn += earn; T.peak = Math.max(T.peak, ovr);
     tro.forEach(t => T.trophies[t] = (T.trophies[t] || 0) + 1);
