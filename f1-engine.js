@@ -478,24 +478,60 @@
   function makeSummary(G, h, C, P, tbl, pos, N, tr, dRep, debut) {
     const T = C.teams.length, exp = C.crew ? tr : (N / T) * (tr - 0.5), rel = (exp - pos) / N;
     const mate = tbl.find(d => d.team === G.team && !d.isPlayer);
-    const expect = rel > (debut ? 0.05 : 0.12) ? 'exceeded' : rel < (debut ? -0.4 : -0.12) ? 'below' : 'met';
+    const comp = h.events || [], main = comp.find(c => c.main) || comp[0] || { n: C.short + ' championship', pos, N, pts: P.pts, lead: pos === 1, gap: 0 };
+    const champ = !!h.champ, wr = P.races ? P.w / P.races : 0, topKit = tr <= Math.max(2, Math.ceil(T / 4)), poorKit = tr > Math.ceil(T * 0.6);
+    const sameCat = G.history.slice(0, -1).filter(x => x.cat === h.cat), lastSame = sameCat[sameCat.length - 1];
+    const titlesHere = sameCat.filter(x => x.champ).length + (champ ? 1 : 0);
+    const pk = a => a[Math.floor(rnd() * a.length)];
+    let expect = rel > (debut ? 0.05 : 0.12) ? 'exceeded' : rel < (debut ? -0.4 : -0.12) ? 'below' : 'met';
+    if (champ) expect = topKit ? 'met' : 'exceeded';
     let extract = 'even';
     if (mate && !C.crew) extract = P.pts > mate.pts * 1.15 + 2 ? 'more' : P.pts < mate.pts * 0.85 - 2 ? 'less' : 'even';
-    const stock = dRep >= 3 ? 'soaring' : dRep >= 1 ? 'rising' : dRep > -1 ? 'steady' : 'falling';
+    const stock = dRep >= 5 ? 'soaring' : dRep >= 2 ? 'rising' : dRep > -1 ? 'steady' : 'falling';
     const para = [];
-    para.push(`${P.w} win${P.w === 1 ? '' : 's'} and ${P.p} podium${P.p === 1 ? '' : 's'}, ${P.pts} points, ${ordStr(pos)} of ${N} in ${C.short}.` + (P.pole ? ` ${P.pole} pole${P.pole === 1 ? '' : 's'}.` : ''));
-    if (debut) para.push(`Your debut season in ${C.short}: the first year is about learning the car and the circuits.`);
-    para.push((debut ? {
-      exceeded: `A standout rookie year: ${G.team} ranked ${ordStr(tr)} on pace and you finished ahead of where the car sits. Expectations beaten.`,
-      met: `${G.team} ranked ${ordStr(tr)} on pace, so ${ordStr(pos)} is a solid first season. Expectations met.`,
+    // 1. the headline: what actually happened
+    if (champ) {
+      if (debut) para.push(pk([`Champion in your debut season in ${C.short}. That is the kind of start people talk about for years.`, `You walked into ${C.short} and won the title first time. Nobody saw that coming.`, `A title on debut in ${C.short}. The paddock is already asking who you are.`]));
+      else if (lastSame && lastSame.champ) para.push(titlesHere >= 3 ? `${titlesHere} titles in ${C.short} and counting. The rest are racing for second.` : `Back-to-back ${C.short} champion. Everyone is now chasing you.`);
+      else para.push(titlesHere === 1 ? `Your first ${C.short} title.` : `Another ${C.short} title. That makes ${titlesHere}.`);
+      para.push(`${P.w} win${P.w === 1 ? '' : 's'} and ${P.p} podium${P.p === 1 ? '' : 's'} from ${P.races} races, and ${main.gap} point${main.gap === 1 ? '' : 's'} clear of P2 in the ${main.n}.` + (wr >= 0.4 ? ' That was dominance, not a lucky year.' : main.gap <= 12 ? ' It went down to the wire.' : ''));
+    } else if (pos <= 3) {
+      para.push(`${ordStr(pos)} in the ${main.n}, ${main.gap} point${main.gap === 1 ? '' : 's'} off the top.` + (P.w ? ` ${P.w} win${P.w === 1 ? '' : 's'} on the way.` : ' No wins though, and that is the missing piece.'));
+    } else if (pos <= Math.ceil(N * 0.25)) {
+      para.push(`${ordStr(pos)} of ${N}: a strong top-quarter finish with ${P.pts} points` + (P.p ? `, ${P.p} podium${P.p === 1 ? '' : 's'}.` : ', but no podiums.'));
+    } else if (pos <= Math.ceil(N * 0.5)) {
+      para.push(`${ordStr(pos)} of ${N} with ${P.pts} points: a decent upper-midfield year` + (P.p ? `, with ${P.p} podium${P.p === 1 ? '' : 's'} to show for it.` : '.'));
+    } else if (pos <= Math.ceil(N * 0.75)) {
+      para.push(`${ordStr(pos)} of ${N}, ${P.pts} points. Midfield, and nobody pays attention to midfield.`);
+    } else {
+      para.push(`A tough year: ${ordStr(pos)} of ${N} with ${P.pts} points. This one hurt.`);
+    }
+    // 2. the tournaments within the season
+    if (comp.length > 1) {
+      const won = comp.filter(c => c.pos === 1);
+      if (won.length) para.push(`Tournament wins: ${won.map(c => c.n).join(', ')}.` + (champ || !main || main.pos === 1 ? '' : ` But the ${main.n} slipped away (${ordStr(main.pos)}).`));
+      const worst = comp.slice().sort((a, b) => b.pos / b.N - a.pos / a.N)[0];
+      if (worst && worst.pos / worst.N > 0.5 && !won.includes(worst)) para.push(`Weak spot: the ${worst.n} (${ordStr(worst.pos)}).`);
+    }
+    // 3. the equipment you had
+    if (champ && poorKit) para.push(`And you did it in the ${ordStr(tr)}-best equipment of ${T}. That is all driver.`);
+    else if (champ && topKit) para.push(`You had top-two equipment, so now the pressure is to prove it when the kit is level.`);
+    else if (!champ && topKit && pos > 3) para.push(`${G.team} ranked ${ordStr(tr)} on pace and you still finished ${ordStr(pos)}. That one is on you.`);
+    else if (!champ) para.push((debut ? {
+      exceeded: `A standout rookie year: ${G.team} ranked ${ordStr(tr)} on pace and you finished ahead of where the car sits.`,
+      met: `${G.team} ranked ${ordStr(tr)} on pace, so ${ordStr(pos)} is a solid first season.`,
       below: `${G.team} ranked ${ordStr(tr)} on pace, so ${ordStr(pos)} is below what the car allows, but first seasons are about learning.`,
     } : {
       exceeded: `${G.team} ranked ${ordStr(tr)} on pace, so you beat expectations by a distance.`,
-      met: `${G.team} ranked ${ordStr(tr)} on pace and you finished right about where the car deserved. Expectations met.`,
+      met: `${G.team} ranked ${ordStr(tr)} on pace and you finished right about where the car deserved.`,
       below: `${G.team} ranked ${ordStr(tr)} on pace, so this fell short of what the car could do.`,
     })[expect]);
-    if (mate && !C.crew) para.push(debut ? ({ more: `Out-scoring ${mate.name} (${P.pts} to ${mate.pts}) in your rookie year is a huge statement.`, less: `${mate.name} knows the car and the tracks better, so trailing them (${mate.pts} to ${P.pts}) is normal for a rookie. Judge it on progress, not the gap.`, even: `Matching ${mate.name} (${P.pts} to ${mate.pts}) as a rookie is a strong start.` })[extract] : ({ more: `You out-scored ${mate.name} (${P.pts} to ${mate.pts}), so you clearly extracted more from the car.`, less: `${mate.name} out-scored you (${mate.pts} to ${P.pts}), so you left something in the car.`, even: `You and ${mate.name} were evenly matched (${P.pts} to ${mate.pts}).` })[extract]);
-    para.push(({ soaring: 'Your stock is soaring and clubs are circling.', rising: 'Your stock is rising. People are noticing.', steady: 'Your stock is steady.', falling: 'Your stock is falling. People are starting to doubt you.' })[stock] + (G.contract > 0 ? ` You have ${G.contract} year${G.contract > 1 ? 's' : ''} left at ${G.team}. Let's plan the summer.` : ' Your deal is up, so let\'s plan the summer.'));
+    // 4. teammate and reliability
+    if (mate && !C.crew) para.push(debut ? ({ more: `You out-scored ${mate.name} (${P.pts} to ${mate.pts}) in your rookie year, which says a lot.`, less: `${mate.name} knows the place better, so trailing them (${mate.pts} to ${P.pts}) is normal for a rookie.`, even: `You matched ${mate.name} (${P.pts} to ${mate.pts}) as a rookie. Strong start.` })[extract] : ({ more: `You beat ${mate.name} (${P.pts} to ${mate.pts}), so you clearly extracted more from the car.`, less: `${mate.name} out-scored you (${mate.pts} to ${P.pts}), so you left something in the car.`, even: `You and ${mate.name} were evenly matched (${P.pts} to ${mate.pts}).` })[extract]);
+    if (P.races >= 10 && P.dnf >= 3) para.push(`${P.dnf} DNFs cost you real points. Tidy that up.`);
+    else if (P.races >= 10 && P.dnf === 0) para.push('Not a single DNF all year. Bulletproof.');
+    // 5. stock and contract
+    para.push(({ soaring: 'Your stock is soaring and people are circling.', rising: 'Your stock is rising. People are noticing.', steady: 'Your stock is steady.', falling: 'Your stock is falling. People are starting to doubt you.' })[stock] + (G.contract > 0 ? ` You have ${G.contract} year${G.contract > 1 ? 's' : ''} left at ${G.team}. Let's plan the summer.` : " Your deal is up, so let's plan the summer."));
     return { agent: G.agent, para, expect, extract, stock, dRep: Math.round(dRep * 10) / 10 };
   }
   const ordStr = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
@@ -577,6 +613,11 @@
     G.news = { champs, rank, rising, falling, msgs, summary, table: mainRows.slice(0, 10).map(r => ({ name: r.d.name, team: r.d.team, pts: r.v, w: r.d.w, isPlayer: r.d.isPlayer })) };
     G.phase = 'wrap';
     buildMarket(G, true);
+    { const M = G.market, ex = [], pr = M.options.filter(o => o.kind === 'promo' && !o.blocked);
+      if (M.sponsors && M.sponsors.length) ex.push(`${M.sponsors.length > 1 ? M.sponsors.length + ' sponsors have' : 'A sponsor has'} been on the phone: ${M.sponsors.map(s => s.name).join(' and ')}.`);
+      if (pr.length) ex.push(`${pr.length} step-up offer${pr.length > 1 ? 's are' : ' is'} on the table, starting with ${pr[0].team}.`);
+      else if (M.broke) ex.push('Money is the problem: nothing on the table is affordable right now.');
+      if (ex.length) { const ps = G.news.summary.para; ps.splice(ps.length - 1, 0, ...ex); } }
     return h;
   }
 
