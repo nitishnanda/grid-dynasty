@@ -299,7 +299,8 @@
     const Dq = 0.35 * st.PAC + 0.45 * st.QUA + 0.1 * st.MEN + 0.1 * st.CON;
     const Dr = 0.28 * st.PAC + 0.28 * st.RAC + 0.14 * st.CON + 0.14 * st.TYR + 0.08 * st.MEN + 0.08 * st.FIT;
     const wetAdj = wet ? (st.WET - 60) * 0.3 : 0;
-    const bonus = S.boost + tmp;
+    if (S.fit === undefined) S.fit = gauss() * (C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
+    const bonus = S.boost + tmp + S.fit;
     const mode = S.mode || 'balance', RAC = st.RAC, sigK = C.sigK || 1, dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
     const active = S.drivers.filter(d => !(d.isPlayer && out));
     // units: one per driver, or one per car in crew series (WEC / GT): crew-mates share the result
@@ -310,6 +311,10 @@
     const uSkill = (u, pv) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetAdj : d.skill), 0) / u.members.length;
     const uCar = u => u.car + (u.hasP ? S.carMod : 0);
     const uP = units.find(u => u.hasP);
+    // car/driver interplay: in a poor car the car caps what the driver can do; in a good car talent is what separates the cars
+    const cMean = units.reduce((t, u) => t + uCar(u), 0) / units.length, cSd = Math.sqrt(units.reduce((t, u) => t + (uCar(u) - cMean) ** 2, 0) / units.length) || 1;
+    const wOf = u => wS * (0.6 + 0.8 / (1 + Math.exp(-1.6 * (uCar(u) - cMean) / cSd)));
+    const mixOf = (u, pv) => { const w = wOf(u); return w * uSkill(u, pv) + (1 - w) * uCar(u); };
 
     // FP1: practice position nudges reputation a little
     let fp = null;
@@ -320,7 +325,7 @@
     }
     // in a close era nobody runs away with it: the best pace is shaved back towards the next best
     const capClose = (arr, key) => { if (S.regime === 'dominant' || !C.dyn) return; const o = arr.slice().sort((a, b) => b[key] - a[key]); if (o.length < 3) return; const c1 = o[0][key], c2 = o[1][key], c3 = o[2][key]; o[0][key] = c2 + 0.5 * (c1 - c2); o[1][key] = c3 + 0.72 * (c2 - c3); };
-    const spreadOf = (key, pv) => { units.forEach(u => { u[key] = wS * uSkill(u, pv) + (1 - wS) * uCar(u); }); capClose(units, key); const m = units.reduce((a, u) => a + u[key], 0) / units.length; units.forEach(u => { u[key] = m + K * (u[key] - m); }); };
+    const spreadOf = (key, pv) => { units.forEach(u => { u[key] = mixOf(u, pv); }); capClose(units, key); const m = units.reduce((a, u) => a + u[key], 0) / units.length; units.forEach(u => { u[key] = m + K * (u[key] - m); }); };
     spreadOf('q', Dq);
     units.forEach(u => { u.q += gauss() * (wet ? 3.6 : 2.2); });
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
@@ -345,7 +350,7 @@
     let prev = qOrder;
     const run = (rf, grid, isSpr) => {
       const n = grid.length;
-      grid.forEach(u => { u.cb = wS * uSkill(u, Dr) + (1 - wS) * uCar(u); });
+      grid.forEach(u => { u.cb = mixOf(u, Dr); });
       capClose(grid, 'cb');
       const rm = grid.reduce((a, u) => a + u.cb, 0) / n;
       grid.forEach((u, gi) => {
@@ -378,7 +383,7 @@
       return res;
     };
     if (C.sprints && C.sprints.includes(ri)) {
-      units.forEach(u => { u.sq = wS * uSkill(u, Dq) + (1 - wS) * uCar(u) + gauss() * (wet ? 3.8 : 2.6); });
+      units.forEach(u => { u.sq = mixOf(u, Dq) + gauss() * (wet ? 3.8 : 2.6); });
       run({ n: 'Sprint', pts: SPR }, units.slice().sort((a, b) => b.sq - a.sq), true);
       entry.sprint = true;
     }

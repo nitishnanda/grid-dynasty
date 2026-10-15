@@ -41,7 +41,7 @@
     kart4: { id: 'kart4', lap: 46, qK: 0.1515, rK: 0.2496, name: 'OK · European / World', short: 'OK Karting', tier: 0, lvl: 67, rounds: 11, rpr: 2, dpt: 3, pay: true, cost: [40, 110], titleName: 'Karting European Champion', sigK: 1.6, eqK: 1.8, dnfK: 1.7, events: [{ n: 'WSK Champions Cup', from: 0, to: 1, title: 'WSK Champions Cup winner' }, { n: 'WSK Super Master Series', from: 2, to: 5, title: 'WSK Super Master champion' }, { n: 'European Championship', from: 6, to: 9, main: true, title: 'Karting European Champion' }, { n: 'World Championship', from: 10, to: 10, wc: true, title: 'Karting World Champion' }],
       rf: KRF, names: WSK, kartWC: true, teams: kteams() },
 
-    f4: { id: 'f4', lap: 75, qK: 0.1403, rK: 1.0799, name: 'British F4', short: 'F4', tier: 1, lvl: 68, rounds: 8, rpr: 3, dpt: 4, pay: true, cost: [90, 230], titleName: 'F4 Champion',
+    f4: { id: 'f4', lap: 75, qK: 0.1403, rK: 1.0799, name: 'British F4', short: 'F4', tier: 1, wS: 0.42, sigK: 1.45, fitK: 4, lvl: 68, rounds: 8, rpr: 3, dpt: 4, pay: true, cost: [90, 230], titleName: 'F4 Champion',
       rf: [{ n: 'R1', pts: PF1, grid: 'q' }, { n: 'R2', pts: PF1, grid: 'rev6' }, { n: 'R3', pts: PF1, grid: 'prev' }],
       names: ['Donington Park', 'Brands Hatch Indy', 'Oulton Park', 'Thruxton', 'Snetterton', 'Silverstone', 'Croft', 'Brands Hatch GP'],
       teams: [
@@ -53,7 +53,7 @@
         ['Virtuosi Racing', -1.5, 'Joseph Smith|Jarrett Clark|George Proudford-Nalder'],
         ['Chris Dittmann Racing', -3.5, 'Tommy Harfield|Henry Mercier'],
       ] },
-    f3: { id: 'f3', lap: 90, qK: 0.1029, rK: 1.3563, name: 'FIA Formula 3', short: 'F3', tier: 2, lvl: 73, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [450, 950], titleName: 'F3 Champion',
+    f3: { id: 'f3', lap: 90, qK: 0.1029, rK: 1.3563, name: 'FIA Formula 3', short: 'F3', tier: 2, wS: 0.4, sigK: 1.45, fitK: 4, lvl: 73, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [450, 950], titleName: 'F3 Champion',
       rf: [{ n: 'Sprint', pts: PSPR, grid: 'rev10' }, { n: 'Feature', pts: PF1, grid: 'q' }],
       names: ['Melbourne', 'Sakhir', 'Imola', 'Monaco', 'Barcelona', 'Spielberg', 'Silverstone', 'Spa', 'Budapest', 'Monza'],
       teams: [
@@ -68,7 +68,7 @@
         ['AIX Racing', -2.5, 'Brad Benavides|Fernando Barrichello|Yevan David'],
         ['DAMS', -3.5, ''],
       ] },
-    f2: { id: 'f2', lap: 92, qK: 0.1067, rK: 1.8077, name: 'FIA Formula 2', short: 'F2', tier: 3, lvl: 78, rounds: 14, rpr: 2, dpt: 2, pay: true, cost: [1400, 2900], titleName: 'F2 Champion',
+    f2: { id: 'f2', lap: 92, qK: 0.1067, rK: 1.8077, name: 'FIA Formula 2', short: 'F2', tier: 3, wS: 0.4, sigK: 1.45, fitK: 4, lvl: 78, rounds: 14, rpr: 2, dpt: 2, pay: true, cost: [1400, 2900], titleName: 'F2 Champion',
       rf: [{ n: 'Sprint', pts: PF2S, grid: 'rev10' }, { n: 'Feature', pts: PF1, grid: 'q' }],
       names: ['Melbourne', 'Sakhir', 'Jeddah', 'Imola', 'Monaco', 'Barcelona', 'Spielberg', 'Silverstone', 'Spa', 'Budapest', 'Monza', 'Baku', 'Lusail', 'Yas Marina'],
       teams: [
