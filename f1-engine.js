@@ -239,7 +239,7 @@
     C.teams.forEach(t => {
       const name = t[0], car = G.tr[C.id][name];
       if (C.id === 'f1') {
-        G.f1.teams[name].forEach(d => { const isP = !!d.player; drivers.push({ id: drivers.length, name: isP ? G.name : d.name, team: name, car, skill: isP ? 0 : 84 + 0.65 * (d.ski - 84) + gauss() * 1.3, isPlayer: isP, pts: 0, w: 0, p: 0, pole: 0, races: 0, dnf: 0, tb: rnd() }); });
+        G.f1.teams[name].forEach(d => { const isP = !!d.player; drivers.push({ id: drivers.length, name: isP ? G.name : d.name, team: name, car, skill: isP ? 0 : 84 + 0.85 * (d.ski - 84) + gauss() * 1.3, isPlayer: isP, pts: 0, w: 0, p: 0, pole: 0, races: 0, dnf: 0, tb: rnd() }); });
         return;
       }
       roster(G, C.id, name).forEach((nm, i) => {
@@ -248,6 +248,8 @@
       });
     });
     const S = G.S = { cat: G.cat, round: 0, drivers, log: [], boost: gauss() * 1.3, carMod: 0, injured: 0, tmp: 0, tmpUntil: 0, wheelDue: false, spins: 0, stageEnds: [Math.floor(C.rounds / 3), Math.floor(2 * C.rounds / 3)], euro: false, wcWin: false, trophies: [], over: false, notes: [], mode: 'balance', teams: [G.team], famPaid: 0, regime: G.dyn[G.cat] ? G.dyn[G.cat].regime : 'dominant' };
+    // first year in a new category is a learning year: slow start, form arriving late in the season
+    S.learn = G.history.some(h => h.cat === G.cat) ? 0 : (G.cat === 'f1' ? 1.5 : C.tier === 0 ? (G.history.length ? 2.2 : 0) : 4.2);
     // F1 rookies take time: established drivers have the edge in years 1-3
     if (G.cat === 'f1') S.boost -= [8, 6.2, 4.2, 2.4, 1][Math.min(G.f1Years, 4)] * (G.tier === 4 ? 1 : 1.1);
     // F1 know-how carries over to other series
@@ -300,7 +302,7 @@
     const Dr = 0.28 * st.PAC + 0.28 * st.RAC + 0.14 * st.CON + 0.14 * st.TYR + 0.08 * st.MEN + 0.08 * st.FIT;
     const wetAdj = wet ? (st.WET - 60) * 0.3 : 0;
     if (S.fit === undefined) S.fit = gauss() * (C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
-    const bonus = S.boost + tmp + S.fit;
+    const bonus = S.boost + tmp + S.fit - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
     const mode = S.mode || 'balance', RAC = st.RAC, sigK = C.sigK || 1, dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
     const active = S.drivers.filter(d => !(d.isPlayer && out));
     // units: one per driver, or one per car in crew series (WEC / GT): crew-mates share the result
@@ -324,7 +326,12 @@
       G.rep = clamp(G.rep + d, 5, 100); fp = { pos: fpos, rep: Math.round(d * 100) / 100 };
     }
     // in a close era nobody runs away with it: the best pace is shaved back towards the next best
-    const capClose = (arr, key) => { if (S.regime === 'dominant' || !C.dyn) return; const o = arr.slice().sort((a, b) => b[key] - a[key]); if (o.length < 3) return; const c1 = o[0][key], c2 = o[1][key], c3 = o[2][key]; o[0][key] = c2 + 0.5 * (c1 - c2); o[1][key] = c3 + 0.72 * (c2 - c3); };
+    // title fights follow the car gap: ~1pt between the best cars = three-way fight, ~2pts = a two-way fight if the other driver is good, 4+ = a runaway
+    const capClose = (arr, key) => { if (!C.dyn) return; const o = arr.slice().sort((a, b) => b[key] - a[key]); if (o.length < 3) return; const c1 = o[0][key], c2 = o[1][key], c3 = o[2][key];
+      const shave = gap => 0.75 * Math.max(0, 1 - Math.max(0, gap - 0.4) / 4.2);
+      const g1 = Math.max(0, o[0].car - Math.max(o[1].car, o[2].car)), g2 = Math.max(0, Math.max(o[1].car, o[2].car) - o[3 % o.length].car);
+      o[0][key] = c2 + (1 - shave(S.regime === 'dominant' ? g1 * 1.4 : g1)) * (c1 - c2);
+      if (o[1].team !== o[0].team || true) o[1][key] = c3 + (1 - 0.8 * shave(g2)) * (c2 - c3); };
     const spreadOf = (key, pv) => { units.forEach(u => { u[key] = mixOf(u, pv); }); capClose(units, key); const m = units.reduce((a, u) => a + u[key], 0) / units.length; units.forEach(u => { u[key] = m + K * (u[key] - m); }); };
     spreadOf('q', Dq);
     units.forEach(u => { u.q += gauss() * (wet ? 3.6 : 2.2); });
