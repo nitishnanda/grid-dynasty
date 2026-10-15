@@ -24,6 +24,10 @@
   const PKARTH = [10, 8, 6, 5, 4, 3, 2, 1];
   const KRF = [{ n: 'Heat', pts: PKARTH, grid: 'q' }, { n: 'Final', pts: PKART, grid: 'prev' }];
   const WSK = ['WSK Champions Cup R1', 'WSK Champions Cup R2', 'Super Master R1', 'Super Master R2', 'Super Master R3', 'Super Master R4', 'Euro R1', 'Euro R2', 'Euro R3', 'Euro R4', 'World Championship'];
+  const PNAS = [40, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];   // NASCAR Cup race points
+  const PSTG = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];                                                                                                          // NASCAR stage points
+  const PIMSA = [350, 320, 300, 280, 260, 250, 240, 230, 220, 210, 200, 190, 180, 170, 160, 150, 140, 130, 120, 110];                                      // IMSA
+  const PSUP = [150, 138, 129, 120, 111, 102, 96, 90, 84, 78, 72, 69, 66, 63, 60, 57, 54, 51, 48, 45, 42, 39, 36, 33, 30];                                 // Supercars
   const PIND = [50, 40, 35, 32, 30, 28, 26, 24, 22, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 5, 5, 5, 5, 5];
 
   const KB = ['Tony Kart Racing Team', 'Kart Republic', 'Birel ART Racing', 'CRG Racing', 'Parolin Motorsport', 'Ricciardo Kart', 'Exprit Racing', 'LN Kart Racing'];
@@ -238,6 +242,86 @@
         ['Cupra Kiro', -2.5, 'Pepe Martí|Dan Ticktum'],
         ['Lola Yamaha ABT', -3, 'Lucas di Grassi|Zane Maloney'],
       ] },
+    nascar: { id: 'nascar', lap: 55, qK: 0.04, rK: 1.7, name: 'NASCAR Cup Series', short: 'NASCAR', tier: 3, lvl: 76, rounds: 36, rpr: 3, dpt: 2, pay: false, sal: [300, 9000], titleName: 'NASCAR Cup Champion', sigK: 1.15, dnfK: 1.1,
+      rf: [{ n: 'Stage 1', pts: PSTG, grid: 'q', stage: true }, { n: 'Stage 2', pts: PSTG, grid: 'prev', stage: true }, { n: 'Race', pts: PNAS, grid: 'prev' }], special: { 0: 'Daytona 500 win' },
+      names: ['Daytona 500', 'Atlanta', 'Circuit of the Americas', 'Phoenix', 'Las Vegas', 'Homestead-Miami', 'Martinsville', 'Darlington', 'Bristol', 'Talladega', 'Texas', 'Kansas', 'North Wilkesboro', 'Charlotte 600', 'Nashville', 'Michigan', 'Pocono', 'San Diego', 'Sonoma', 'Chicagoland', 'Atlanta II', 'North Wilkesboro II', 'Indianapolis', 'Iowa', 'Richmond', 'New Hampshire', 'Daytona', 'Darlington II', 'Gateway', 'Bristol II', 'Kansas II', 'Talladega II', 'Charlotte Roval', 'Las Vegas II', 'Homestead II', 'Phoenix Finale'],
+      teams: [
+        ['Hendrick Motorsports', 4.5, 'Kyle Larson|Chase Elliott|William Byron|Alex Bowman', 4],
+        ['Joe Gibbs Racing', 4, 'Denny Hamlin|Christopher Bell|Chase Briscoe|Ty Gibbs', 4],
+        ['Team Penske', 3.5, 'Joey Logano|Ryan Blaney|Austin Cindric', 3],
+        ['23XI Racing', 2.5, 'Tyler Reddick|Bubba Wallace|Riley Herbst', 3],
+        ['Trackhouse Racing', 1.5, 'Shane van Gisbergen|Ross Chastain|Daniel Suárez', 3],
+        ['RFK Racing', 0.5, 'Brad Keselowski|Chris Buescher', 2],
+        ['Richard Childress Racing', 0, 'Kyle Busch|Austin Dillon|Austin Hill', 3],
+        ['Legacy Motor Club', -1.5, 'Erik Jones|John Hunter Nemechek', 2],
+        ['Spire Motorsports', -2, 'Carson Hocevar|Michael McDowell', 2],
+        ['Front Row Motorsports', -2.5, 'Ryan Preece|Noah Gragson|Todd Gilliland', 3],
+        ['Wood Brothers Racing', -3, 'Josh Berry', 1],
+        ['Haas Factory Team', -3, 'Cole Custer|Ty Dillon', 2],
+        ['Kaulig Racing', -3.5, 'AJ Allmendinger|Justin Haley', 2],
+        ['Rick Ware Racing', -4.5, '', 2],
+      ] },
+    imsa: { id: 'imsa', lap: 105, qK: 0.1, rK: 6.5, name: 'IMSA SportsCar Championship', short: 'IMSA', tier: 3, lvl: 78, rounds: 10, rpr: 1, dpt: 3, pay: false, crew: true, sal: [150, 1500], titleName: 'IMSA GTP Champion',
+      rf: [{ n: 'Race', pts: PIMSA, grid: 'q' }], special: { 0: 'Rolex 24 at Daytona win' },
+      names: ['Rolex 24 at Daytona', 'Sebring 12h', 'Long Beach', 'Laguna Seca', 'Detroit', 'Watkins Glen 6h', 'Road America', 'VIR', 'Indianapolis', 'Petit Le Mans'],
+      teams: [
+        ['Porsche Penske Motorsport #6', 4, 'Kévin Estre|Laurens Vanthoor|Matt Campbell'],
+        ['Porsche Penske Motorsport #7', 4, 'Felipe Nasr|Nick Tandy|Julien Andlauer'],
+        ['Cadillac Whelen #31', 3.5, 'Jack Aitken|Pipo Derani|Frederik Vesti'],
+        ['Cadillac Wayne Taylor Racing #10', 3, 'Filipe Albuquerque|Ricky Taylor|Louis Delétraz'],
+        ['Acura Meyer Shank Racing #60', 2, 'Tom Blomqvist|Colin Braun|Nick Yelloly'],
+        ['BMW M Team RLL #24', 1.5, 'Philipp Eng|Marco Wittmann|Dries Vanthoor'],
+        ['BMW M Team RLL #25', 1.5, 'Connor De Phillippi|Nick Yelloly|Kevin Magnussen'],
+        ['Aston Martin Valkyrie #23', 0, 'Alex Riberas|Roman De Angelis|Ross Gunn'],
+        ['Lamborghini Iron Lynx #63', -1, 'Romain Grosjean|Mirko Bortolotti|Daniil Kvyat'],
+        ['Cadillac Action Express #311', 0.5, 'Sébastien Bourdais|Scott Dixon|Alex Palou'],
+        ['Acura Wayne Taylor #40', -1.5, 'Brendon Hartley|Felipe Drugovich|Jordan Taylor'],
+      ] },
+    dtm: { id: 'dtm', lap: 85, qK: 0.09, rK: 1.8, name: 'DTM', short: 'DTM', tier: 3, lvl: 76, rounds: 8, rpr: 2, dpt: 2, pay: false, sal: [150, 1100], titleName: 'DTM Champion',
+      rf: [{ n: 'Race 1', pts: PKART, grid: 'q' }, { n: 'Race 2', pts: PKART, grid: 'q' }],
+      names: ['Oschersleben', 'Lausitzring', 'Red Bull Ring', 'Norisring', 'Nürburgring', 'Sachsenring', 'Zandvoort', 'Hockenheim'],
+      teams: [
+        ['Manthey EMA Porsche', 3.5, 'Thomas Preining|Ricardo Feller', 2],
+        ['Team Landgraf Mercedes-AMG', 3, 'Jules Gounon|Lucas Auer', 2],
+        ['ABT Lamborghini', 2.5, 'Mirko Bortolotti|Kelvin van der Linde', 2],
+        ['Team WRT BMW', 2, 'Sheldon van der Linde|Marco Wittmann', 2],
+        ['Schubert Motorsport BMW', 1, 'Dennis Olsen|Maximilian Götz', 2],
+        ['Emil Frey Racing', 0, 'Jack Aitken|Arthur Leclerc', 2],
+        ['Winward Racing', -0.5, 'Luca Stolz|Maro Engel', 2],
+        ['Rowe Racing', -1.5, '', 2],
+        ['Mücke Motorsport', -2.5, '', 2],
+        ['KÜS Team Bernhard', -3, '', 2],
+        ['Grasser Racing Team', -3.5, '', 2],
+      ] },
+    supercars: { id: 'supercars', lap: 80, qK: 0.06, rK: 2.0, name: 'Repco Supercars Championship', short: 'Supercars', tier: 3, lvl: 75, rounds: 14, rpr: 2, dpt: 2, pay: false, sal: [200, 1600], titleName: 'Supercars Champion',
+      rf: [{ n: 'Race 1', pts: PSUP, grid: 'q' }, { n: 'Race 2', pts: PSUP, grid: 'prev' }], special: { 10: 'Bathurst 1000 win' },
+      names: ['Sydney', 'Melbourne', 'Taupō', 'Symmons Plains', 'Tasmania', 'Perth', 'Darwin', 'Townsville', 'Queensland', 'Sandown 500', 'Bathurst 1000', 'Gold Coast', 'Adelaide', 'Newcastle'],
+      teams: [
+        ['Triple Eight Race Engineering', 4, 'Broc Feeney|Will Brown', 2],
+        ['Walkinshaw Andretti United', 3, 'Chaz Mostert|Ryan Wood', 2],
+        ['Tickford Racing', 2.5, 'Cam Waters|Thomas Randle', 2],
+        ['Erebus Motorsport', 2, 'Brodie Kostecki|Jayden Ojeda', 2],
+        ['Dick Johnson Racing', 1, 'Matt Payne|Nick Percat', 2],
+        ['Team 18', 0, 'Mark Winterbottom|Anton De Pasquale', 2],
+        ['Grove Racing', -0.5, 'Kai Allen|Jack Le Brocq', 2],
+        ['Brad Jones Racing', -1.5, '', 2],
+        ['PremiAir Racing', -2, '', 2],
+        ['Matt Stone Racing', -3, '', 2],
+      ] },
+    gt3w: { id: 'gt3w', lap: 115, qK: 0.0909, rK: 3.5312, name: 'GT3 Works Programmes', short: 'GT3 Works', tier: 3, lvl: 76, rounds: 10, rpr: 1, dpt: 3, pay: false, crew: true, sal: [100, 900], titleName: 'GT3 Works Champion',
+      rf: [{ n: 'Race', pts: PF1, grid: 'q' }], special: { 3: 'Spa 24h win' },
+      names: ['Paul Ricard', 'Monza 3h', 'Brands Hatch', 'Spa 24h', 'Nürburgring 24h', 'Misano', 'Zandvoort', 'Barcelona', 'Hockenheim', 'Valencia'],
+      teams: [
+        ['Mercedes-AMG Team Verstappen', 3.5, 'Jules Gounon|Daniel Juncadella|Lucas Auer'],
+        ['Ferrari AF Corse Works', 3.5, 'Alessandro Pier Guidi|James Calado|Antonio Fuoco'],
+        ['Porsche Manthey Works', 3, 'Kévin Estre|Laurens Vanthoor|Ricardo Feller'],
+        ['BMW Team WRT Works', 3, 'Sheldon van der Linde|Dries Vanthoor|Charles Weerts'],
+        ['Audi Sport WRT Works', 2, 'Kelvin van der Linde|Ricardo Feller|Dennis Marschall'],
+        ['Lamborghini Iron Lynx Works', 1, 'Mirko Bortolotti|Andrea Caldarelli|Franck Perera'],
+        ['McLaren Works Programme', 0, 'Ben Barnicoat|Marvin Kirchhöfer|Nicolai Kjærgaard'],
+        ['Aston Martin Works', -0.5, 'Marco Sørensen|Nicki Thiim|Jonny Adam'],
+        ['Ford Works Programme', -1.5, 'Dennis Olsen|Mikaël Grenier|Arjun Maini'],
+      ] },
   };
 
   const ACADEMIES = [
@@ -252,9 +336,10 @@
 
   // ladder logic
   const PROMO = { f4: ['f3'], frec: ['f3'], gt4: ['gt3'], f3: ['f2'], sfl: ['sf'], nxt: ['indy'], gt3: ['wec'], f2: ['f1'], sf: ['f1'], indy: ['f1'], wec: ['f1'], fe: ['f1'] };
-  const LATERAL = { f4: ['frec', 'gt4'], frec: ['gt4'], gt4: ['frec'], f3: ['sfl', 'nxt', 'gt3'], sfl: ['nxt', 'gt3'], nxt: ['sfl', 'gt3'], gt3: ['sfl', 'nxt'], f2: ['indy', 'sf', 'wec', 'fe'] };
+  const LATERAL = { f4: ['frec', 'gt4'], frec: ['gt4'], gt4: ['frec'], f3: ['sfl', 'nxt', 'gt3'], sfl: ['nxt', 'gt3'], nxt: ['sfl', 'gt3'], gt3: ['sfl', 'nxt'], f2: ['indy', 'sf', 'wec', 'fe', 'imsa', 'gt3w', 'dtm'] };
   const STUCK_CATS = ['f4', 'frec', 'gt4', 'f3', 'sfl', 'nxt', 'gt3', 'f2'];
-  const TIER3_SIDE = ['sf', 'indy', 'wec', 'fe'];
+  const SENIOR = ['wec', 'imsa', 'gt3w', 'fe', 'indy', 'nascar', 'dtm', 'supercars'];   // where F1 drivers and F2 graduates actually go (no Super Formula)
+  const TIER3_SIDE = ['sf', ...SENIOR];
   const STATS = ['PAC', 'QUA', 'RAC', 'CON', 'WET', 'TYR', 'FIT', 'MEN'];
   const STAT_NAMES = { PAC: 'Pace', QUA: 'Qualifying', RAC: 'Racecraft', CON: 'Consistency', WET: 'Wet weather', TYR: 'Tyre mgmt', FIT: 'Fitness', MEN: 'Mentality' };
 
@@ -266,13 +351,21 @@
   dyn('fe', [2027, 2031, 2035, 2039, 2043, 2047, 2051, 2055, 2059], ['Jaguar TCS Racing', 'Porsche Formula E Team']);
   dyn('sf', [2029, 2035, 2041, 2047, 2053, 2059], ['Team Mugen', 'Vantelin Team TOM\'S']);
 
+  dyn('nascar', [2031, 2038, 2045, 2052, 2059], ['Hendrick Motorsports', 'Joe Gibbs Racing', 'Team Penske']);
+  dyn('imsa', [2030, 2036, 2042, 2048, 2054], ['Porsche Penske Motorsport #6', 'Porsche Penske Motorsport #7', 'Cadillac Whelen #31']);
+  dyn('dtm', [2029, 2035, 2041, 2047, 2053], ['Manthey EMA Porsche', 'Team Landgraf Mercedes-AMG']);
+  dyn('supercars', [2030, 2037, 2044, 2051, 2058], ['Triple Eight Race Engineering', 'Walkinshaw Andretti United']);
+  CATS.nascar.floors = [['Hendrick Motorsports', 4], ['Joe Gibbs Racing', 4], ['Team Penske', 5]];
+  CATS.imsa.floors = [['Porsche Penske Motorsport #6', 6], ['Porsche Penske Motorsport #7', 6], ['Cadillac Whelen #31', 6]];
+  CATS.dtm.floors = [['Manthey EMA Porsche', 4], ['Team Landgraf Mercedes-AMG', 5]];
+  CATS.supercars.floors = [['Triple Eight Race Engineering', 3], ['Walkinshaw Andretti United', 5]];
   CATS.f1.floors = [['Mercedes', 4], ['Red Bull Racing', 4], ['Ferrari', 6], ['McLaren', 6]];
   CATS.indy.floors = [['Chip Ganassi Racing', 5], ['Team Penske', 5], ['Arrow McLaren', 6]];
   CATS.wec.floors = [['Toyota Gazoo Racing #7', 6], ['Toyota Gazoo Racing #8', 6], ['Ferrari AF Corse #51', 6]];
   CATS.fe.floors = [['Porsche Formula E Team', 5], ['Jaguar TCS Racing', 5]];
   CATS.sf.floors = [['Team Mugen', 5], ['Vantelin Team TOM\'S', 5]];
   // team livery colours (substring match, first hit wins)
-  const TEAM_COLORS = [['Racing Bulls', '#6692ff'], ['Red Bull', '#1e41ff'], ['Mercedes', '#00d2be'], ['Ferrari', '#dc0000'], ['McLaren', '#ff8000'], ['Aston Martin', '#00826f'], ['Alpine', '#0090ff'], ['Williams', '#005aff'], ['Haas', '#b6babd'], ['Audi', '#cf0a2c'], ['Cadillac', '#c9a227'], ['Toyota', '#eb0a1e'], ['BMW', '#1c69d4'], ['Porsche', '#b12b28'], ['Peugeot', '#2b6fd0'], ['Genesis', '#7aa7d9'], ['Jaguar', '#1a1a1a'], ['Penske', '#ffd100'], ['Ganassi', '#d6001c'], ['Andretti', '#e4002b'], ['Prema', '#d71920'], ['Trident', '#0f4fa8'], ['MP Motorsport', '#ff6a00'], ['ART Grand Prix', '#8a9099'], ['Campos', '#2f56c9'], ['DAMS', '#003a8c'], ['Invicta', '#10a45a'], ['Van Amersfoort', '#f58220'], ['Rodin', '#6c4bd1'], ['Hitech', '#e8c200']];
+  const TEAM_COLORS = [['Racing Bulls', '#6692ff'], ['Red Bull', '#1e41ff'], ['Mercedes', '#00d2be'], ['Ferrari', '#dc0000'], ['McLaren', '#ff8000'], ['Aston Martin', '#00826f'], ['Alpine', '#0090ff'], ['Williams', '#005aff'], ['Haas', '#b6babd'], ['Audi', '#cf0a2c'], ['Cadillac', '#c9a227'], ['Toyota', '#eb0a1e'], ['Hendrick', '#1f4aa8'], ['Gibbs', '#f2b705'], ['Penske', '#ffd100'], ['Triple Eight', '#d71920'], ['Cadillac', '#c9a227'], ['BMW', '#1c69d4'], ['Porsche', '#b12b28'], ['Peugeot', '#2b6fd0'], ['Genesis', '#7aa7d9'], ['Jaguar', '#1a1a1a'], ['Penske', '#ffd100'], ['Ganassi', '#d6001c'], ['Andretti', '#e4002b'], ['Prema', '#d71920'], ['Trident', '#0f4fa8'], ['MP Motorsport', '#ff6a00'], ['ART Grand Prix', '#8a9099'], ['Campos', '#2f56c9'], ['DAMS', '#003a8c'], ['Invicta', '#10a45a'], ['Van Amersfoort', '#f58220'], ['Rodin', '#6c4bd1'], ['Hitech', '#e8c200']];
   // talent tiers: share of new careers, and OVR advantage over the "on-path" level by age band
   // bands: 7-11, 12-13, 14-15, 16-18, 19-22, 23+
   const TIERS = [
@@ -296,6 +389,6 @@
   const ROOKIES = ['Rafael Câmara', 'Dino Beganovic', 'Nikola Tsolov', 'Sebastián Montoya', 'Kush Maini', 'Gabriele Minì', 'Ugo Ugochukwu', 'Martinius Stenshorne', 'Noah Strømsted', 'Freddie Slater', 'Théophile Naël', 'Tuukka Taponen', 'Ritomo Miyata', 'Oliver Goethe', 'Laurens van Hoepen', 'Mari Boya'];
   const RETIRE_2028 = ['Lewis Hamilton', 'Fernando Alonso'];
 
-  const D = { TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, F1P, ROOKIES, RETIRE_2028 };
+  const D = { SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, F1P, ROOKIES, RETIRE_2028 };
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else root.F1D = D;
 })(typeof window !== 'undefined' ? window : globalThis);

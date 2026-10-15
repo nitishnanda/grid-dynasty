@@ -118,7 +118,7 @@ const ARCH=[['allround','All-rounder','Balanced across the board'],['qualifier',
 const teamColor=n=>{for(const [k,c] of D.TEAM_COLORS)if(String(n).includes(k))return c;let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;return `hsl(${h},70%,52%)`;};
 
 function save(){try{if(G)localStorage.setItem(KEY,JSON.stringify(G));}catch(e){}}
-function load(){try{const s=localStorage.getItem(KEY);const g=s?JSON.parse(s):null;return g&&g.v===2?g:null;}catch(e){return null;}}
+function load(){try{const s=localStorage.getItem(KEY);const g=s?JSON.parse(s):null;return g&&g.v===2?(E.migrate?E.migrate(g):g):null;}catch(e){return null;}}
 function clear(){try{localStorage.removeItem(KEY);}catch(e){}}
 const stamp=(txt,col)=>`<span class="stamp" style="color:${col};border-color:${col}">${esc(txt)}</span>`;
 const tierStamp=t=>{const T=D.TIERS[t];return stamp(T.n,T.id==='gen'?'#c2185b':T.id==='wonder'?'#a86f00':T.id==='late'?'#c24a00':T.id==='talented'?'#1f4bff':'#5a5244');};

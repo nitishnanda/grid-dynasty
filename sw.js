@@ -1,5 +1,5 @@
 /* Grid Dynasty service worker: network first, falls back to cache so the game works offline */
-const CACHE = 'grid-dynasty-v22';
+const CACHE = 'grid-dynasty-v23';
 const FILES = ['./', './index.html', './f1-data.js', './f1-engine.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

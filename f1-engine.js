@@ -1,7 +1,7 @@
 /* Grid Dynasty – career engine (no DOM). Karting -> F4 -> F3 -> F2 -> F1 with lateral moves. */
 (function (root) {
   const D = typeof require !== 'undefined' && typeof module !== 'undefined' ? require('./f1-data.js') : root.F1D;
-  const { CATS, NATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, TIERS, PROMO_P, F1P, ROOKIES, RETIRE_2028 } = D;
+  const { CATS, NATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, SENIOR, STATS, TIERS, PROMO_P, F1P, ROOKIES, RETIRE_2028 } = D;
 
   const rnd = Math.random;
   const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
@@ -415,7 +415,7 @@
       const fin = res.filter(u => !u.crash);
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => rg(fin[0].s - u.s) * rScale));
-      res.forEach((u, i) => u.members.forEach(d => { d.races++; if (u.crash) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
+      res.forEach((u, i) => u.members.forEach(d => { if (!rf.stage) d.races++; if (u.crash) { if (!rf.stage) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; } return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (!out) {
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
@@ -435,7 +435,7 @@
       if (rf.grid === 'q') grid = qOrder.slice();
       else if (rf.grid === 'prev') grid = prev.slice();
       else { const k = +rf.grid.replace('rev', ''); grid = qOrder.slice(); grid = grid.slice(0, k).reverse().concat(grid.slice(k)); }
-      prev = run(rf, grid, false);
+      prev = run(rf, grid, !!rf.stage);   // NASCAR stages score stage points only: no wins, light incident rate
     });
     S.log.push(entry);
     S.round++;
@@ -473,7 +473,7 @@
     const S = G.S, C = CATS[S.cat], tb = standings(G), pos = tb.findIndex(d => d.isPlayer) + 1, N = tb.length;
     const low = pos > N * 0.7;
     const lastSI = G.standIns.length ? G.standIns[G.standIns.length - 1].year : -99;
-    const f1Path = ['f2', 'sf', 'indy', 'wec', 'fe'].includes(S.cat) && G.age <= 31 && (G.academy || G.reserve || G.rep >= 62)
+    const f1Path = ['f2', 'sf', 'indy', 'wec', 'fe', 'imsa', 'nascar', 'dtm', 'supercars', 'gt3w'].includes(S.cat) && G.age <= 31 && (G.academy || G.reserve || G.rep >= 62)
       && (G.year - lastSI) >= (G.reserve ? 2 : 3) && !G.history.some(h => h.cat === 'f1') && !G.demoted;
     const L = [
       { id: 'upgrade', g: 1, w: 13, ic: '🔧', t: 'Car upgrade', fx: 'Your car is +2.5 rating for the rest of the season.' },
@@ -671,7 +671,7 @@
       else { let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(G.dyn[c].str[t[0]] / 1.6); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; } ct = CC.teams[Math.min(i, CC.teams.length - 1)][0]; }
       G.dyn[c]._champ = ct; evolveCat(G, c, ct);
     });
-    const show = ['f1', 'f2', 'f3', 'f4', 'indy', 'wec', 'fe', 'sf'];
+    const show = ['f1', 'f2', 'f3', 'f4', 'wec', 'imsa', 'gt3w', 'gt3', 'indy', 'nascar', 'fe', 'dtm', 'supercars', 'sf'];
     if (!show.includes(S.cat)) champs.push({ cat: C.short, who: lead0.name, team: lead0.team });
     show.forEach(c => {
       const CC = CATS[c];
@@ -864,7 +864,7 @@
       if (f1Demoted) {
         M.note = `You were dropped mid-season. Offers: lower F1 teams, an outside shot at a bigger team, or another series.`;
         M.options.push(...offersFor(G, 'f1', attract(G, 'f1') - 28, 3, G.team).map(o => Object.assign(o, { kind: 'move' })));
-        lat(TIER3_SIDE, () => attract(G, 'f1') + 8, 1);
+        lat(SENIOR.slice().sort(() => rnd() - 0.5).slice(0, 3), () => attract(G, 'f1') + 8, 1);
       } else if (stuck) {
         M.stuck = true; M.note = (M.note ? M.note + ' ' : '') + `3 seasons in ${C.short} without moving up: retire or go sideways.`;
         if (tgt) { const p = promoChance(G, cat, promoCat, pos, 0.35); if (rnd() < p) { M.options.push(...offersFor(G, promoCat, attract(G, promoCat) - 5, 2, null).map(o => Object.assign(o, { kind: 'promo' }))); M.note += ' A late call-up arrived.'; } }
@@ -873,15 +873,15 @@
         M.options.push(stay());
         M.options.push(...offersFor(G, cat, attract(G, cat), 3, G.team));
         if (G.age >= 21 && (TIER3_SIDE.includes(cat) || cat === 'f1')) {
-          const cats = (cat === 'f1' && nextAge >= 34) ? ['fe', 'wec', 'indy', 'sf'] : TIER3_SIDE.filter(c => c !== cat).sort(() => rnd() - 0.5).slice(0, 2);
+          const cats = (cat === 'f1' && nextAge >= 34) ? ['wec', 'imsa', 'gt3w', 'fe', 'indy', 'nascar'].sort(() => rnd() - 0.5).slice(0, 4) : (cat === 'f1' ? SENIOR : TIER3_SIDE).filter(c => c !== cat).sort(() => rnd() - 0.5).slice(0, cat === 'f1' ? 3 : 2);
           lat(cats, c => attract(G, c) + (cat === 'f1' ? 8 : 0), 1);
-          if (cat === 'f1' && nextAge >= 34) M.note = (M.note ? M.note + ' ' : '') + 'Time to think about a final chapter in Formula E or WEC, where F1 experience still wins races.';
+          if (cat === 'f1' && nextAge >= 34) M.note = (M.note ? M.note + ' ' : '') + 'Time to think about a final chapter: WEC, IMSA, GT3, Formula E or even NASCAR, where F1 experience still wins races.';
         }
       }
       // academy drivers without an F1 seat can take a reserve role
       if (G.academy && cat === 'f2' && !M.options.some(o => o.cat === 'f1')) {
         const rt = isRB(G) ? 'Racing Bulls' : G.academy.f1[0];
-        ['fe', 'sf', 'indy', 'wec'].sort(() => rnd() - 0.5).slice(0, 2).forEach(c => offersFor(G, c, attract(G, c) + 6, 1, null).forEach(o => M.options.push(Object.assign(o, { kind: 'reserve', reserveFor: rt, role: `${rt} F1 reserve` }))));
+        ['fe', 'sf', 'indy', 'wec', 'imsa', 'gt3w'].sort(() => rnd() - 0.5).slice(0, 2).forEach(c => offersFor(G, c, attract(G, c) + 6, 1, null).forEach(o => M.options.push(Object.assign(o, { kind: 'reserve', reserveFor: rt, role: `${rt} F1 reserve` }))));
         M.note = (M.note ? M.note + ' ' : '') + `${G.academy.n} can keep you as ${rt} reserve while you race elsewhere.`;
       }
     }
@@ -934,6 +934,16 @@
   }
   function endCareerNow(G) { finishSeason(G, true); return retire(G); }
 
-  const api = { standingsEv, compTable, takeSponsor, canContinue, continueContract, WEALTH, setStats, CATS, TIERS, rnd, newGame, rerollStats, rerollClub, startSeason, playRound, simToEnd, setMode, wheelList, spinWheel, skipWheel, finishSeason, buildMarket, chooseOption, retire, endCareerNow, standings, player, ovrOf, potLabel, funding, costOf, salOf, kartCat, MAX_AGE, tierOf };
+  // saves from older versions: make sure every series has its world state
+  function migrate(G) {
+    if (!G || !G.dyn) return G;
+    Object.values(CATS).forEach(C => {
+      if (!G.tr[C.id]) G.tr[C.id] = {};
+      if (C.dyn && !G.dyn[C.id]) { G.dyn[C.id] = { str: {}, trend: {}, streak: 0, last: null, regime: 'close', relEra: 1, gapEra: 1, relTeam: {} }; C.teams.forEach(t => { G.dyn[C.id].str[t[0]] = t[1]; G.dyn[C.id].trend[t[0]] = 0; G.dyn[C.id].relTeam[t[0]] = 1; }); }
+      if (!Object.keys(G.tr[C.id]).length) setTR(G, C.id);
+    });
+    return G;
+  }
+  const api = { migrate, SENIOR, standingsEv, compTable, takeSponsor, canContinue, continueContract, WEALTH, setStats, CATS, TIERS, rnd, newGame, rerollStats, rerollClub, startSeason, playRound, simToEnd, setMode, wheelList, spinWheel, skipWheel, finishSeason, buildMarket, chooseOption, retire, endCareerNow, standings, player, ovrOf, potLabel, funding, costOf, salOf, kartCat, MAX_AGE, tierOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.F1E = api;
 })(typeof window !== 'undefined' ? window : globalThis);
