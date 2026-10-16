@@ -239,7 +239,7 @@
     C.teams.forEach(t => {
       const name = t[0], car = G.tr[C.id][name];
       if (C.id === 'f1') {
-        G.f1.teams[name].forEach(d => { const isP = !!d.player; drivers.push({ id: drivers.length, name: isP ? G.name : d.name, team: name, car, skill: isP ? 0 : 84 + 0.85 * (d.ski - 84) + gauss() * 1.3, isPlayer: isP, pts: 0, w: 0, p: 0, pole: 0, races: 0, dnf: 0, tb: rnd() }); });
+        G.f1.teams[name].forEach(d => { const isP = !!d.player; drivers.push({ id: drivers.length, name: isP ? G.name : d.name, team: name, car, skill: isP ? 0 : 84 + 0.85 * (d.ski - 84) * (G.year - d.birth <= 19 ? 0.55 : G.year - d.birth === 20 ? 0.72 : G.year - d.birth === 21 ? 0.86 : G.year - d.birth === 22 ? 0.95 : 1) + gauss() * 1.3, isPlayer: isP, pts: 0, w: 0, p: 0, pole: 0, races: 0, dnf: 0, tb: rnd() }); });
         return;
       }
       roster(G, C.id, name).forEach((nm, i) => {
@@ -250,8 +250,8 @@
     const S = G.S = { cat: G.cat, round: 0, drivers, log: [], boost: gauss() * 1.3, carMod: 0, injured: 0, tmp: 0, tmpUntil: 0, wheelDue: false, spins: 0, stageEnds: [Math.floor(C.rounds / 3), Math.floor(2 * C.rounds / 3)], euro: false, wcWin: false, trophies: [], over: false, notes: [], mode: 'balance', teams: [G.team], famPaid: 0, regime: G.dyn[G.cat] ? G.dyn[G.cat].regime : 'dominant' };
     // first year in a new category is a learning year: slow start, form arriving late in the season
     S.learn = G.history.some(h => h.cat === G.cat) ? 0 : (G.cat === 'f1' ? 1.5 : C.tier === 0 ? (G.history.length ? 2.2 : 0) : 4.2);
-    // F1 rookies take time: established drivers have the edge in years 1-3
-    if (G.cat === 'f1') S.boost -= [8, 6.2, 4.2, 2.4, 1][Math.min(G.f1Years, 4)] * (G.tier === 4 ? 1 : 1.1);
+    // F1 rookies take time: years 1-2 are a learning curve, year 3 is where it starts to click, then full ceiling
+    if (G.cat === 'f1') { S.exp = [0.3, 0.48, 0.76, 0.93, 1][Math.min(G.f1Years, 4)]; S.boost -= [1.5, 1, 0.5, 0, 0][Math.min(G.f1Years, 4)]; }
     // F1 know-how carries over to other series
     if (TIER3_SIDE.includes(G.cat) && G.f1Years > 0) S.boost += Math.min(5, G.f1Years * 0.5);
     // champions tend to go back to back; a third in a row is hard unless you are a top-3 tier talent
@@ -313,7 +313,7 @@
         const top2 = ranked.filter(d => cs.indexOf(d.car) <= 1 && !d.isPlayer)[0];
         if (top2 && ranked[0].pts - top2.pts < 80 && !ranked[0].isPlayer) { top2.form += 1.6; ranked[0].form -= 1.0; }
       }
-      if (S.round >= 2 && ranked.length > 1) {
+      if (S.round >= 2 && ranked.length > 1 && !ranked[0].isPlayer && !ranked[1].isPlayer) {   // the script only runs AI-vs-AI fights; a player in the title fight is left to the cars and drivers
         const R = C.rounds, a = ranked[0], b = ranked[1], m = a.pts - b.pts, tgt = S.scr.M * Math.pow(S.round / R, 0.85), err = tgt - m, g = Math.min(S.scr.k === 3 ? 16 : 9, 0.12 * Math.abs(err) * (1 + 3 * S.round / R)) * Math.sign(err);
         const hu = !a.isPlayer, ch = !b.isPlayer;   // never steer the player: only the AI side of the fight
         if (g > 0) ranked.slice(1, 4).forEach(d => { if (!d.isPlayer) d.form -= g * (d === b ? 1 : 0.7); });   // fight too close for the script: everyone chasing falls back
@@ -336,7 +336,7 @@
     if (C.crew) { const m = {}; active.forEach(d => { (m[d.team] = m[d.team] || { members: [], team: d.team, car: d.car }).members.push(d); }); Object.values(m).forEach(u => units.push(u)); }
     else active.forEach(d => units.push({ members: [d], team: d.team, car: d.car }));
     units.forEach(u => { u.hasP = u.members.some(d => d.isPlayer); });
-    const uSkill = (u, pv) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetAdj : d.skill) + (d.form || 0), 0) / u.members.length;
+    const uSkill = (u, pv) => u.members.reduce((a, d) => a + (d.isPlayer ? (S.exp !== undefined ? C.lvl + (pv - C.lvl) * S.exp : pv) + bonus + wetAdj : d.skill) + (d.form || 0), 0) / u.members.length;   // rookies only show part of their ceiling
     const carRankK = c => C.id === 'f1' ? S.drivers.map(d => d.car).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y - x).indexOf(c) : -1;
     const uCar = u => u.car + (u.hasP ? S.carMod : 0) + (S.dev ? (S.dev[u.team] || 0) + (carRankK(u.car) === 0 ? 1.1 : carRankK(u.car) === 1 ? 0.5 : carRankK(u.car) === 2 ? -0.6 : carRankK(u.car) === 3 ? -1.0 : 0) : 0) + (S.dom && S.domTeam === u.team ? 0 : 0);
     const uP = units.find(u => u.hasP);
@@ -357,7 +357,7 @@
     const spreadOf = (key, pv) => { units.forEach(u => { u[key] = mixOf(u, pv); }); capClose(units, key); const m = units.reduce((a, u) => a + u[key], 0) / units.length; units.forEach(u => { u[key] = m + K * (u[key] - m); }); };
     spreadOf('q', Dq);
     if (C.id === 'f1') { const tq = {}; units.forEach(u => { (tq[u.team] = tq[u.team] || []).push(u); }); Object.values(tq).forEach(g => { const m = g.reduce((t, u) => t + u.q, 0) / g.length; g.forEach(u => { u.q = m + (S.dom && S.domTeam === u.team ? 0.38 : 0.5) * (u.q - m); }); }); }   // same car: teammates' one-lap pace sits closer than their race pace
-    units.forEach(u => { u.q += gauss() * (wet ? 2.6 : (C.id === 'f1' ? 1.2 : 2.2)) + (C.id === 'f1' && rnd() < 0.13 ? -(1.2 + rnd() * 3.2) : 0) + (S.dom && S.domTeam === u.team ? 2.4 : 0) - (C.id === 'f1' && ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.63) * 14), 0) : 0); });   // sustained pole streaks regress: nobody takes 19 of 24   // bad Saturdays (traffic, mistakes, red flags); a dominant car also qualifies further clear
+    units.forEach(u => { u.q += gauss() * (wet ? 2.6 : (C.id === 'f1' ? 1.4 : 2.2)) + (C.id === 'f1' && rnd() < 0.13 ? -(1.2 + rnd() * 3.2) : 0) + (S.dom && S.domTeam === u.team ? 2.4 : 0) - (C.id === 'f1' && ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.63) * 14), 0) : 0); });   // sustained pole streaks regress: nobody takes 19 of 24   // bad Saturdays (traffic, mistakes, red flags); a dominant car also qualifies further clear
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
     const qpos = out ? null : qOrder.indexOf(uP) + 1;
     // weekend character: gaps breathe from one event to the next, bigger in the wet and in a dominant era
@@ -388,7 +388,7 @@
         u.grid = gi + 1;
         let sig = (u.hasP ? clamp(5.6 - st.CON / 38, 3, 5) : 4.2) * sigK;
         const sprK = isSpr ? 0.5 : 1;
-        let pe = (u.hasP ? clamp(0.045 - (st.CON - 60) * 0.00055, 0.012, 0.06) : 0.036) * dnfK * sprK * (wet ? 1.35 : 1);   // driver error
+        let pe = (u.hasP ? clamp(0.045 - (st.CON - 60) * 0.00055, 0.012, 0.06) * (S.exp !== undefined ? 1 + (1 - S.exp) * 0.9 : 1) : 0.036) * dnfK * sprK * (wet ? 1.35 : 1);   // driver error
         let pr = 0.024 * clamp(1 + (C.lvl - uCar(u)) / (C.dyn ? 14 : 10), 0.6, 1.9) * dnfK * sprK * relOf(u);                // reliability: weaker cars and fresh regulations fail more
         let bias = 0;
         if (u.hasP) {
@@ -402,7 +402,7 @@
       const res = grid.filter(u => !u.crash).sort((a, b) => b.s - a.s).concat(grid.filter(u => u.crash));
       if (C.id === 'f1' && !isSpr && ri === C.rounds - 1 && S.scr) {   // finale: the real-life title script plays out through the top two's finishing places
         const rk = S.drivers.filter(d => d.pts >= 0).slice().sort((x, y) => y.pts - x.pts), A = rk[0], B = rk[1], ua = res.find(u => u.members.includes(A)), ub = res.find(u => u.members.includes(B));
-        if (ua && ub && !ua.crash && !ub.crash && !(A.isPlayer && B.isPlayer)) {
+        if (ua && ub && !ua.crash && !ub.crash && !A.isPlayer && !B.isPlayer) {
           const f0 = res.filter(u => !u.crash), P = rf.pts, lim = Math.min(12, f0.length), ca = f0.indexOf(ua), cb = f0.indexOf(ub), M = S.scr.M; let best = null;
           for (let pa = 0; pa < lim; pa++) for (let pb = 0; pb < lim; pb++) {
             if (pa === pb || (A.isPlayer && pa !== ca) || (B.isPlayer && pb !== cb)) continue;
