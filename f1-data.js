@@ -92,6 +92,29 @@
       rf: [{ n: 'Grand Prix', pts: PF1, grid: 'q' }],
       names: ['Australia', 'China', 'Japan', 'Bahrain', 'Saudi Arabia', 'Miami', 'Canada', 'Monaco', 'Barcelona', 'Austria', 'Great Britain', 'Belgium', 'Hungary', 'Netherlands', 'Italy', 'Madrid', 'Azerbaijan', 'Singapore', 'United States', 'Mexico City', 'Brazil', 'Las Vegas', 'Qatar', 'Abu Dhabi'],
       special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.8, dnfK: 0.75, spread: 1.65, wS: 0.26, sMax: 13,
+      // lap-time model calibrated on F1DB 2010-2026 (see README "Calibration"): everything in % of a lap unless noted
+      time: {
+        beta: 0.1,            // % of lap per car-rating point at a normal stage of the rule cycle (x gapEra: ~0.145 in a reset year, ~0.07 late in a cycle)
+        dPt: 0.039,           // % of lap per driver-rating point (fitted scale: 25.7 points per 1%)
+        trackSd: 0.15,        // team-by-track car fit, re-drawn every weekend
+        tfRace: 0.5,          // (plus raceTeamSd of race-day-only car form)
+        raceTeamSd: 0.1,          // how much of the track fit carries into race pace
+        qSd: 0.23,            // one driver's one-lap execution noise
+        badP: 0.13, badMean: 0.55,   // a scrappy lap: traffic, mistake, red flag (heavy tail seen in teammate gaps)
+        evoQ1: 1.1, evoQ2: 0.5,      // fastest Q1 / Q2 lap vs fastest Q3 lap (track evolution, F1DB medians 2010-2026)
+        formSd: 3.2,          // season form, rating points (0.145% of a lap, F1DB REML estimate)
+        pen: [5.5, 4.0, 2.2, 0],     // rookie penalty in rating points for F1 seasons 1, 2, 3, 4+
+        laps: 57, sprintLaps: 19,
+        rSd: 0.19,            // race-day pace noise
+        gridS: 2.1, gridS2: 0.07, poleS: 4,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
+        raceVsQuali: 2.5,     // AI drivers: stable race-craft vs one-lap difference, rating points
+        startSd: 4.5,         // first-lap / strategy chaos, seconds
+        scP: 0.58, restartSd: 2.0,    // safety-car races and restart scatter
+        lossP: 0.12, lossMax: 20,    // per driver per race: a slow stop, time penalty or strategy miss costing 4-22 s
+        penP: 0.06,                 // per driver per race: a grid penalty (5 or 10 places, or the back of the grid)
+        inc: [2.6, 3.7, 5.5, 6.4, 5.7],   // incident DNF % by grid bucket P1-3, 4-6, 7-10, 11-15, 16+ (F1DB 2010-2025, scaled to the 2022-25 level)
+        mech: [10.5, 7.5, 5.0, 3.6],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
+      },
       teams: [
         ['Mercedes', 7, 'George Russell|Kimi Antonelli'],
         ['McLaren', 3, 'Lando Norris|Oscar Piastri'],
@@ -379,13 +402,19 @@
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];
 
   // F1 driver pool: [birth year, skill]
+  // F1 driver pool: [birth year, base rating, F1 seasons raced before 2026]
+  // Ratings are fitted from 2010-2026 qualifying (F1DB): a driver + team-season model on lap-time gaps, scaled so the
+  // best active driver = 93 and the 2026 grid median = 84 (1 point ~ 0.039% of a lap ~ 0.035 s). "Base" is the
+  // experience-neutral level: drivers in their first three seasons carry a rookie penalty on top (see CATS.f1.time.pen).
   const F1P = {
-    'Max Verstappen': [1997, 93], 'Lando Norris': [1999, 90], 'Oscar Piastri': [2001, 89], 'George Russell': [1998, 89], 'Charles Leclerc': [1997, 90],
-    'Lewis Hamilton': [1985, 88], 'Kimi Antonelli': [2006, 85], 'Isack Hadjar': [2004, 83], 'Alex Albon': [1996, 84], 'Carlos Sainz': [1994, 85],
-    'Liam Lawson': [2002, 82], 'Arvid Lindblad': [2007, 80], 'Fernando Alonso': [1981, 86], 'Lance Stroll': [1998, 80], 'Pierre Gasly': [1996, 84],
-    'Franco Colapinto': [2003, 80], 'Esteban Ocon': [1996, 83], 'Oliver Bearman': [2005, 83], 'Nico Hülkenberg': [1987, 83], 'Gabriel Bortoleto': [2004, 82],
-    'Sergio Pérez': [1990, 80], 'Valtteri Bottas': [1989, 80],
+    'Oscar Piastri': [2001, 93.0, 3], 'Lando Norris': [1999, 92.3, 7], 'Max Verstappen': [1997, 92.1, 11], 'Charles Leclerc': [1997, 90.9, 8],
+    'Kimi Antonelli': [2006, 90.2, 1], 'Fernando Alonso': [1981, 89.7, 22], 'Gabriel Bortoleto': [2004, 88.9, 1], 'Lewis Hamilton': [1985, 88.8, 19],
+    'George Russell': [1998, 88.6, 7], 'Carlos Sainz': [1994, 88.2, 11], 'Arvid Lindblad': [2007, 88.0, 0], 'Isack Hadjar': [2004, 87.6, 1],
+    'Oliver Bearman': [2005, 87.0, 2], 'Nico Hülkenberg': [1987, 86.6, 14], 'Alex Albon': [1996, 84.0, 6], 'Pierre Gasly': [1996, 84.0, 9],
+    'Valtteri Bottas': [1989, 83.4, 12], 'Esteban Ocon': [1996, 82.4, 9], 'Liam Lawson': [2002, 82.1, 3], 'Sergio Pérez': [1990, 80.9, 14],
+    'Lance Stroll': [1998, 79.1, 9], 'Franco Colapinto': [2003, 78.6, 2],
   };
+
   const ROOKIES = ['Rafael Câmara', 'Dino Beganovic', 'Nikola Tsolov', 'Sebastián Montoya', 'Kush Maini', 'Gabriele Minì', 'Ugo Ugochukwu', 'Martinius Stenshorne', 'Noah Strømsted', 'Freddie Slater', 'Théophile Naël', 'Tuukka Taponen', 'Ritomo Miyata', 'Oliver Goethe', 'Laurens van Hoepen', 'Mari Boya'];
   const RETIRE_2028 = ['Lewis Hamilton', 'Fernando Alonso'];
 
