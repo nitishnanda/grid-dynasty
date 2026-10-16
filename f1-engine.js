@@ -375,6 +375,7 @@
     if (!out && qOrder.length > 1) qi = qpos === 1 ? { pos: 1, gap: Math.max(0.001, qg(qOrder[0].q - qOrder[1].q) * qScale * Math.exp(gauss() * 0.55)), lead: true } : { pos: qpos, gap: Math.max(0.001, qg(qOrder[0].q - uP.q) * qScale), lead: false };
     if (G.dbg) (G.dbg.qt = G.dbg.qt || []).push([qOrder[0].team, qOrder[1] && qOrder[1].team]);
     if (G.dbg) G.dbg.q.push(qOrder.map(u => qg(qOrder[0].q - u.q) * qScale));
+    if (G.dbg && G.dbg.full) G.dbg.qf.push(qOrder.map(u => ({ n: u.members[0].name, t: u.team, g: qg(qOrder[0].q - u.q) * qScale })));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
     const entry = { ev: evIdx, round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
@@ -415,6 +416,7 @@
       const fin = res.filter(u => !u.crash);
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => rg(fin[0].s - u.s) * rScale));
+      if (G.dbg && G.dbg.full && !isSpr) G.dbg.rf.push({ grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash, cause: u.cause, g: u.crash ? null : rg(fin[0].s - u.s) * rScale })) });
       res.forEach((u, i) => u.members.forEach(d => { if (!rf.stage) d.races++; if (u.crash) { if (!rf.stage) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; } return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (!out) {
         const pos = res.indexOf(uP) + 1;
