@@ -57,7 +57,7 @@
         ['Virtuosi Racing', -1.5, 'Joseph Smith|Jarrett Clark|George Proudford-Nalder'],
         ['Chris Dittmann Racing', -3.5, 'Tommy Harfield|Henry Mercier'],
       ] },
-    f3: { id: 'f3', lap: 90, qK: 0.1029, rK: 1.3563, name: 'FIA Formula 3', short: 'F3', tier: 2, wS: 0.4, sigK: 1.45, fitK: 4, lvl: 73, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [450, 950], titleName: 'F3 Champion',
+    f3: { id: 'f3', lap: 90, qK: 0.1029, rK: 1.3563, name: 'FIA Formula 3', short: 'F3', tier: 2, wS: 0.5, sigK: 1.15, fitK: 4, lvl: 73, rounds: 10, rpr: 2, dpt: 3, pay: true, cost: [450, 950], titleName: 'F3 Champion',
       rf: [{ n: 'Sprint', pts: PSPR, grid: 'rev10' }, { n: 'Feature', pts: PF1, grid: 'q' }],
       names: ['Melbourne', 'Sakhir', 'Imola', 'Monaco', 'Barcelona', 'Spielberg', 'Silverstone', 'Spa', 'Budapest', 'Monza'],
       teams: [
@@ -72,7 +72,7 @@
         ['AIX Racing', -2.5, 'Brad Benavides|Fernando Barrichello|Yevan David'],
         ['DAMS', -3.5, ''],
       ] },
-    f2: { id: 'f2', lap: 92, qK: 0.1067, rK: 1.8077, name: 'FIA Formula 2', short: 'F2', tier: 3, wS: 0.4, sigK: 1.45, fitK: 4, lvl: 78, rounds: 14, rpr: 2, dpt: 2, pay: true, cost: [1400, 2900], titleName: 'F2 Champion',
+    f2: { id: 'f2', lap: 92, qK: 0.1067, rK: 1.8077, name: 'FIA Formula 2', short: 'F2', tier: 3, wS: 0.55, sigK: 1.1, fitK: 4, lvl: 78, rounds: 14, rpr: 2, dpt: 2, pay: true, cost: [1400, 2900], titleName: 'F2 Champion',
       rf: [{ n: 'Sprint', pts: PF2S, grid: 'rev10' }, { n: 'Feature', pts: PF1, grid: 'q' }],
       names: ['Melbourne', 'Sakhir', 'Jeddah', 'Imola', 'Monaco', 'Barcelona', 'Spielberg', 'Silverstone', 'Spa', 'Budapest', 'Monza', 'Baku', 'Lusail', 'Yas Marina'],
       teams: [
@@ -112,13 +112,13 @@
         domP: 0.25, domEnd: 0.2, domBoost: 3,   // share of rule resets that produce a dominant car, chance a dominant era ends each year, its edge in car points
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
         laps: 57, sprintLaps: 19,
-        rSd: 0.19,            // race-day pace noise
+        rSd: 0.15,            // race-day pace noise per driver (OpenF1: driver part of the race-vs-quali reshuffle ~0.24%)
         gridS: 1.2, gridS2: 0.02, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
-        raceVsQuali: 2.5,     // AI drivers: stable race-craft vs one-lap difference, rating points
+        raceVsQuali: 2.0,     // AI drivers: stable race-craft vs one-lap difference, rating points
         startSd: 4.5,         // first-lap / strategy chaos, seconds
         scP: 0.45, scSprint: 0.3, restartSd: 2.0,   // safety-car races and restart scatter (OpenF1 2023-26: SC 48% of GPs plus 9% red flags, 35% of sprints)
         scEarly: 0.3,               // share of safety cars in the opening laps, which erase almost none of the final gaps (real median: 40% of the gaps erased)
-        cruiseAt: 4, cruiseK: 0.55,  // a leader more than ~4 s clear backs off: only 55% of the extra margin shows at the flag
+        cruiseAt: 4, cruiseK: 0.6,   // a leader more than ~4 s clear backs off: only 60% of the extra margin shows at the flag
         passS: 2.5,                  // seconds to pass each slower car that started ahead (track position matters more than a fixed per-slot cost)
         lossP: 0.26, lossMax: 12, dmgP: 0.04,   // per driver per race: a slow stop or time penalty costing 4-16 s (OpenF1: ~0.14 slow stops and ~0.13 time penalties a race); dmg: first-lap damage or a drive-through, 15-60 s
         lateP: 0.02,                // per driver per race: retires in the last 10% of the race but is still classified, laps down
@@ -410,6 +410,11 @@
     { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 10, 9, 9.5], blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
+  // junior ladder: chance of a step-up seat by final position [P1, P2-3, P4-5, P6-10, P11+] = share who raced the next series the
+  // following season (Wikipedia standings 2005-2025: GP2/F2 -> F1 via F1DB, GP3/F3 -> F2, FR Eurocup/FRECA -> F3, Italian F4 -> FRECA/F3),
+  // scaled so that with STEP_TIER and the call-ups below the bot careers reproduce those rates; F2/F3 champions may not return
+  const STEP_P = { f2: [0.45, 0.27, 0.14, 0.04, 0.01], f3: [0.85, 0.85, 0.6, 0.55, 0.1], frec: [0.95, 0.95, 0.8, 0.33, 0.16], f4: [0.52, 0.4, 0.36, 0.26, 0.09] };
+  const STEP_TIER = [0.8, 0.9, 1, 1.15, 1.3];   // at the same result, academies and teams chase the quicker, younger talent (prospect ... generational)
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];
 
   // F1 driver pool: [birth year, skill]
@@ -429,6 +434,6 @@
   const ROOKIES = ['Rafael Câmara', 'Dino Beganovic', 'Nikola Tsolov', 'Sebastián Montoya', 'Kush Maini', 'Gabriele Minì', 'Ugo Ugochukwu', 'Martinius Stenshorne', 'Noah Strømsted', 'Freddie Slater', 'Théophile Naël', 'Tuukka Taponen', 'Ritomo Miyata', 'Oliver Goethe', 'Laurens van Hoepen', 'Mari Boya'];
   const RETIRE_2028 = ['Lewis Hamilton', 'Fernando Alonso'];
 
-  const D = { SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, F1P, ROOKIES, RETIRE_2028 };
+  const D = { SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 };
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else root.F1D = D;
 })(typeof window !== 'undefined' ? window : globalThis);

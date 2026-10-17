@@ -1,7 +1,7 @@
 /* Apex Ladder – career engine (no DOM). Karting -> F4 -> F3 -> F2 -> F1 with lateral moves. */
 (function (root) {
   const D = typeof require !== 'undefined' && typeof module !== 'undefined' ? require('./f1-data.js') : root.F1D;
-  const { CATS, NATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, SENIOR, STATS, TIERS, PROMO_P, F1P, ROOKIES, RETIRE_2028 } = D;
+  const { CATS, NATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, SENIOR, STATS, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 } = D;
 
   const rnd = Math.random;
   const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
@@ -148,10 +148,11 @@
   const costOf = (G, cat, name) => { const C = CATS[cat]; return C.pay ? Math.round(lerp(C.cost[0], C.cost[1], pf(G, cat, name))) : 0; };
   const salOf = (G, cat, name) => {
     const C = CATS[cat];
-    if (cat === 'f1') {
+    if (cat === 'f1') {   // base pay, £k a year: fitted to reported 2014-26 salaries of the 2026 grid (log pay ~ experience, last season's finish, team, titles; R² 0.84)
       const tr = trS(G, 'f1'), rank = C.teams.map(t => t[0]).sort((a, b) => tr[b] - tr[a]).indexOf(name), frac = 1 - rank / (C.teams.length - 1);
-      const titles = Math.min(5, (G.tot.trophies['F1 World Champion'] || 0));
-      return Math.round(lerp(1500, 35000, Math.pow(frac, 1.2)) * (0.45 + 1.2 * Math.pow(G.rep / 100, 2) + 0.18 * titles));
+      const L = G.last || {}, prevQ = L.cat === 'f1' && L.pos ? 1 - (Math.min(L.pos, 20) - 1) / 19 : 0;
+      const titles = Math.min(4, G.tot.trophies['F1 World Champion'] || 0), exp = Math.min(10, G.f1Years) / 10;
+      return Math.round(Math.exp(6.75 + 0.64 * frac + 1.79 * exp + 0.27 * titles + 1.03 * prevQ - (G.f1Years === 0 ? 0.76 : 0)));
     }
     return C.pay ? 0 : Math.round(lerp(C.sal[0], C.sal[1], Math.pow(pf(G, cat, name), 1.8)) * (0.35 + G.rep / 160));
   };
@@ -283,12 +284,12 @@
       }
       roster(G, C.id, name).forEach((nm, i) => {
         const isP = name === G.team && i === seats(C.id, name) - 1;
-        drivers.push({ id: drivers.length, name: isP ? G.name : nm, team: name, car, skill: C.lvl + 0.4 * (car - C.lvl) + gauss() * 3.5, isPlayer: isP, pts: 0, w: 0, p: 0, pole: 0, races: 0, dnf: 0, tb: rnd() });
+        drivers.push({ id: drivers.length, name: isP ? G.name : nm, team: name, car, skill: C.lvl + 0.4 * (car - C.lvl) + gauss() * (C.skSd || 3.5), isPlayer: isP, pts: 0, w: 0, p: 0, pole: 0, races: 0, dnf: 0, tb: rnd() });
       });
     });
     const S = G.S = { cat: G.cat, round: 0, drivers, log: [], boost: gauss() * 1.3, carMod: 0, injured: 0, tmp: 0, tmpUntil: 0, wheelDue: false, spins: 0, stageEnds: [Math.floor(C.rounds / 3), Math.floor(2 * C.rounds / 3)], euro: false, wcWin: false, trophies: [], over: false, notes: [], mode: 'balance', teams: [G.team], famPaid: 0, regime: G.dyn[G.cat] ? G.dyn[G.cat].regime : 'dominant' };
     // first year in a new category is a learning year: slow start, form arriving late in the season
-    S.learn = G.history.some(h => h.cat === G.cat) ? 0 : (G.cat === 'f1' ? (C.time ? 2.5 : 1.5) : C.tier === 0 ? (G.history.length ? 2.2 : 0) : 4.2);
+    S.learn = G.history.some(h => h.cat === G.cat) ? 0 : (G.cat === 'f1' ? (C.time ? 2.5 : 1.5) : C.tier === 0 ? (G.history.length ? 2.2 : 0) : 5.5);   // juniors: rookies finish ~0.1 of the field lower than second-year drivers (Wikipedia standings)
     // F1 rookies take time: years 1-2 are a learning curve, year 3 is where it starts to click, then full ceiling
     if (G.cat === 'f1' && !C.time) { S.exp = [0.3, 0.48, 0.76, 0.93, 1][Math.min(G.f1Years, 4)]; S.boost -= [1.5, 1, 0.5, 0, 0][Math.min(G.f1Years, 4)]; }   // (the lap-time model uses the fitted rookie penalty instead)
     // F1 know-how carries over to other series
@@ -751,7 +752,7 @@
     }
     const anyTitle = evRes ? (!partial && evRes.some(r => r.pos === 1 && (r.main || r.wc))) : champ;
     let earn = 0;
-    if (!C.pay) earn = Math.round(salOf(G, S.cat, G.team) * (0.9 + q * 0.25) + P.w * salOf(G, S.cat, G.team) * 0.02);
+    if (!C.pay) { const base = G.deal && G.deal.sal ? G.deal.sal : salOf(G, S.cat, G.team); earn = Math.round(base * (0.9 + q * 0.25) + P.w * base * 0.02); }
     const carRank = C.teams.map(t => t[0]).sort((a, b) => G.tr[S.cat][b] - G.tr[S.cat][a]).indexOf(S.teams[0]) + 1;
     const repBefore = G.rep;
     if (!partial) { const dRep = (C.tier === 0 ? kartRepW(G.age) : REP_W[C.tier]) * (q * 10 - 3.5) + (anyTitle ? 6 : 0) + Math.min(P.w, 10) * 0.15 + (C.tier === 0 ? FLAIR[G.tier] * (0.6 + 0.4 * q) : 0); G.rep = clamp(G.rep + dRep, 5, 100); }
@@ -845,11 +846,15 @@
   };
   function makeOffer(G, kind, catId, team, extra) {
     const C = CATS[catId], r = trS(G, catId)[team], ros = roster(G, catId, team);
-    const tm = ros.filter(n => n !== G.name)[0] || ros[0];
-    const tmSkill = C.lvl + 0.4 * (r - C.lvl), ovr = ovrOf(G.stats);
+    let tm = ros.filter(n => n !== G.name)[0] || ros[0], tmSkill = C.lvl + 0.4 * (r - C.lvl), ovr = ovrOf(G.stats);
+    if (catId === 'f1' && G.f1 && G.f1.teams[team]) {   // F1: you would partner the stronger incumbent (you take the weaker one's seat), judged on next year's level
+      const inc = G.f1.teams[team].filter(d => d && !d.player).sort((a, b) => b.ski - a.ski)[0];
+      if (inc) { tm = inc.name; tmSkill = effOf(inc); ovr = ovr - penOf(G.f1Years + 1); }
+    }
     const role = ovr >= tmSkill + 2 ? 'Lead driver' : ovr >= tmSkill - 3 ? 'Equal status' : 'Second driver';
     const years = C.tier === 0 || JR1.includes(catId) ? 1 : C.tier >= 3 ? 1 + Math.floor(rnd() * 4) : 1 + Math.floor(rnd() * 3);
-    return Object.assign({ kind, cat: catId, team, r: Math.round(r), cost: costOf(G, catId, team), sal: salOf(G, catId, team), years, role, tm, tier: C.tier }, extra || {});
+    const sal = Math.round(salOf(G, catId, team) * (catId === 'f1' ? Math.exp(gauss() * 0.2) : 1));   // F1 deals are negotiated: ±20% around the going rate
+    return Object.assign({ kind, cat: catId, team, r: Math.round(r), cost: costOf(G, catId, team), sal, years, role, tm, tier: C.tier }, extra || {});
   }
   // dominated every category you raced in (F4, F3, F2): the only way to walk into a top team on debut
   const JR1 = ['f4', 'f3', 'f2', 'frec'];   // junior single-seater deals are one-year
@@ -916,10 +921,10 @@
   const f4Thr = age => age <= 16 ? 60 : age === 17 ? 54 : 48;
   const bucket = pos => pos <= 4 ? 0 : pos <= 7 ? 1 : pos <= 10 ? 2 : pos <= 15 ? 3 : 4;
   function promoChance(G, fromCat, toCat, pos, mult) {
-    let p = PROMO_P[bucket(pos)][G.tier];
-    if (toCat === 'f1' && fromCat === 'f2' && bucket(pos) > 0) p *= 0.3;
+    const st = STEP_P[fromCat];
+    let p = st ? st[pos === 1 ? 0 : pos <= 3 ? 1 : pos <= 5 ? 2 : pos <= 10 ? 3 : 4] * STEP_TIER[G.tier] : PROMO_P[bucket(pos)][G.tier];
     if (TIER3_SIDE.includes(fromCat)) p *= pos <= 3 ? 0.03 : 0;
-    return clamp(p * (mult || 1), 0, 1);
+    return clamp(p * (mult || 1), 0, st ? 0.97 : 1);
   }
 
   const SPONSORS = ['Halden Motors', 'Brightline Energy', 'Corvane Tyres', 'Northgate Logistics', 'Kestrel Foods', 'Meridian Bank', 'Apex Racewear', 'Voltmark Batteries', 'Larkfield Homes', 'Quill Insurance', 'Redmere Telecom', 'Ostler Engineering'];
@@ -948,7 +953,8 @@
     const L = G.last, C = CATS[G.cat], nextAge = G.age + 1, lh = G.history[G.history.length - 1];
     G._mk = []; G._rescued = false;
     const M = { options: [], stuck: false, forced: false, academy: null, nextAge, note: '', roll: null, msgs: G._mk, broke: false };
-    const stay = () => { const o = makeOffer(G, 'stay', G.cat, G.team); o.years = G.contract > 0 ? G.contract : (C.tier === 0 || JR1.includes(G.cat) ? 1 : 1 + Math.floor(rnd() * 2)); if (C.pay && C.tier >= 1 && !affordable(G, G.cat, G.team)) o.blocked = true; return o; };
+    // staying on a running deal keeps its pay
+    const stay = () => { const o = makeOffer(G, 'stay', G.cat, G.team); o.years = G.contract > 0 ? G.contract : (C.tier === 0 || JR1.includes(G.cat) ? 1 : 1 + Math.floor(rnd() * 2)); if (G.contract > 0 && G.deal && G.deal.sal) o.sal = G.deal.sal; if (C.pay && C.tier >= 1 && !affordable(G, G.cat, G.team)) o.blocked = true; return o; };
     const lat = (cats, A, k, kind) => cats.forEach(lc => offersFor(G, lc, A(lc), k, null).forEach(o => M.options.push(Object.assign(o, { kind: kind || 'lateral' }))));
     let quit = false;
     if (C.tier === 0 && G.wealth === 'poor') {
@@ -979,7 +985,7 @@
           const p = promoChance(G, cat, promoCat, pos);
           promoted = rnd() < p;
           M.roll = { pos, p, got: promoted, to: CATS[promoCat].short };
-          if (promoted) M.note = pos <= 4 ? `P${pos} in ${C.short}. Top 4 means the doors open.` : `P${pos} gave you a ${Math.round(p * 100)}% shot at ${CATS[promoCat].short}, and the call came.`;
+          if (promoted) M.note = p >= 0.9 ? `P${pos} in ${C.short}: the doors are open.` : `P${pos} gave you a ${Math.round(p * 100)}% shot at ${CATS[promoCat].short}, and the call came.`;
           else if (p > 0.02) M.note = `P${pos} gave you a ${Math.round(p * 100)}% chance of a ${CATS[promoCat].short} seat. No call this time.`;
         }
         if (promoted) M.options.push(...offersFor(G, promoCat, attract(G, promoCat) + (pos <= 4 ? 8 : 0), 4, null).map(o => Object.assign(o, { kind: 'promo' })));
@@ -1000,18 +1006,23 @@
           if (isRB(G) && t !== 'Racing Bulls') continue;
           if (!G.history.some(h => h.cat === 'f1') && Object.keys(trS(G, 'f1')).sort((a, b) => trS(G, 'f1')[b] - trS(G, 'f1')[a]).slice(0, 4).includes(t) && !dominatedAll(G) && !(G.reserve === t && rnd() < 0.35)) continue;
           let p = 0;
-          if (G.reserve === t) p = clamp(0.2 + 0.55 * L.q, 0, 0.75);
-          else if (G.academy && G.academy.f1.includes(t)) p = cat === 'f2' ? 0.12 + 0.35 * L.q : 0.05;
-          else if (cat === 'f2') p = pos <= 8 ? 0.02 : 0;
+          if (G.reserve === t) p = clamp(0.1 + 0.4 * L.q, 0, 0.5);
+          else if (G.academy && G.academy.f1.includes(t)) p = cat === 'f2' ? 0.5 * promoChance(G, 'f2', 'f1', pos) : 0.05;   // the junior ladder odds (above) already include these call-ups
+          else if (cat === 'f2') p = 0.2 * promoChance(G, 'f2', 'f1', pos);
           else if (pos <= 2 && G.rep >= 70) p = 0.04 + 0.02 * Math.max(0, G.tier - 1);
           if (rnd() < p) { M.options.push(makeOffer(G, 'promo', 'f1', t, { vacancy: true })); M.note = (M.note ? M.note + ' ' : '') + `A seat opened up at ${t} and they want you.`; break; }
         }
       }
-      const stuck = STUCK_CATS.includes(cat) && G.seasonsInCat >= 3 && !M.options.some(o => o.kind === 'promo');
+      const champOut = (cat === 'f2' || cat === 'f3') && L.champ && !M.options.some(o => o.kind === 'promo');   // F2/F3 champions may not race in the series again
+      const stuck = !champOut && STUCK_CATS.includes(cat) && G.seasonsInCat >= 3 && !M.options.some(o => o.kind === 'promo');
       if (f1Demoted) {
         M.note = G.demotedWhy ? `No new deal with ${G.team}. Offers: lower F1 teams, an outside shot at a bigger team, or another series.` : `You were dropped mid-season. Offers: lower F1 teams, an outside shot at a bigger team, or another series.`;
         M.options.push(...offersFor(G, 'f1', attract(G, 'f1') - 28, 3, G.team).map(o => Object.assign(o, { kind: 'move' })));
         lat(SENIOR.slice().sort(() => rnd() - 0.5).slice(0, 3), () => attract(G, 'f1') + 8, 1);
+      } else if (champOut) {
+        M.note = (M.note ? M.note + ' ' : '') + `${C.short} champions can't defend their title, and no ${CATS[promoCat].short} seat came: go sideways or call it a day.`;
+        (LATERAL[cat] || []).forEach(lc => offersFor(G, lc, attract(G, lc) + 6, 2, null).forEach(o => M.options.push(Object.assign(o, { kind: 'lateral' }))));
+        if (!M.options.length) M.options.push(...offersFor(G, cat === 'f2' ? 'wec' : 'gt3', attract(G, cat === 'f2' ? 'wec' : 'gt3') + 10, 2, null).map(o => Object.assign(o, { kind: 'lateral' })));
       } else if (stuck) {
         M.stuck = true; M.note = (M.note ? M.note + ' ' : '') + `3 seasons in ${C.short} without moving up: retire or go sideways.`;
         if (tgt) { const p = promoChance(G, cat, promoCat, pos, 0.35); if (rnd() < p) { M.options.push(...offersFor(G, promoCat, attract(G, promoCat) - 5, 2, null).map(o => Object.assign(o, { kind: 'promo' }))); M.note += ' A late call-up arrived.'; } }
@@ -1062,7 +1073,7 @@
     if (!G.academy) G.reserve = null;
     G.demoted = false; G.demotedWhy = null; G.f1 && (G.f1.vac = []);
     if (o.team !== G.team || o.kind !== 'stay') G.contract = o.years;
-    G.team = o.team; G.deal = { cost: o.scholarship ? o.cost : costOf(G, o.cat, o.team), sal: salOf(G, o.cat, o.team) };
+    G.team = o.team; G.deal = { cost: o.scholarship ? o.cost : costOf(G, o.cat, o.team), sal: o.sal !== undefined ? o.sal : salOf(G, o.cat, o.team) };
     startSeason(G);
   }
 
