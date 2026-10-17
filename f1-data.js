@@ -124,22 +124,26 @@
         lateP: 0.02,                // per driver per race: retires in the last 10% of the race but is still classified, laps down
         dropTop: 0.6, dropMid: 1.35, dropBack: 1.65, poach: 0.95, swapP: 0.1,   // drivers at the top teams stay put; the lower teams churn (F1DB 2010-25: 10% / 26% / 31% of drivers move from top-3 / 4-6 / 7+ teams)
         wetP: 0.075,                // share of grands prix that are properly wet (OpenF1 2023-26: 6% start on inters/wets, 18% see any rain)
+        mech26: 1.4,                // 2026 only: mechanical failures so far run 40% above the usual reset-year level (21% of starts failed to finish)
         penP: 0.06,                 // per driver per race: a grid penalty (5 or 10 places, or the back of the grid)
         inc: [2.1, 3.0, 4.4, 5.1, 4.6],   // incident DNF % by grid bucket P1-3, 4-6, 7-10, 11-15, 16+ (F1DB 2010-2025, scaled to the 2022-25 level)
         mech: [12, 6.0, 4.2, 3.4],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
       },
+      // 2026 start: car strengths fitted to the 2026 results so far (mean qualifying position and finish per team, 17 rounds) and each team's real reliability so far
+      edge2026: {'Mercedes': 0.67, 'McLaren': -1.85, 'Ferrari': -1.23, 'Red Bull Racing': -0.05, 'Williams': 2.48, 'Racing Bulls': 3.46, 'Aston Martin': 7.03, 'Alpine': 1.76, 'Haas': 3.68, 'Audi': 1.77, 'Cadillac': 1.43},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
+      rel2026: {'Mercedes': 0.5, 'Ferrari': 0.5, 'Red Bull Racing': 0.8, 'McLaren': 0.95, 'Racing Bulls': 0.25, 'Alpine': 0.5, 'Haas': 0.68, 'Audi': 0.8, 'Williams': 1.5, 'Aston Martin': 2.4, 'Cadillac': 1.75},
       teams: [
-        ['Mercedes', 7, 'George Russell|Kimi Antonelli'],
-        ['McLaren', 3, 'Lando Norris|Oscar Piastri'],
-        ['Ferrari', 4.2, 'Charles Leclerc|Lewis Hamilton'],
-        ['Red Bull Racing', 2.4, 'Max Verstappen|Isack Hadjar'],
-        ['Williams', -8.5, 'Alex Albon|Carlos Sainz'],
-        ['Racing Bulls', -4, 'Liam Lawson|Arvid Lindblad'],
-        ['Aston Martin', -11, 'Fernando Alonso|Lance Stroll'],
-        ['Alpine', -4.6, 'Pierre Gasly|Franco Colapinto'],
-        ['Haas', -6, 'Esteban Ocon|Oliver Bearman'],
-        ['Audi', -7, 'Nico Hülkenberg|Gabriel Bortoleto'],
-        ['Cadillac', -12, 'Sergio Pérez|Valtteri Bottas'],
+        ['Mercedes', 8.53, 'George Russell|Kimi Antonelli'],
+        ['McLaren', 5.8, 'Lando Norris|Oscar Piastri'],
+        ['Ferrari', 8.03, 'Charles Leclerc|Lewis Hamilton'],
+        ['Red Bull Racing', 6.22, 'Max Verstappen|Isack Hadjar'],
+        ['Williams', -5.83, 'Alex Albon|Carlos Sainz'],
+        ['Racing Bulls', 0.78, 'Liam Lawson|Arvid Lindblad'],
+        ['Aston Martin', -12.67, 'Fernando Alonso|Lance Stroll'],
+        ['Alpine', 1.55, 'Pierre Gasly|Franco Colapinto'],
+        ['Haas', -3.99, 'Esteban Ocon|Oliver Bearman'],
+        ['Audi', -1.67, 'Nico Hülkenberg|Gabriel Bortoleto'],
+        ['Cadillac', -13.81, 'Sergio Pérez|Valtteri Bottas'],
       ],
     },
 

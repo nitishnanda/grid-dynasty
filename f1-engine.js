@@ -65,7 +65,7 @@
     G.rep = startAge === 16 ? [46, 52, 56, 62, 72][G.tier] + gauss() * 3 : 12 + rnd() * 8;
     Object.values(CATS).forEach(C => {
       G.tr[C.id] = {};
-      if (C.dyn) { G.dyn[C.id] = { str: {}, trend: {}, streak: 0, last: null, regime: C.id === 'f1' ? 'dominant' : 'close', relEra: C.id === 'f1' ? 1.7 : 1, gapEra: C.id === 'f1' ? 1.45 : 1, relTeam: {} }; C.teams.forEach(t => { G.dyn[C.id].str[t[0]] = t[1]; G.dyn[C.id].trend[t[0]] = 0; G.dyn[C.id].relTeam[t[0]] = C.id === 'f1' ? (C.time ? clamp(Math.exp(gauss() * 0.9), 0.3, 6) : clamp(1 + gauss() * 0.3, 0.6, 1.8)) : 1; }); }
+      if (C.dyn) { G.dyn[C.id] = { str: {}, trend: {}, streak: 0, last: null, regime: C.id === 'f1' ? 'dominant' : 'close', relEra: C.id === 'f1' ? 1.7 : 1, gapEra: C.id === 'f1' ? 1.45 : 1, relTeam: {}, edge: C.edge2026 ? Object.assign({}, C.edge2026) : {} }; C.teams.forEach(t => { G.dyn[C.id].str[t[0]] = t[1]; G.dyn[C.id].trend[t[0]] = 0; G.dyn[C.id].relTeam[t[0]] = C.id === 'f1' ? (C.rel2026 && C.rel2026[t[0]] !== undefined ? C.rel2026[t[0]] : C.time ? clamp(Math.exp(gauss() * 0.9), 0.3, 6) : clamp(1 + gauss() * 0.3, 0.6, 1.8)) : 1; }); }   // the 2026 start uses each team's real reliability so far
       setTR(G, C.id);
     });
     initF1(G);
@@ -102,6 +102,7 @@
   }
   function evolveCat(G, c, champ) {
     const C = CATS[c], d = G.dyn[c], ny = G.year + 1, reg = C.regYears.includes(ny), names = C.teams.map(t => t[0]);
+    if (d.edge) { if (reg) d.edge = {}; else Object.keys(d.edge).forEach(k => { d.edge[k] *= 0.5; }); }   // a team's race-vs-qualifying edge fades and a rule reset wipes it
     if (reg) {
       // a reset shuffles the order, but the established powerhouses keep most of their edge
       names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] = clamp((el ? 0.85 : 0.5) * base + gauss() * (el ? 1.8 : 2.8), -(C.sMax || 8), C.sMax || 8); d.trend[n] = (el ? -0.08 : -0.2) * d.str[n] + gauss() * 0.7; });
@@ -472,10 +473,10 @@
         const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * 0.045, 0.7, 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
         grid.forEach((u, gi) => {
           u.grid = gi + 1;
-          let rp = carPctT(u, true) + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * (wet ? 1.6 : 1)
+          let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * (wet ? 1.6 : 1)
             + (!isSpr && ri >= 6 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.w / ri - 0.66) * 3), 0) : 0);   // win streaks fade too (rivals' upgrades, risk, reliability): real record 19 of 22
           let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1);
-          let pr = TM.mech[regAgeT] / 100 * mfT(u) / mfM * (isSpr ? 0.35 : 1);
+          let pr = TM.mech[regAgeT] / 100 * (G.year === 2026 ? TM.mech26 || 1 : 1) * mfT(u) / mfM * (isSpr ? 0.35 : 1);   // 2026 is an unusually fragile new-engine year
           if (u.hasP) {
             pe *= clamp(1 + (65 - st.CON) * 0.012, 0.6, 1.5) * (G.f1Years < 2 ? 1.3 : 1);
             if (mode === 'push') { rp -= 0.05 + (RAC - 60) * 0.001; pe *= clamp(1.6 + (60 - RAC) * 0.03, 1.15, 3.4); pr *= 1.15; }
