@@ -225,7 +225,7 @@
         ['Buzz MK Racing', -3, 'Roman Staněk', 1],
         ['DELiGHTWORKS Racing', -3.5, 'Nobuharu Matsushita', 1],
       ] },
-    indy: { id: 'indy', sigK: 1.15, champT: 3.5, champRep: 1.6, lap: 65, qK: 0.0721, rK: 2.6551, name: 'IndyCar Series', short: 'IndyCar', tier: 3, lvl: 79, rounds: 17, rpr: 1, dpt: 2, pay: false, sal: [250, 6000], titleName: 'IndyCar Champion',
+    indy: { id: 'indy', skSd: 2.7, sigK: 1.15, champT: 3.5, champRep: 0.7, champDrvRep: 0.27, lap: 65, qK: 0.0721, rK: 2.6551, name: 'IndyCar Series', short: 'IndyCar', tier: 3, lvl: 79, rounds: 17, rpr: 1, dpt: 2, pay: false, sal: [250, 6000], titleName: 'IndyCar Champion',
       rf: [{ n: 'Race', pts: PIND, grid: 'q' }], special: { 5: 'Indy 500 win' },
       names: ['St. Petersburg', 'Phoenix', 'Long Beach', 'Barber', 'Indianapolis GP', 'Indianapolis 500', 'Detroit', 'Road America', 'Mid-Ohio', 'Toronto', 'Iowa', 'Laguna Seca', 'Portland', 'Milwaukee', 'Nashville', 'Gateway', 'Markham'],
       teams: [
@@ -240,7 +240,7 @@
         ['A.J. Foyt Racing', -3, 'Santino Ferrucci|Caio Collet'],
         ['Dale Coyne Racing', -4, 'Romain Grosjean|Dennis Hauger'],
       ] },
-    wec: { id: 'wec', sigK: 1.1, champT: 4, champRep: 1.8, lap: 200, qK: 0.1194, rK: 9.7287, name: 'WEC Hypercar', short: 'WEC', tier: 3, lvl: 78, rounds: 8, rpr: 1, dpt: 3, pay: false, crew: true, sal: [150, 1800], titleName: 'WEC Hypercar Champion',
+    wec: { id: 'wec', skSd: 2.5, sigK: 1.1, champT: 4, champRep: 0.7, champDrvRep: 0.2, lap: 200, qK: 0.1194, rK: 9.7287, name: 'WEC Hypercar', short: 'WEC', tier: 3, lvl: 78, rounds: 8, rpr: 1, dpt: 3, pay: false, crew: true, sal: [150, 1800], titleName: 'WEC Hypercar Champion',
       rf: [{ n: 'Race', pts: PF1, grid: 'q' }], special: { 3: '24 Hours of Le Mans win' },
       names: ['Qatar 1812km', 'Imola 6h', 'Spa 6h', '24 Hours of Le Mans', 'São Paulo 6h', 'COTA 6h', 'Fuji 6h', 'Bahrain 8h'],
       teams: [
@@ -261,7 +261,7 @@
         ['Aston Martin THOR Team #007', -1.5, 'Tom Gamble|Harry Tincknell|Ross Gunn'],
         ['Aston Martin THOR Team #009', -2, 'Alex Riberas|Marco Sørensen|Roman De Angelis'],
       ] },
-    fe: { id: 'fe', sigK: 1.4, champT: 8, champRep: 0.7, lap: 70, qK: 0.0578, rK: 1.0175, name: 'Formula E', short: 'Formula E', tier: 3, lvl: 78, rounds: 16, rpr: 1, dpt: 2, pay: false, sal: [200, 2500], titleName: 'Formula E Champion',
+    fe: { id: 'fe', sigK: 1.55, champT: 8, champRep: 0.7, champDrvRep: 0.08, lap: 70, qK: 0.0578, rK: 1.0175, name: 'Formula E', short: 'Formula E', tier: 3, lvl: 78, rounds: 16, rpr: 1, dpt: 2, pay: false, sal: [200, 2500], titleName: 'Formula E Champion',
       rf: [{ n: 'E-Prix', pts: PF1, grid: 'q' }],
       names: ['São Paulo', 'Mexico City', 'Miami', 'Jeddah', 'Madrid', 'Berlin', 'Monaco', 'Sanya', 'Shanghai', 'Tokyo', 'London', 'Portland', 'Misano', 'Jakarta', 'Seoul', 'Cape Town'],
       teams: [
@@ -276,7 +276,7 @@
         ['Cupra Kiro', -2.5, 'Pepe Martí|Dan Ticktum'],
         ['Lola Yamaha ABT', -3, 'Lucas di Grassi|Zane Maloney'],
       ] },
-    nascar: { id: 'nascar', champT: 7, champRep: 0.3, lap: 55, qK: 0.04, rK: 1.7, name: 'NASCAR Cup Series', short: 'NASCAR', tier: 3, lvl: 76, rounds: 36, rpr: 3, dpt: 2, pay: false, sal: [300, 9000], titleName: 'NASCAR Cup Champion', sigK: 1.6, dnfK: 1.1,
+    nascar: { id: 'nascar', champT: 7, champRep: 0.3, champDrvRep: 0.0, lap: 55, qK: 0.04, rK: 1.7, name: 'NASCAR Cup Series', short: 'NASCAR', tier: 3, lvl: 76, rounds: 36, rpr: 3, dpt: 2, pay: false, sal: [300, 9000], titleName: 'NASCAR Cup Champion', sigK: 1.6, dnfK: 1.1,
       rf: [{ n: 'Stage 1', pts: PSTG, grid: 'q', stage: true }, { n: 'Stage 2', pts: PSTG, grid: 'prev', stage: true }, { n: 'Race', pts: PNAS, grid: 'prev' }], special: { 0: 'Daytona 500 win' },
       names: ['Daytona 500', 'Atlanta', 'Circuit of the Americas', 'Phoenix', 'Las Vegas', 'Homestead-Miami', 'Martinsville', 'Darlington', 'Bristol', 'Talladega', 'Texas', 'Kansas', 'North Wilkesboro', 'Charlotte 600', 'Nashville', 'Michigan', 'Pocono', 'San Diego', 'Sonoma', 'Chicagoland', 'Atlanta II', 'North Wilkesboro II', 'Indianapolis', 'Iowa', 'Richmond', 'New Hampshire', 'Daytona', 'Darlington II', 'Gateway', 'Bristol II', 'Kansas II', 'Talladega II', 'Charlotte Roval', 'Las Vegas II', 'Homestead II', 'Phoenix Finale'],
       teams: [
@@ -295,7 +295,7 @@
         ['Kaulig Racing', -3.5, 'AJ Allmendinger|Justin Haley', 2],
         ['Rick Ware Racing', -4.5, '', 2],
       ] },
-    imsa: { id: 'imsa', sigK: 1.1, champT: 6, champRep: 0.4, lap: 105, qK: 0.1, rK: 6.5, name: 'IMSA SportsCar Championship', short: 'IMSA', tier: 3, lvl: 78, rounds: 10, rpr: 1, dpt: 3, pay: false, crew: true, sal: [150, 1500], titleName: 'IMSA GTP Champion',
+    imsa: { id: 'imsa', skSd: 2.5, sigK: 1.1, champT: 6, champRep: 0.3, champDrvRep: 0.02, lap: 105, qK: 0.1, rK: 6.5, name: 'IMSA SportsCar Championship', short: 'IMSA', tier: 3, lvl: 78, rounds: 10, rpr: 1, dpt: 3, pay: false, crew: true, sal: [150, 1500], titleName: 'IMSA GTP Champion',
       rf: [{ n: 'Race', pts: PIMSA, grid: 'q' }], special: { 0: 'Rolex 24 at Daytona win' },
       names: ['Rolex 24 at Daytona', 'Sebring 12h', 'Long Beach', 'Laguna Seca', 'Detroit', 'Watkins Glen 6h', 'Road America', 'VIR', 'Indianapolis', 'Petit Le Mans'],
       teams: [
@@ -311,7 +311,7 @@
         ['Cadillac Action Express #311', 0.5, 'Sébastien Bourdais|Scott Dixon|Alex Palou'],
         ['Acura Wayne Taylor #40', -1.5, 'Brendon Hartley|Felipe Drugovich|Jordan Taylor'],
       ] },
-    dtm: { id: 'dtm', sigK: 1.35, champT: 9, champRep: 0.4, lap: 85, qK: 0.09, rK: 1.8, name: 'DTM', short: 'DTM', tier: 3, lvl: 76, rounds: 8, rpr: 2, dpt: 2, pay: false, sal: [150, 1100], titleName: 'DTM Champion',
+    dtm: { id: 'dtm', skSd: 3.3, sigK: 1.35, champT: 9, champRep: 0.5, champDrvRep: 0.06, lap: 85, qK: 0.09, rK: 1.8, name: 'DTM', short: 'DTM', tier: 3, lvl: 76, rounds: 8, rpr: 2, dpt: 2, pay: false, sal: [150, 1100], titleName: 'DTM Champion',
       rf: [{ n: 'Race 1', pts: PKART, grid: 'q' }, { n: 'Race 2', pts: PKART, grid: 'q' }],
       names: ['Oschersleben', 'Lausitzring', 'Red Bull Ring', 'Norisring', 'Nürburgring', 'Sachsenring', 'Zandvoort', 'Hockenheim'],
       teams: [
@@ -327,7 +327,7 @@
         ['KÜS Team Bernhard', -3, '', 2],
         ['Grasser Racing Team', -3.5, '', 2],
       ] },
-    supercars: { id: 'supercars', sigK: 0.72, champT: 2.8, champRep: 3.2, lap: 80, qK: 0.06, rK: 2.0, name: 'Repco Supercars Championship', short: 'Supercars', tier: 3, lvl: 75, rounds: 14, rpr: 2, dpt: 2, pay: false, sal: [200, 1600], titleName: 'Supercars Champion',
+    supercars: { id: 'supercars', skSd: 4.0, sigK: 0.72, champT: 2.8, champRep: 0.7, champDrvRep: 0.5, lap: 80, qK: 0.06, rK: 2.0, name: 'Repco Supercars Championship', short: 'Supercars', tier: 3, lvl: 75, rounds: 14, rpr: 2, dpt: 2, pay: false, sal: [200, 1600], titleName: 'Supercars Champion',
       rf: [{ n: 'Race 1', pts: PSUP, grid: 'q' }, { n: 'Race 2', pts: PSUP, grid: 'prev' }], special: { 10: 'Bathurst 1000 win' },
       names: ['Sydney', 'Melbourne', 'Taupō', 'Symmons Plains', 'Tasmania', 'Perth', 'Darwin', 'Townsville', 'Queensland', 'Sandown 500', 'Bathurst 1000', 'Gold Coast', 'Adelaide', 'Newcastle'],
       teams: [

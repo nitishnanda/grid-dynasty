@@ -182,6 +182,22 @@
     const p = 1 - Math.pow(1 - ({ f4: 0.6, f3: 0.5, f2: 0.45 }[cat] || (CATS[cat].dyn ? 0.12 : 0.35)), since);
     CATS[cat].teams.forEach(t => { for (let i = 0; i < seats(cat, t[0]); i++) if (rnd() < p) G.names[cat + '|' + t[0] + '|' + i] = freshName(G, cat); });
   }
+  // the winter driver market of a senior series: ~20% new faces, ~30% of the drivers change team (Wikipedia entry lists 2008-2025: a
+  // third of each season's field is new, about a third of returners switch team), with moves skewed towards the stronger cars
+  function driverMarket(G, cat) {
+    const C = CATS[cat], D = G.dyn[cat]; if (!C.dyn || cat === 'f1' || !D) return;
+    const teams = C.teams.map(t => t[0]), key = (t, i) => cat + '|' + t + '|' + i;
+    teams.forEach(t => { for (let i = 0; i < seats(cat, t); i++) if (rnd() < (C.newFaces === undefined ? 0.2 : C.newFaces)) G.names[key(t, i)] = freshName(G, cat); });
+    const seatsAll = []; teams.forEach(t => { for (let i = 0; i < seats(cat, t); i++) seatsAll.push([t, i]); });
+    const pm = C.moveP === undefined ? 0.3 : C.moveP;
+    seatsAll.forEach(([t, i]) => {
+      if (rnd() >= pm / 2) return;   // each swap moves two drivers
+      const w = teams.filter(x => x !== t).map(x => Math.exp((D.str[x] || 0) / 4)); let r = rnd() * w.reduce((a, b) => a + b, 0), k = 0;
+      const others = teams.filter(x => x !== t); for (; k < w.length - 1; k++) { r -= w[k]; if (r <= 0) break; }
+      const t2 = others[k], j = Math.floor(rnd() * seats(cat, t2)), a = seatName(G, cat, t, i), b = seatName(G, cat, t2, j);
+      G.names[key(t, i)] = b; G.names[key(t2, j)] = a;
+    });
+  }
   function roster(G, cat, team) {
     if (cat === 'f1') return G.f1.teams[team].map(d => d.player ? G.name : d.name);
     return Array.from({ length: seats(cat, team) }, (_, i) => seatName(G, cat, team, i));
@@ -791,8 +807,16 @@
     const champs = [], retirees = [];
     Object.keys(G.dyn).forEach(c => {
       const CC = CATS[c]; let ct;
+      if (c !== 'f1' && CC.dyn) { driverMarket(G, c); G.churn[c] = G.year + 1; }
       if (c === S.cat) ct = Object.keys(teamPts).sort((a, b) => teamPts[b] - teamPts[a])[0];
-      else { let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(G.dyn[c].str[t[0]] / (CC.champT || 1.6)) * (G.dyn[c].lastChampT === t[0] ? (CC.champRep === undefined ? 1 : CC.champRep) : 1); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; } ct = CC.teams[Math.min(i, CC.teams.length - 1)][0]; G.dyn[c].lastChampT = ct; }
+      else {
+        const D = G.dyn[c]; D.forceWho = null;
+        // a defending champion often repeats whichever team he is with now (series' real repeat rate); otherwise the title goes by car strength
+        const held = D.lastChampD && rnd() < (CC.champDrvRep || 0) ? CC.teams.map(t => t[0]).find(t => roster(G, c, t).includes(D.lastChampD)) : null;
+        if (held) { ct = held; D.forceWho = D.lastChampD; }
+        else { let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(D.str[t[0]] / (CC.champT || 1.6)) * (D.lastChampT === t[0] ? (CC.champRep === undefined ? 1 : CC.champRep) : 1); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; } ct = CC.teams[Math.min(i, CC.teams.length - 1)][0]; }
+        D.lastChampT = ct;
+      }
       G.dyn[c]._champ = ct; evolveCat(G, c, ct);
     });
     // nobody knows next year's car order in the summer: offers and the pecking order show a forecast (very hazy before new rules)
@@ -807,7 +831,7 @@
         if (c === 'f1') { const ds = G.f1.teams[ct].filter(d => !d.player); who = ds.sort((a, b) => effOf(b) - effOf(a))[0].name; }
         else {   // either of a team's drivers can take the title, the lead seat more often; last year's champion usually repeats if his team does
           const ros = roster(G, c, ct), D = G.dyn[c];
-          who = D.lastChampD && ros.includes(D.lastChampD) && rnd() < (CC.champKeep === undefined ? 0.85 : CC.champKeep) ? D.lastChampD : ros[rnd() < 0.62 ? 0 : Math.min(ros.length - 1, 1 + Math.floor(rnd() * (ros.length - 1)))];
+          who = D.forceWho && ros.includes(D.forceWho) ? D.forceWho : ros[rnd() < 0.62 ? 0 : Math.min(ros.length - 1, 1 + Math.floor(rnd() * (ros.length - 1)))];
           D.lastChampD = who;
         }
         champs.push({ cat: CC.short, who, team: ct });
