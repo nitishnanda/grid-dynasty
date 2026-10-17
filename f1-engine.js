@@ -988,6 +988,21 @@
     while (out.length < k && Object.keys(w).length) { const ks = Object.keys(w); let r = rnd() * ks.reduce((a, c) => a + w[c], 0), i = 0; for (; i < ks.length - 1; i++) { r -= w[ks[i]]; if (r <= 0) break; } out.push(ks[i]); delete w[ks[i]]; }
     return out;
   }
+  // why a step up did not come: grid already full, teams wanted someone younger, or the seats went to academy drivers
+  function noSeatWhy(G, promoCat, nextAge) {
+    const target = CATS[promoCat].short, vac = promoCat === 'f1' ? new Set((G.f1.vac || [])).size : 0, w = [];
+    w.push(['full', promoCat === 'f1' ? (vac <= 1 ? 5 : vac <= 3 ? 2 : 0.5) : 2.5]);
+    w.push(['young', nextAge >= 22 ? 3 : nextAge >= 21 ? 1.5 : 0]);
+    w.push(['wait', nextAge <= 19 ? 3 : 0]);
+    w.push(['academy', !G.academy && (promoCat === 'f1' ? vac > 0 : true) ? 2 : 0]);
+    let r = rnd() * w.reduce((a, x) => a + x[1], 0), k = 'full'; for (const [id, v] of w) { r -= v; if (r <= 0 && v > 0) { k = id; break; } }
+    return ({
+      full: promoCat === 'f1' ? (vac === 0 ? `Why: every ${target} seat is already under contract for next year, and not one opened up.` : `Why: the ${target} grid is nearly locked. Only ${vac} seat${vac > 1 ? 's' : ''} opened up and the teams signed their drivers early.`) : `Why: next year's ${target} line-ups were already signed before the season finished.`,
+      young: `Why: the teams that had a seat wanted someone younger, and at ${nextAge} you are no longer the fresh prospect.`,
+      wait: `Why: teams think you need one more year and have not offered a seat yet.`,
+      academy: `Why: the seats that did open went to manufacturer academy drivers, who get priority.`,
+    })[k];
+  }
   function buildMarket(G, keepPhase) {
     const L = G.last, C = CATS[G.cat], nextAge = G.age + 1, lh = G.history[G.history.length - 1];
     G._mk = []; G._rescued = false;
@@ -1025,7 +1040,7 @@
           promoted = rnd() < p;
           M.roll = { pos, p, got: promoted, to: CATS[promoCat].short };
           if (promoted) M.note = p >= 0.9 ? `P${pos} in ${C.short}: the doors are open.` : `P${pos} gave you a ${Math.round(p * 100)}% shot at ${CATS[promoCat].short}, and the call came.`;
-          else if (p > 0.02) M.note = `P${pos} gave you a ${Math.round(p * 100)}% chance of a ${CATS[promoCat].short} seat. No call this time.`;
+          else if (p > 0.02) M.note = `P${pos} gave you a ${Math.round(p * 100)}% chance of a ${CATS[promoCat].short} seat. No call this time. ${noSeatWhy(G, promoCat, nextAge)}`;
         }
         if (promoted) M.options.push(...offersFor(G, promoCat, attract(G, promoCat) + (pos <= 4 ? 8 : 0), 4, null).map(o => Object.assign(o, { kind: 'promo' })));
         // most F4 graduates step up to FRECA; about half of F4 champions go straight to FIA F3 (Italian F4 2014-2024)
@@ -1079,10 +1094,14 @@
         }
       }
       // academy drivers without an F1 seat can take a reserve role
-      if (G.academy && cat === 'f2' && !M.options.some(o => o.cat === 'f1')) {
-        const rt = isRB(G) ? 'Racing Bulls' : G.academy.f1[0];
-        ['fe', 'sf', 'indy', 'wec', 'imsa', 'gt3w'].sort(() => rnd() - 0.5).slice(0, 2).forEach(c => offersFor(G, c, attract(G, c) + 6, 1, null).forEach(o => M.options.push(Object.assign(o, { kind: 'reserve', reserveFor: rt, role: `${rt} F1 reserve` }))));
-        M.note = (M.note ? M.note + ' ' : '') + `${G.academy.n} can keep you as ${rt} reserve while you race elsewhere.`;
+      if (cat === 'f2' && !M.options.some(o => o.cat === 'f1') && (G.academy || L.champ || pos <= 3)) {
+        // an F2 champion or podium finisher without a seat: a team keeps you on the books as reserve driver (simulator, Friday practice, stand-in calls) while you race elsewhere
+        const tr = trS(G, 'f1'), top = Object.keys(tr).sort((a, b) => tr[b] - tr[a]).slice(0, 7);
+        const rt = isRB(G) ? 'Racing Bulls' : G.academy ? G.academy.f1[0] : top[Math.floor(rnd() * Math.min(top.length, L.champ ? 7 : 5))];
+        const tag = o => Object.assign(o, { kind: 'reserve', reserveFor: rt, role: `${rt} F1 reserve` });
+        const lat = M.options.filter(o => o.kind === 'lateral' && o.cat !== 'f1' && !o.blocked).sort(() => rnd() - 0.5).slice(0, 2);   // the same seats, now with the reserve contract attached
+        if (lat.length) lat.forEach(tag); else ['fe', 'sf', 'indy', 'wec', 'imsa', 'gt3w'].sort(() => rnd() - 0.5).slice(0, 2).forEach(c => offersFor(G, c, attract(G, c) + 6, 1, null).forEach(o => M.options.push(tag(o))));
+        M.note = (M.note ? M.note + ' ' : '') + (G.academy ? `${G.academy.n} can keep you as ${rt} reserve while you race elsewhere.` : `${rt} offer you a reserve driver contract: you race elsewhere, work in their simulator, and are first in line when a seat opens or a driver is hurt.`);
       }
     }
     M.options = M.options.filter((o, i, a) => a.findIndex(x => x.cat === o.cat && x.team === o.team) === i);
@@ -1111,7 +1130,7 @@
     if (o.cat !== G.cat) { G.seasonsInCat = 0; G.cat = o.cat; }
     if (o.cat === 'f1') G.reserve = null;
     if (o.kind === 'reserve') G.reserve = o.reserveFor;
-    if (!G.academy) G.reserve = null;
+    if (!G.academy && o.kind !== 'reserve') G.reserve = null;
     G.demoted = false; G.demotedWhy = null; G.f1 && (G.f1.vac = []);
     if (o.team !== G.team || o.kind !== 'stay') G.contract = o.years;
     G.team = o.team; G.deal = { cost: o.scholarship ? o.cost : costOf(G, o.cat, o.team), sal: o.sal !== undefined ? o.sal : salOf(G, o.cat, o.team) };
