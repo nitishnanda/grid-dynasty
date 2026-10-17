@@ -400,17 +400,17 @@
     // ---- F1: lap-time model (F1DB-calibrated). Pace is in % of a lap behind the fastest car; lower = faster ----
     const TM = C.time, dynT = TM ? G.dyn[S.cat] : null, geT = TM ? (dynT.gapEra || 1) : 1, betaT = TM ? TM.beta * geT : 0;
     const regAgeT = TM ? Math.min(3, G.year - Math.max(...C.regYears.filter(y => y <= G.year), 2026)) : 0;
-    const tfT = {}, trT = {}; if (TM) C.teams.forEach(t => { tfT[t[0]] = gauss() * TM.trackSd * Math.sqrt(geT); trT[t[0]] = gauss() * TM.raceTeamSd * Math.sqrt(geT); });   // track fit (both days) and race-day-only car form (tyres, strategy, set-up)
+    const tfT = {}, trT = {}, tqT = {}; if (TM) C.teams.forEach(t => { tfT[t[0]] = gauss() * TM.trackSd * Math.sqrt(geT); trT[t[0]] = gauss() * TM.raceTeamSd * Math.sqrt(geT); tqT[t[0]] = gauss() * (TM.qTeamSd || 0); });   // track fit (both days) and race-day-only car form (tyres, strategy, set-up)
     const carTopT = TM ? Math.max(...units.map(uCar)) : 0;
     const wetT = wet ? (st.WET - ovrOf(st)) * 0.3 : 0;   // wet skill relative to your own level (the AI's wet skill is centred on zero too)
     const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) - (d.rk ? TM.rookieRace : 0) : 0)) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
     const lapNoiseT = () => gauss() * TM.qSd * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
     const carPctT = (u, race) => { const g = carTopT - uCar(u);
-      // one-lap pace converges as the rules mature; race pace behind the front-runners barely does (F1DB: P10's race gap is ~flat by regulation age)
-      if (race) return betaT * Math.min(g, TM.raceKnee) + TM.beta * TM.raceBack * Math.sqrt(geT) * Math.max(0, g - TM.raceKnee);
+      // one-lap pace converges as the rules mature; race pace behind the front-runners does not: it is far wider in a reset year, then ~flat (OpenF1 2023-26)
+      if (race) return betaT * Math.min(g, TM.raceKnee) + TM.beta * TM.raceBack * (regAgeT === 0 ? TM.raceReset : 1) * Math.pow(Math.max(0, g - TM.raceKnee), TM.raceBackPow);
       return betaT * (g <= TM.knee ? g : TM.knee + (g - TM.knee) * TM.tail * Math.pow(geT, 2.5)); };
-    const qPaceT = u => carPctT(u) + tfT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT() - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
+    const qPaceT = u => carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT() - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
     if (TM) {
       units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.58) * 2.5 + Math.max(0, d.pole / ri - 0.68) * 6), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
       const qo = units.slice().sort((a, b) => a.qp - b.qp), e1 = Math.max(0.3, TM.evoQ1 + gauss() * 0.3), e2 = Math.max(0.1, TM.evoQ2 + gauss() * 0.15);
@@ -446,7 +446,7 @@
     const entry = { ev: evIdx, round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
     let prev = qOrder;
     const run = (rf, grid, isSpr) => {
-      const n = grid.length;
+      const n = grid.length; let scNow = false;
       if (TM) {
         // race time = distance x (1 + race pace deficit) + track position + first-lap/strategy scatter; then reliability, incidents and safety cars
         const L = isSpr ? TM.sprintLaps : TM.laps, base = L * C.lap, sk = isSpr ? 0.5 : 1, gk = isSpr ? 0.45 : 1, lk = isSpr ? TM.sprintLaps / TM.laps : 1;
@@ -463,19 +463,21 @@
             else if (mode === 'coast') { rp += 0.05; pe *= 0.45; pr *= 0.8; }
           } else if (u.members.some(d => d.rk)) pe *= 1.5;
           u.tsec = base * (1 + rp / 100) + ((gi > 0 ? TM.poleS : 0) + gi * TM.gridS + gi * gi * TM.gridS2) * gk + gauss() * TM.startSd * sk * (wet ? 1.5 : 1) + (rnd() < TM.lossP * lk ? 4 + rnd() * TM.lossMax : 0) + (rnd() < TM.dmgP * lk ? 15 + rnd() * 45 : 0);   // + first-lap damage / drive-through   // slow stop, time penalty, strategy miss
-          u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null;
+          u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null; u.rp = rp;
         });
         if (TM.passS) {   // overtaking: every slower car that started ahead of you costs time to pass
           const raw = grid.map(u => u.tsec);
           grid.forEach((u, gi) => { let k = 0; for (let j = 0; j < gi; j++) if (raw[j] > raw[gi]) k++; u.tsec += k * TM.passS * gk; });
         }
         if (rnd() < (isSpr ? TM.scSprint : TM.scP) * (wet ? 1.5 : 1)) {   // safety car: the field is bunched at some point and the order gets a shake at the restart
-          const f = 0.15 + 0.8 * rnd(), live = grid.filter(u => !u.crash), t0 = Math.min(...live.map(u => u.tsec));
+          // f = share of the gaps erased: about a third of real safety cars come in the first laps and erase almost nothing (OpenF1 2023-26)
+          const f = rnd() < (TM.scEarly || 0) ? 0.02 + 0.08 * rnd() : 0.15 + 0.85 * rnd(), live = grid.filter(u => !u.crash), t0 = Math.min(...live.map(u => u.tsec)); scNow = true;
           live.forEach(u => { u.tsec = t0 + (u.tsec - t0) * (1 - f) + Math.abs(gauss()) * TM.restartSd + (u.tsec - t0) * 0; });
         }
         { const live = grid.filter(u => !u.crash).sort((a, b) => a.tsec - b.tsec);   // a leader with a big gap manages it rather than flat-out extending it
           if (live.length > 1) { const m = live[1].tsec - live[0].tsec, c = TM.cruiseAt * (isSpr ? 0.4 : 1); if (m > c) live[0].tsec = live[1].tsec - (c + (m - c) * TM.cruiseK); } }
-        grid.forEach(u => { u.s = -u.tsec; });
+        // retiring in the last 10% of the race still gets you classified, laps down (F1DB: ~2% of starters)
+        grid.forEach(u => { if (!u.crash && rnd() < (TM.lateP || 0) * lk) { const done = Math.floor(L * (0.9 + 0.1 * rnd())); u.late = true; u.tsec += (L - done) * C.lap * 1.05; } u.s = -u.tsec; });
       } else {
         grid.forEach(u => { u.cb = mixOf(u, Dr); });
         capClose(grid, 'cb');
@@ -499,20 +501,21 @@
       const res = grid.filter(u => !u.crash).sort((a, b) => b.s - a.s).concat(grid.filter(u => u.crash));
       if (C.id === 'f1' && !isSpr && ri === C.rounds - 1 && S.scr) {   // finale: the real-life title script plays out through the top two's finishing places
         const rk = S.drivers.filter(d => d.pts >= 0).slice().sort((x, y) => y.pts - x.pts), A = rk[0], B = rk[1], ua = res.find(u => u.members.includes(A)), ub = res.find(u => u.members.includes(B));
-        if (ua && ub && !ua.crash && !ub.crash && !S.pIn0 && !rk.slice(0, 5).some(d => d.isPlayer)) {
-          const f0 = res.filter(u => !u.crash), P = rf.pts, lim = Math.min(12, f0.length), ca = f0.indexOf(ua), cb = f0.indexOf(ub), M = S.scr.M, pinP = f0.findIndex(u => u.hasP); let best = null;
+        if (ua && ub && !ua.crash && !ub.crash && !ua.late && !ub.late && !S.pIn0 && !rk.slice(0, 5).some(d => d.isPlayer)) {
+          const f0 = res.filter(u => !u.crash && !u.late), P = rf.pts, lim = Math.min(12, f0.length), ca = f0.indexOf(ua), cb = f0.indexOf(ub), M = S.scr.M, pinP = f0.findIndex(u => u.hasP); let best = null;
           for (let pa = 0; pa < lim; pa++) for (let pb = 0; pb < lim; pb++) {
             if (pa === pb || pa === pinP || pb === pinP) continue;
             const mg = (A.pts + (P[pa] || 0)) - (B.pts + (P[pb] || 0)), cost = Math.abs((M <= 10 ? Math.abs(mg) : mg) - M) + 0.4 * (Math.abs(pa - ca) + Math.abs(pb - cb)) + rnd() * 0.5;
             if (!best || cost < best.cost) best = { cost, pa, pb };
           }
-          if (best) { const rest = f0.filter((u, i) => u !== ua && u !== ub && i !== pinP), nf = []; for (let i = 0, r = 0; i < f0.length; i++) nf.push(i === best.pa ? ua : i === best.pb ? ub : i === pinP ? f0[pinP] : rest[r++]); if (TM) { const ts = f0.map(u => u.tsec); nf.forEach((u, i) => { u.tsec = ts[i]; u.s = -ts[i]; }); } res.splice(0, res.length, ...nf, ...res.filter(u => u.crash)); }
+          if (best) { const rest = f0.filter((u, i) => u !== ua && u !== ub && i !== pinP), nf = []; for (let i = 0, r = 0; i < f0.length; i++) nf.push(i === best.pa ? ua : i === best.pb ? ub : i === pinP ? f0[pinP] : rest[r++]); if (TM) { const ts = f0.map(u => u.tsec); nf.forEach((u, i) => { u.tsec = ts[i]; u.s = -ts[i]; }); } res.splice(0, res.length, ...nf, ...res.filter(u => u.late && !u.crash), ...res.filter(u => u.crash)); }
         }
       }
       const fin = res.filter(u => !u.crash);
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
       const gapR = (a, b) => TM ? b.tsec - a.tsec : rg(a.s - b.s) * rScale;
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => gapR(fin[0], u)));
+      if (G.dbg && G.dbg.pace && TM && !isSpr) G.dbg.pace.push({ sc: scNow, base: TM.laps * C.lap, u: res.map(u => ({ n: u.members[0].name, t: u.team, qs: u.qs, rp: u.rp, ts: u.tsec, grid: u.grid, crash: !!u.crash, p: !!u.hasP })) });
       if (G.dbg && G.dbg.full && !isSpr) G.dbg.rf.push({ grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash, cause: u.cause, g: u.crash ? null : gapR(fin[0], u) })) });
       res.forEach((u, i) => u.members.forEach(d => { if (!rf.stage) d.races++; if (u.crash) { if (!rf.stage) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; } return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (C.id === 'f1' && !isSpr && uP && !uP.crash) { const um = res.find(u => !u.hasP && u.team === uP.team); if (um && !um.crash) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.r[1]++; if (res.indexOf(uP) < res.indexOf(um)) h.r[0]++; } }
@@ -520,7 +523,7 @@
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
         if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (TM ? gapR(fin[0], fin[1]) : rg(fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55)) : gapR(fin[0], uP)); if (!lead && TM) laps = Math.max(0, Math.ceil((isSpr ? TM.sprintLaps : TM.laps) * gap / uP.tsec) - 1); else if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
-        entry.races.push({ n: rf.n, grid: uP.grid, pen: (!isSpr && uP.pen) || null, qpos: (!isSpr && uP.pen && uP.qpos) || null, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
+        entry.races.push({ n: rf.n, grid: uP.grid, pen: (!isSpr && uP.pen) || null, qpos: (!isSpr && uP.pen && uP.qpos) || null, late: !!uP.late, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
         if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); }
       }
       return res;

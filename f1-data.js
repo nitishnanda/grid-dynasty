@@ -96,7 +96,8 @@
       time: {
         beta: 0.096,          // % of lap per car-rating point at a normal stage of the rule cycle (x gapEra: ~0.14 in a reset year, ~0.07 late in a cycle)
         knee: 3, tail: 0.35,  // qualifying: car gap beyond `knee` points counts `tail` x gapEra^2.5 as much (the field converges at the back)
-        raceKnee: 4, raceBack: 2.0,   // race: beyond `raceKnee` each point costs raceBack x beta x sqrt(gapEra), so race gaps stay ~flat over a rules cycle
+        raceKnee: 4, raceBack: 2.0, raceBackPow: 0.7, raceReset: 1.7,   // race: beyond `raceKnee` a car loses raceBack x beta x (gap - knee)^raceBackPow, x raceReset in a reset year
+                              // (OpenF1 2023-26 race pace: P10 car ~1.85% off in a reset year, ~1.3% after that; teammates ~0.29% apart)
         domQ: 0.3,            // a dominant car's extra one-lap edge (front-row lockouts: ~0.5 in dominant seasons)
         dPt: 0.039,           // % of lap per driver-rating point (fitted scale: 25.7 points per 1%)
         trackSd: 0.2,        // team-by-track car fit, re-drawn every weekend
@@ -112,13 +113,15 @@
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
         laps: 57, sprintLaps: 19,
         rSd: 0.19,            // race-day pace noise
-        gridS: 1.4, gridS2: 0.02, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
+        gridS: 1.2, gridS2: 0.02, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
         raceVsQuali: 2.5,     // AI drivers: stable race-craft vs one-lap difference, rating points
         startSd: 4.5,         // first-lap / strategy chaos, seconds
-        scP: 0.45, scSprint: 0.2, restartSd: 2.0,   // safety-car races and restart scatter
-        cruiseAt: 4, cruiseK: 0.65,  // a leader more than ~4 s clear backs off: only 65% of the extra margin shows at the flag
+        scP: 0.45, scSprint: 0.3, restartSd: 2.0,   // safety-car races and restart scatter (OpenF1 2023-26: SC 48% of GPs plus 9% red flags, 35% of sprints)
+        scEarly: 0.3,               // share of safety cars in the opening laps, which erase almost none of the final gaps (real median: 40% of the gaps erased)
+        cruiseAt: 4, cruiseK: 0.55,  // a leader more than ~4 s clear backs off: only 55% of the extra margin shows at the flag
         passS: 2.5,                  // seconds to pass each slower car that started ahead (track position matters more than a fixed per-slot cost)
-        lossP: 0.18, lossMax: 20, dmgP: 0.04,   // per driver per race: a slow stop, time penalty or strategy miss costing 4-24 s; dmg: first-lap damage or a drive-through, 15-60 s
+        lossP: 0.26, lossMax: 12, dmgP: 0.04,   // per driver per race: a slow stop or time penalty costing 4-16 s (OpenF1: ~0.14 slow stops and ~0.13 time penalties a race); dmg: first-lap damage or a drive-through, 15-60 s
+        lateP: 0.02,                // per driver per race: retires in the last 10% of the race but is still classified, laps down
         penP: 0.06,                 // per driver per race: a grid penalty (5 or 10 places, or the back of the grid)
         inc: [2.1, 3.0, 4.4, 5.1, 4.6],   // incident DNF % by grid bucket P1-3, 4-6, 7-10, 11-15, 16+ (F1DB 2010-2025, scaled to the 2022-25 level)
         mech: [12, 6.0, 4.2, 3.4],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
