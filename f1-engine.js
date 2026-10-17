@@ -792,7 +792,7 @@
     Object.keys(G.dyn).forEach(c => {
       const CC = CATS[c]; let ct;
       if (c === S.cat) ct = Object.keys(teamPts).sort((a, b) => teamPts[b] - teamPts[a])[0];
-      else { let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(G.dyn[c].str[t[0]] / 1.6); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; } ct = CC.teams[Math.min(i, CC.teams.length - 1)][0]; }
+      else { let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(G.dyn[c].str[t[0]] / (CC.champT || 1.6)) * (G.dyn[c].lastChampT === t[0] ? (CC.champRep === undefined ? 1 : CC.champRep) : 1); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; } ct = CC.teams[Math.min(i, CC.teams.length - 1)][0]; G.dyn[c].lastChampT = ct; }
       G.dyn[c]._champ = ct; evolveCat(G, c, ct);
     });
     // nobody knows next year's car order in the summer: offers and the pecking order show a forecast (very hazy before new rules)
@@ -805,7 +805,11 @@
       if (CC.dyn) {
         const ct = G.dyn[c]._champ; let who;
         if (c === 'f1') { const ds = G.f1.teams[ct].filter(d => !d.player); who = ds.sort((a, b) => effOf(b) - effOf(a))[0].name; }
-        else who = roster(G, c, ct)[0];
+        else {   // either of a team's drivers can take the title, the lead seat more often; last year's champion usually repeats if his team does
+          const ros = roster(G, c, ct), D = G.dyn[c];
+          who = D.lastChampD && ros.includes(D.lastChampD) && rnd() < (CC.champKeep === undefined ? 0.85 : CC.champKeep) ? D.lastChampD : ros[rnd() < 0.62 ? 0 : Math.min(ros.length - 1, 1 + Math.floor(rnd() * (ros.length - 1)))];
+          D.lastChampD = who;
+        }
         champs.push({ cat: CC.short, who, team: ct });
       } else {
         let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(t[1] / 3); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; }
