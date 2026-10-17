@@ -214,7 +214,7 @@
   const baseAnchor = () => { const v = Object.values(F1P); return v.reduce((a, [b, k, y]) => a + k - penOf((y || 0) + 1), 0) / v.length; };
   function initF1(G) {
     G.f1 = { teams: {}, free: [], queue: ROOKIES.slice(), retired: [] };
-    CATS.f1.teams.forEach(t => { G.f1.teams[t[0]] = t[2].split('|').map(n => { const [b, k, y] = F1P[n]; return { name: n, birth: b, ski: k, pot: k + (START_YEAR - b <= 23 ? 1.5 : 0), yrs: y || 0 }; }); });
+    CATS.f1.teams.forEach(t => { G.f1.teams[t[0]] = t[2].split('|').map(n => { const [b, k, y] = F1P[n]; return { name: n, birth: b, ski: k, pot: Math.min(k + (START_YEAR - b <= 23 ? 1.5 : 0), 94.5), yrs: y || 0 }; }); });
     G.f1.anchor = baseAnchor();
   }
   function newRookie(G) {

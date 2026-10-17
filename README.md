@@ -33,13 +33,13 @@ Open the Pages link in Safari (iPhone) or Chrome (Android), then Share, Add to H
 - Red Bull juniors debut at Racing Bulls. A mid-season promotion to Red Bull is rare, a demotion is common
 - Pick or randomise family wealth (poor, middle class, rich, old money). Poor families can run out of money in karting unless you keep finishing top five
 - Contracts: sign for 1-4 years and press Continue at the end of a season instead of re-deciding every year
-- F1 rookies need time. Titles in your first two F1 seasons are very rare
+- F1 rookies need time. Titles in your first two F1 seasons are rare (a generational talent can still do it in year two, like Hamilton in 2008)
 
 ## Calibration (F1)
 
 F1 runs on a lap-time model fitted to the F1DB open database (every result, qualifying lap and retirement 2010-2026):
 
-- Driver ratings for the 2026 grid come from a driver + team-season model on 6,890 qualifying laps (1 rating point is about 0.035 s a lap). Rookies carry a fitted experience penalty for their first three seasons.
+- Driver ratings for the 2026 grid come from a driver + team-season model on 6,890 qualifying laps (1 rating point is about 0.035 s a lap). The 2026 grid is then tuned to the 2026 season so far (rounds 1-17): each driver's rating reflects current form from teammate qualifying gaps, race results and reliability, and the sim reproduces real wins, podiums and points per driver (RMS error about 13 points a season over 100 simulated seasons). Rookies carry a small experience penalty (about 2.0 / 0.8 points in seasons one and two), eased after Antonelli showed a second-year driver can lead the title fight.
 - Car pace, track-by-track fit, knockout track evolution, one-lap noise and its heavy tail, race-day form, grid-position value, safety cars, grid penalties, and mechanical vs incident DNFs (by regulation age and grid slot) are all set from the data.
 - The AI driver market (rookies, drops, retirements, transfers, debut ages, career lengths) is tuned to F1DB seat-change statistics.
 - Race pace is fitted to lap-by-lap timing from OpenF1 (2023-2026) and Jolpica (2022). The race-pace spread behind the leaders (about 1.9% of a lap for the P10 car in a reset year, about 1.3% after that), teammate race-pace gaps, how much race day reshuffles the qualifying order, safety-car rates and timing, slow stops and time penalties all come from that data. One-lap gaps converge as the rules mature. A dominant car also gets a small one-lap edge, so it locks out the front row more often.

@@ -107,7 +107,7 @@
         badP: 0.14, badMean: 0.55,   // a scrappy lap: traffic, mistake, red flag (heavy tail seen in teammate gaps)
         evoQ1: 0.7, evoQ2: 0.35,      // fastest Q1 / Q2 lap vs fastest Q3 lap (track evolution, F1DB medians 2010-2026)
         formSd: 4.0,          // season form, rating points (0.145% of a lap, F1DB REML estimate)
-        pen: [3.8, 3.2, 1.8, 0],   // rookie penalty in rating points for F1 seasons 1, 2, 3, 4+
+        pen: [2.0, 0.8, 0, 0],   // rookie penalty in rating points for F1 seasons 1, 2, 3, 4+
         rookieRace: 2,        // AI rookies race worse than they qualify (F1DB: rookies win ~43% of quali duels but take only ~33% of the points)
         domP: 0.25, domEnd: 0.2, domBoost: 3,   // share of rule resets that produce a dominant car, chance a dominant era ends each year, its edge in car points
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
@@ -130,20 +130,20 @@
         mech: [12, 6.0, 4.2, 3.4],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
       },
       // 2026 start: car strengths fitted to the 2026 results so far (mean qualifying position and finish per team, 17 rounds) and each team's real reliability so far
-      edge2026: {'Mercedes': 0.67, 'McLaren': -1.85, 'Ferrari': -1.23, 'Red Bull Racing': -0.05, 'Williams': 2.48, 'Racing Bulls': 3.46, 'Aston Martin': 7.03, 'Alpine': 1.76, 'Haas': 3.68, 'Audi': 1.77, 'Cadillac': 1.43},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
+      edge2026: {'Mercedes': 0.22, 'McLaren': -2.15, 'Ferrari': -1.09, 'Red Bull Racing': -0.26, 'Williams': 2.51, 'Racing Bulls': 3.38, 'Aston Martin': 7.0, 'Alpine': 1.73, 'Haas': 3.54, 'Audi': 1.43, 'Cadillac': 1.45},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
       rel2026: {'Mercedes': 0.5, 'Ferrari': 0.5, 'Red Bull Racing': 0.8, 'McLaren': 0.95, 'Racing Bulls': 0.25, 'Alpine': 0.5, 'Haas': 0.68, 'Audi': 0.8, 'Williams': 1.5, 'Aston Martin': 2.4, 'Cadillac': 1.75},
       teams: [
-        ['Mercedes', 8.53, 'George Russell|Kimi Antonelli'],
-        ['McLaren', 5.8, 'Lando Norris|Oscar Piastri'],
-        ['Ferrari', 8.03, 'Charles Leclerc|Lewis Hamilton'],
-        ['Red Bull Racing', 6.22, 'Max Verstappen|Isack Hadjar'],
-        ['Williams', -5.83, 'Alex Albon|Carlos Sainz'],
-        ['Racing Bulls', 0.78, 'Liam Lawson|Arvid Lindblad'],
-        ['Aston Martin', -12.67, 'Fernando Alonso|Lance Stroll'],
-        ['Alpine', 1.55, 'Pierre Gasly|Franco Colapinto'],
-        ['Haas', -3.99, 'Esteban Ocon|Oliver Bearman'],
-        ['Audi', -1.67, 'Nico Hülkenberg|Gabriel Bortoleto'],
-        ['Cadillac', -13.81, 'Sergio Pérez|Valtteri Bottas'],
+        ['Mercedes', 9.06, 'George Russell|Kimi Antonelli'],
+        ['McLaren', 7.79, 'Lando Norris|Oscar Piastri'],
+        ['Ferrari', 8.63, 'Charles Leclerc|Lewis Hamilton'],
+        ['Red Bull Racing', 6.92, 'Max Verstappen|Isack Hadjar'],
+        ['Williams', -4.4, 'Alex Albon|Carlos Sainz'],
+        ['Racing Bulls', 0.5, 'Liam Lawson|Arvid Lindblad'],
+        ['Aston Martin', -12.4, 'Fernando Alonso|Lance Stroll'],
+        ['Alpine', 0.55, 'Pierre Gasly|Franco Colapinto'],
+        ['Haas', -3.0, 'Esteban Ocon|Oliver Bearman'],
+        ['Audi', -0.4, 'Nico Hülkenberg|Gabriel Bortoleto'],
+        ['Cadillac', -13.9, 'Sergio Pérez|Valtteri Bottas'],
       ],
     },
 
@@ -412,7 +412,7 @@
     { id: 'prospect', n: 'Prospect', p: 0.51, col: '#8b8fb0', adv: [5, 5, 5, -3.5, -7.5, -7], blurb: 'Below-average F1 ceiling. Podiums in karting, then a midfield grind.' },
     { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [7.5, 7, 7, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
     { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [3, 3.5, 12, 5, 3.5, 3.5], blurb: 'Regular points and the odd podium early on, then winning and podiums in the final karting years and the junior formulas.' },
-    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [9, 6.5, 6.5, 4, 4.4, 5.0], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
+    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [9, 6.5, 6.5, 4, 3.55, 4.15], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
     { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 10, 9, 9.5], blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
@@ -429,12 +429,12 @@
   // best active driver = 93 and the 2026 grid median = 84 (1 point ~ 0.039% of a lap ~ 0.035 s). "Base" is the
   // experience-neutral level: drivers in their first three seasons carry a rookie penalty on top (see CATS.f1.time.pen).
   const F1P = {
-    'Oscar Piastri': [2001, 93.0, 3], 'Lando Norris': [1999, 92.3, 7], 'Max Verstappen': [1997, 92.1, 11], 'Charles Leclerc': [1997, 90.9, 8],
-    'Kimi Antonelli': [2006, 90.2, 1], 'Fernando Alonso': [1981, 89.7, 22], 'Gabriel Bortoleto': [2004, 88.9, 1], 'Lewis Hamilton': [1985, 88.8, 19],
-    'George Russell': [1998, 88.6, 7], 'Carlos Sainz': [1994, 88.2, 11], 'Arvid Lindblad': [2007, 88.0, 0], 'Isack Hadjar': [2004, 87.6, 1],
-    'Oliver Bearman': [2005, 87.0, 2], 'Nico Hülkenberg': [1987, 86.6, 14], 'Alex Albon': [1996, 84.0, 6], 'Pierre Gasly': [1996, 84.0, 9],
-    'Valtteri Bottas': [1989, 83.4, 12], 'Esteban Ocon': [1996, 82.4, 9], 'Liam Lawson': [2002, 82.1, 3], 'Sergio Pérez': [1990, 80.9, 14],
-    'Lance Stroll': [1998, 79.1, 9], 'Franco Colapinto': [2003, 78.6, 2],
+    'Oscar Piastri': [2001, 88.0, 3], 'Lando Norris': [1999, 91.0, 7], 'Max Verstappen': [1997, 92.5, 11], 'Charles Leclerc': [1997, 90.0, 8],
+    'Kimi Antonelli': [2006, 93.8, 1], 'Fernando Alonso': [1981, 85.5, 22], 'Gabriel Bortoleto': [2004, 84.8, 1], 'Lewis Hamilton': [1985, 90.5, 19],
+    'George Russell': [1998, 89.0, 7], 'Carlos Sainz': [1994, 85.0, 11], 'Arvid Lindblad': [2007, 87.0, 0], 'Isack Hadjar': [2004, 86.8, 1],
+    'Oliver Bearman': [2005, 85.5, 2], 'Nico Hülkenberg': [1987, 83.5, 14], 'Alex Albon': [1996, 81.0, 6], 'Pierre Gasly': [1996, 88.5, 9],
+    'Valtteri Bottas': [1989, 79.0, 12], 'Esteban Ocon': [1996, 80.5, 9], 'Liam Lawson': [2002, 87.0, 3], 'Sergio Pérez': [1990, 81.5, 14],
+    'Lance Stroll': [1998, 78.0, 9], 'Franco Colapinto': [2003, 82.0, 2],
   };
 
   const ROOKIES = ['Rafael Câmara', 'Dino Beganovic', 'Nikola Tsolov', 'Sebastián Montoya', 'Kush Maini', 'Gabriele Minì', 'Ugo Ugochukwu', 'Martinius Stenshorne', 'Noah Strømsted', 'Freddie Slater', 'Théophile Naël', 'Tuukka Taponen', 'Ritomo Miyata', 'Oliver Goethe', 'Laurens van Hoepen', 'Mari Boya'];
