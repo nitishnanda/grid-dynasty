@@ -103,12 +103,12 @@
       // a reset shuffles the order, but the established powerhouses keep most of their edge
       names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] = clamp((el ? 0.85 : 0.5) * base + gauss() * (el ? 1.8 : 2.8), -(C.sMax || 8), C.sMax || 8); d.trend[n] = (el ? -0.08 : -0.2) * d.str[n] + gauss() * 0.7; });
       d.streak = 0; d.last = null;
-      d.regime = rnd() < 0.25 ? 'dominant' : 'close';
+      d.regime = rnd() < (C.time ? C.time.domP : 0.25) ? 'dominant' : 'close';
       d.relEra = 1.7; d.gapEra = c === 'f1' ? 1.45 : 1.55; names.forEach(n => { d.relTeam[n] = C.time ? clamp(Math.exp(gauss() * 0.9), 0.3, 6) : clamp(1 + gauss() * 0.3, 0.6, 1.8); });   // F1DB: in a reset year one team can fail half its starts (Aston Martin 2026) while another barely breaks
       if (d.regime === 'close') compressTop(d, names, 4, C.time ? 0.75 : 0.4);
-      else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += C.time ? 4 : 2.2; }
+      else { const lead = names.slice().sort((a, b) => d.str[b] - d.str[a])[0]; d.str[lead] += C.time ? C.time.domBoost : 2.2; }
     } else {
-      if (d.regime === 'dominant' && rnd() < 0.3) d.regime = 'close';
+      if (d.regime === 'dominant' && rnd() < (C.time ? C.time.domEnd : 0.3)) d.regime = 'close';
       d.relEra = 1 + (d.relEra - 1) * 0.6; { const lastReg = Math.max(...C.regYears.filter(y => y <= ny), 2026), age = ny - lastReg, tgt = C.time ? (age <= 1 ? 1 : age === 2 ? 0.9 : age === 3 ? 0.76 : age === 4 ? 0.64 : 0.56) : (age <= 2 ? 1 : age === 3 ? 0.9 : age === 4 ? 0.8 : 0.72); d.gapEra = tgt + (d.gapEra - tgt) * 0.72; }   // fields converge the longer the rules stay stable
       names.forEach(n => { d.relTeam[n] = C.time ? clamp(Math.exp(Math.log(d.relTeam[n]) * 0.6 + gauss() * 0.25), 0.3, 4) : clamp(1 + (d.relTeam[n] - 1) * 0.7 + gauss() * 0.08, 0.6, 1.8); });
       names.forEach(n => { const base = teamDef(c, n)[1], el = (C.elite || []).includes(n); d.str[n] += d.trend[n] + gauss() * (el ? 0.8 : 1.1) + 0.15 * ((el ? 0.85 : 0.6) * base - d.str[n]); d.trend[n] *= 0.8; });
@@ -341,7 +341,7 @@
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
       // the season's title script, drawn so that the REALISED margins match 2010-2025: ~31% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~19% runaway (130+)
       // (draw weights are higher than the targets for tight and runaway seasons because some of those leak into the middle buckets)
-      if (!S.scr) { const w = S.dom ? [0.02, 0.04, 0.22, 0.72] : [0.48, 0.15, 0.24, 0.13], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
+      if (!S.scr) { const w = S.dom ? [0.02, 0.04, 0.22, 0.72] : [0.51, 0.17, 0.24, 0.08], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
         S.scr = { k, M: [rnd() * 10, 11 + rnd() * 52, 80 + rnd() * 50, 150 + rnd() * rnd() * 170][k] }; }
       if (!C.time && S.round >= Math.floor(C.rounds / 2) && ranked[0] && cs.indexOf(ranked[0].car) >= 2) {   // a title leader outside the two fastest cars gets reeled in
         const top2 = ranked.filter(d => cs.indexOf(d.car) <= 1 && !d.isPlayer)[0];
@@ -397,7 +397,7 @@
     const tfT = {}, trT = {}; if (TM) C.teams.forEach(t => { tfT[t[0]] = gauss() * TM.trackSd * Math.sqrt(geT); trT[t[0]] = gauss() * TM.raceTeamSd * Math.sqrt(geT); });   // track fit (both days) and race-day-only car form (tyres, strategy, set-up)
     const carTopT = TM ? Math.max(...units.map(uCar)) : 0;
     const wetT = wet ? (st.WET - ovrOf(st)) * 0.3 : 0;   // wet skill relative to your own level (the AI's wet skill is centred on zero too)
-    const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) : 0)) + (d.form || 0), 0) / u.members.length;
+    const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) - (d.rk ? TM.rookieRace : 0) : 0)) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
     const lapNoiseT = () => gauss() * TM.qSd * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
     const carPctT = (u, race) => { const g = carTopT - uCar(u); return betaT * (g <= TM.knee ? g : TM.knee + (g - TM.knee) * Math.min(1, TM.tail * (race ? TM.raceTail : 1)) * Math.pow(geT, 2.5)); };   // race pace converges less than one-lap pace (tyres, traffic)
@@ -450,14 +450,20 @@
             pe *= clamp(1 + (65 - st.CON) * 0.012, 0.6, 1.5) * (G.f1Years < 2 ? 1.3 : 1);
             if (mode === 'push') { rp -= 0.05 + (RAC - 60) * 0.001; pe *= clamp(1.6 + (60 - RAC) * 0.03, 1.15, 3.4); pr *= 1.15; }
             else if (mode === 'coast') { rp += 0.05; pe *= 0.45; pr *= 0.8; }
-          } else if (u.members.some(d => d.rk)) pe *= 1.25;
+          } else if (u.members.some(d => d.rk)) pe *= 1.5;
           u.tsec = base * (1 + rp / 100) + ((gi > 0 ? TM.poleS : 0) + gi * TM.gridS + gi * gi * TM.gridS2) * gk + gauss() * TM.startSd * sk * (wet ? 1.5 : 1) + (rnd() < TM.lossP * lk ? 4 + rnd() * TM.lossMax : 0) + (rnd() < TM.dmgP * lk ? 15 + rnd() * 45 : 0);   // + first-lap damage / drive-through   // slow stop, time penalty, strategy miss
           u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null;
         });
+        if (TM.passS) {   // overtaking: every slower car that started ahead of you costs time to pass
+          const raw = grid.map(u => u.tsec);
+          grid.forEach((u, gi) => { let k = 0; for (let j = 0; j < gi; j++) if (raw[j] > raw[gi]) k++; u.tsec += k * TM.passS * gk; });
+        }
         if (rnd() < (isSpr ? TM.scSprint : TM.scP) * (wet ? 1.5 : 1)) {   // safety car: the field is bunched at some point and the order gets a shake at the restart
           const f = 0.15 + 0.8 * rnd(), live = grid.filter(u => !u.crash), t0 = Math.min(...live.map(u => u.tsec));
           live.forEach(u => { u.tsec = t0 + (u.tsec - t0) * (1 - f) + Math.abs(gauss()) * TM.restartSd + (u.tsec - t0) * 0; });
         }
+        { const live = grid.filter(u => !u.crash).sort((a, b) => a.tsec - b.tsec);   // a leader with a big gap manages it rather than flat-out extending it
+          if (live.length > 1) { const m = live[1].tsec - live[0].tsec, c = TM.cruiseAt * (isSpr ? 0.4 : 1); if (m > c) live[0].tsec = live[1].tsec - (c + (m - c) * TM.cruiseK); } }
         grid.forEach(u => { u.s = -u.tsec; });
       } else {
         grid.forEach(u => { u.cb = mixOf(u, Dr); });
