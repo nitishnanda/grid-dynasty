@@ -511,7 +511,7 @@
             if (mode === 'push') { bias = 1.2 + (RAC - 60) * 0.025; sig *= 1.25; pe *= clamp(1.6 + (60 - RAC) * 0.03, 1.15, 3.4); pr *= 1.15; }
             else if (mode === 'coast') { bias = -0.3; sig *= 0.55; pe *= 0.4; pr *= 0.8; }
           }
-          u.s = rm + K * (u.cb - rm) + (n / 2 - gi) * 0.16 + bias + gauss() * (sig + (wet ? 1.5 * sigK : 0));
+          u.s = rm + K * (u.cb - rm) + (n / 2 - gi) * 0.16 + bias + gauss() * (sig + (wet ? 1.5 * sigK : 0)) + (C.upsetP && !u.hasP && rnd() < C.upsetP * (isSpr ? 0.5 : 1) ? Math.abs(gauss()) * sig * (C.upsetK || 1.5) : 0);   // a lottery result: safety-car timing, strategy, a lucky restart
           u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null;
         });
         if (mode === 'coast' && uP && grid.includes(uP)) { const m = grid.reduce((a, u) => a + u.s, 0) / n; uP.s = 0.85 * uP.s + 0.15 * m; }
