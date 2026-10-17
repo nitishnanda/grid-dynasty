@@ -253,7 +253,8 @@
         const pr = scripted ? 0 : retP(a) + (a >= 36 ? (RETIRE_BIAS[d.name] || 0) : 0);
         const z = (gridEff - eff) / 2.6 + Math.max(0, mEff - eff - 2) / 3.5;
         const sp = pos[d.name] || 0;   // championship position (F1DB 2010-25: no reigning champion lost a seat, ~4% of top-3 finishers did)
-        const pd = forced || sp === 1 ? 0 : (sp && sp <= 3 ? 0.35 : 1) * (a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? (CATS.f1.time.dropTop || 1.3) : rankT.indexOf(t) >= 7 ? (CATS.f1.time.dropBack || 1) : (CATS.f1.time.dropMid || 1)) * ((d.yrs || 0) < 1 ? 0.4 : (d.yrs || 0) < 2 ? 0.8 : 1));   // rookies usually get a second year
+        const elite = (effOf(d) >= gridEff + 4.2 || d.ski >= 90.5) && a < 38;   // a clear star (Verstappen, Norris, Piastri, Leclerc) is never dropped
+        const pd = forced || sp === 1 || elite ? 0 : (sp && sp <= 3 ? 0.35 : 1) * (a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? (CATS.f1.time.dropTop || 1.3) : rankT.indexOf(t) >= 7 ? (CATS.f1.time.dropBack || 1) : (CATS.f1.time.dropMid || 1)) * ((d.yrs || 0) < 1 ? 0.4 : (d.yrs || 0) < 2 ? 0.8 : 1));   // rookies usually get a second year
         d.yrs = (d.yrs || 0) + 1;
         if (forced || rnd() < pr) { out.push({ name: d.name, age: a, team: t, dropped: false }); G.f1.retired.push(d.name); T[t][i] = null; }
         else if (rnd() < pd) { out.push({ name: d.name, age: a, team: t, dropped: true }); d.exT = t; d.exY = G.year; G.f1.free.push(d); T[t][i] = null; }
@@ -440,7 +441,7 @@
       units.forEach(u => { u.q += gauss() * (wet ? 2.6 : (C.id === 'f1' ? 1.4 : 2.2)) + (C.id === 'f1' && rnd() < 0.13 ? -(1.2 + rnd() * 3.2) : 0) + (S.dom && S.domTeam === u.team ? 2.4 : 0) - (C.id === 'f1' && ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.63) * 14), 0) : 0); });   // sustained pole streaks regress: nobody takes 19 of 24   // bad Saturdays (traffic, mistakes, red flags); a dominant car also qualifies further clear
     }
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
-    if (C.id === 'f1' && uP) { const um = units.find(u => !u.hasP && u.team === uP.team); if (um) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.q[1]++; if (qOrder.indexOf(uP) < qOrder.indexOf(um)) h.q[0]++; } }
+    if (!C.crew && uP) { const um = units.find(u => !u.hasP && u.team === uP.team); if (um) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.q[1]++; if (qOrder.indexOf(uP) < qOrder.indexOf(um)) h.q[0]++; } }
     const qpos = out ? null : qOrder.indexOf(uP) + 1;
     // weekend character: gaps breathe from one event to the next, bigger in the wet and in a dominant era
     const dynS = C.dyn ? G.dyn[S.cat] : null, relOf = u => dynS ? (dynS.relEra || 1) * ((dynS.relTeam && dynS.relTeam[u.team]) || 1) : 1;
@@ -536,7 +537,7 @@
       if (G.dbg && G.dbg.pace && TM && !isSpr) G.dbg.pace.push({ sc: scNow, base: TM.laps * C.lap, u: res.map(u => ({ n: u.members[0].name, t: u.team, qs: u.qs, rp: u.rp, ts: u.tsec, grid: u.grid, crash: !!u.crash, p: !!u.hasP })) });
       if (G.dbg && G.dbg.full && !isSpr) G.dbg.rf.push({ grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash, cause: u.cause, g: u.crash ? null : gapR(fin[0], u) })) });
       res.forEach((u, i) => u.members.forEach(d => { if (!rf.stage) d.races++; if (u.crash) { if (!rf.stage) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; } return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
-      if (C.id === 'f1' && !isSpr && uP && !uP.crash) { const um = res.find(u => !u.hasP && u.team === uP.team); if (um && !um.crash) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.r[1]++; if (res.indexOf(uP) < res.indexOf(um)) h.r[0]++; } }
+      if (!C.crew && !isSpr && uP && !uP.crash) { const um = res.find(u => !u.hasP && u.team === uP.team); if (um && !um.crash) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.r[1]++; if (res.indexOf(uP) < res.indexOf(um)) h.r[0]++; } }
       if (!out) {
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
@@ -556,8 +557,8 @@
       if (rf.grid === 'q') {
         grid = qOrder.slice();
         if (TM) {   // power-unit / gearbox / sporting grid penalties: more of them as the season wears on
-          const pp = TM.penP * (0.4 + 1.2 * ri / C.rounds), pens = grid.filter(() => rnd() < pp);
-          pens.forEach(u => { const i = grid.indexOf(u), toBack = rnd() < 0.4, n = rnd() < 0.5 ? 5 : 10, back = toBack ? grid.length : i + n; grid.splice(i, 1); grid.splice(Math.min(grid.length, back), 0, u); u.pen = toBack ? 'back' : n; u.qpos = i + 1; });
+          const pp = TM.penP * (0.4 + 1.2 * ri / C.rounds), q0 = new Map(grid.map((u, i) => [u, i + 1])), pens = grid.filter(() => rnd() < pp);
+          pens.forEach(u => { const i = grid.indexOf(u), toBack = rnd() < 0.4, n = rnd() < 0.5 ? 5 : 10, back = toBack ? grid.length : i + n; grid.splice(i, 1); grid.splice(Math.min(grid.length, back), 0, u); u.pen = toBack ? 'back' : n; u.qpos = q0.get(u); });   // qpos = where the car really qualified, whatever the other penalties did to the order
         }
       }
       else if (rf.grid === 'prev') grid = prev.slice();
@@ -687,6 +688,32 @@
   const kartRepW = age => age >= 14 ? 2.0 : 1.3;
   const FLAIR = [0, 1.5, 1.0, 2.6, 4]; // rep earned for the drives themselves, by talent tier (karting only)
   const E_standings = (G, i) => standingsEv(G, i);
+  // season report card: every number is judged in the context of the car, the team-mate and the field, not just the result
+  const gradeOf = x => x >= 90 ? 'A+' : x >= 80 ? 'A' : x >= 70 ? 'B+' : x >= 60 ? 'B' : x >= 50 ? 'C' : x >= 38 ? 'D' : 'E';
+  function reportCard(G, C, P, mate, pos, N, expPos, tr, champ) {
+    const S = G.S, cl = x => Math.max(3, Math.min(99, Math.round(x))), mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+    const ws = S.log.filter(l => !l.note && !l.out), gp = ws.flatMap(l => l.races.filter(r => !r.spr).map(r => Object.assign({ q: l.qpos }, r))), fin = gp.filter(r => !r.dnf);
+    if (gp.length < 3) return null;
+    const diff = expPos - pos, card = [], add = (k, label, score, note) => card.push({ k, label, score: cl(score), grade: gradeOf(cl(score)), note });
+    const h = S.h2h || { q: [0, 0], r: [0, 0] };
+    const rookie = C.time ? G.f1Years <= 1 : G.history.filter(x => x.cat === C.id).length <= 1;   // a first season is judged more kindly
+    add('ctx', 'Season in context', 52 + 13 * diff + (champ ? 18 : 0) + (pos <= 3 ? 6 : 0) + (rookie ? 7 : 0), `P${pos} against P${expPos} expected for the ${ordStr(tr)}-ranked car${diff > 0 ? ': you beat the car' : diff < 0 ? ': the car was better than the result' : ''}.`);
+    if (mate && !C.crew) {
+      const share = (P.pts + 3) / (P.pts + mate.pts + 6), qh = (h.q[0] + 1) / (h.q[1] + 2);
+      // against a much better team-mate (or as a rookie) trailing is expected: judge the share against what the rating gap predicts
+      const gap = C.time ? (G.stats ? ovrOf(G.stats) - penOf(G.f1Years) - mate.skill : 0) : 0, exS = Math.max(0.15, Math.min(0.85, 0.5 + gap * 0.025)), exQ = Math.max(0.15, Math.min(0.85, 0.5 + gap * 0.02));
+      add('extract', 'Car extraction', 50 + (share - exS) * 140 + (qh - exQ) * 40, `${P.pts} points to ${mate.name}'s ${mate.pts}` + (h.q[1] ? `; ahead in qualifying ${h.q[0]} of ${h.q[1]}` : '') + (h.r[1] ? `, in the race ${h.r[0]} of ${h.r[1]}.` : '.'));
+    } else add('extract', 'Car extraction', 50 + 11 * diff, `No team-mate to measure against: judged on ${diff >= 0 ? 'beating' : 'missing'} the car's expected finish.`);
+    const aq = mean(gp.map(r => r.q)); add('quali', 'One-lap pace', 56 + (expPos - aq) * (230 / N), `Qualified P${aq.toFixed(1)} on average` + (h.q[1] ? ` and beat your team-mate on ${Math.round(100 * h.q[0] / h.q[1])}% of Saturdays.` : '.'));
+    if (fin.length) {
+      const gain = mean(fin.map(r => r.grid - r.pos)); add('race', 'Racecraft', 42 + gain * (240 / N), `${gain >= 0 ? '+' : ''}${gain.toFixed(1)} places a race from the grid to the flag.`);
+      const m = mean(fin.map(r => r.pos)), sd = Math.sqrt(mean(fin.map(r => (r.pos - m) ** 2))); add('cons', 'Consistency', 92 - (sd / N) * 270, `Finishes ranged around P${m.toFixed(1)} give or take ${sd.toFixed(1)} places.`);
+      const half = Math.floor(fin.length / 2), a = mean(fin.slice(0, half || 1).map(r => r.pos)), b = mean(fin.slice(half).map(r => r.pos)); add('prog', 'Progress through the year', 50 + (a - b) * (260 / N), `Averaged P${a.toFixed(1)} in the first half and P${b.toFixed(1)} in the second.`);
+    }
+    const errs = P.dnfE || 0, rel = P.dnfR || 0; add('clean', 'Clean driving', 100 - (errs / Math.max(1, P.races)) * 520, errs ? `${errs} DNF${errs > 1 ? 's' : ''} down to your own mistakes` + (rel ? `, plus ${rel} reliability failure${rel > 1 ? 's' : ''} that were not your fault.` : '.') : `No DNFs from driver error` + (rel ? `; ${rel} reliability failure${rel > 1 ? 's' : ''} were not your fault.` : '.'));
+    const wts = { ctx: 30, extract: 20, quali: 15, race: 10, cons: 10, clean: 10, prog: 5 }, tw = card.reduce((a, c) => a + wts[c.k], 0), ov = card.reduce((a, c) => a + c.score * wts[c.k], 0) / tw;
+    return { overall: cl(ov), grade: gradeOf(cl(ov)), rows: card };
+  }
   function makeSummary(G, h, C, P, tbl, pos, N, tr, dRep, debut) {
     const T = C.teams.length;
     const mate = tbl.find(d => d.team === G.team && !d.isPlayer);
@@ -750,7 +777,8 @@
     else if (P.races >= 10 && P.dnf === 0) para.push('Not a single DNF all year. Bulletproof.');
     // 5. stock and contract
     para.push(({ soaring: 'Your stock is soaring and people are circling.', rising: 'Your stock is rising. People are noticing.', steady: 'Your stock is steady.', falling: 'Your stock is falling. People are starting to doubt you.' })[stock] + (G.contract > 0 ? ` You have ${G.contract} year${G.contract > 1 ? 's' : ''} left at ${G.team}. Let's plan the summer.` : " Your deal is up, so let's plan the summer."));
-    return { agent: G.agent, para, expect, extract, stock, dRep: Math.round(dRep * 10) / 10 };
+    const card = reportCard(G, C, P, mate, pos, N, expPos, tr, champ);
+    return { agent: G.agent, card, para, expect, extract, stock, dRep: Math.round(dRep * 10) / 10 };
   }
   const ordStr = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
 
@@ -904,6 +932,7 @@
       }
       C.teams.forEach(t => {
         const nm = t[0]; if (out.includes(nm) || (nm === excludeTeam && catId === G.cat)) return;
+        if (nm === 'Racing Bulls' && !isRB(G)) return;   // the Red Bull junior team signs from its own academy
         if (top4.includes(nm)) { if (dom && rnd() < 0.25) out.push(nm); return; }
         if (A + gauss() * 7 >= 100 * pf(G, catId, nm) - 5) out.push(nm);
       });
@@ -916,10 +945,13 @@
       const beatMate = L.cat === 'f1' && (L.tmShare > 0.5 || L.qH2H > 0.5);
       rank.forEach((nm, r) => {
         if (nm === excludeTeam) return;
-        if (r < 4 && G.f1Years > 2 && !beatMate && !L.champ) return;   // a top team wants proof: beat your team-mate (rookie years excepted)
+        if (nm === 'Racing Bulls' && !isRB(G) && G.f1Years < 4) return;   // not an academy driver: only experienced drivers get a Racing Bulls call
+        // a top-four team wants a champion, a top-five finisher, or someone who clearly destroyed a good team-mate
+        const proven = L.champ || (L.cat === 'f1' && L.pos <= 5) || (L.tmShare >= 0.58 && L.qH2H >= 0.55 && G.f1Years <= 7);
         if (excludeTeam && G.contract > 0 && !G.demoted && (tr[nm] < tr[excludeTeam] + 1.5 || rnd() < 0.5)) return;   // under contract: only a clearly faster team buys you out
         const inc = (G.f1.teams[nm] || []).filter(d => d && !d.player).map(d => d.yrs ? effOf(d) : d.ski - 1), low = inc.length ? Math.min(...inc) : 80;
-        const need = low + (r < 4 ? 1 : r < 7 ? -0.5 : -2.5) + (G.age >= 35 ? 1.5 + (G.age - 35) * 0.6 : 0) + (G.age >= 38 ? (G.age - 37) * 2 : 0) + (G.demoted ? 3 : 0) - (G.last && G.last.champ ? 3 : 0);
+        const need = low + (r < 4 ? 1 : r < 7 ? -0.5 : -2.5) + (G.f1Years <= 3 ? Math.max(0, G.age - 23) * 0.7 : 0) + (G.age >= 35 ? 1.5 + (G.age - 35) * 0.6 : 0) + (G.age >= 38 ? (G.age - 37) * 2 : 0) + (G.demoted ? 3 : 0) - (G.last && G.last.champ ? 3 : 0);
+        if (r < 4 && !proven && v < need + 2.5) return;   // a top-four team needs proof, or an outright star (value well above its weakest driver)
         if (v + gauss() * 1.6 >= need) out.push(nm);
       });
       return out.slice(0, n + 1).map(nm => makeOffer(G, 'move', catId, nm));
@@ -1060,6 +1092,7 @@
       if (cat !== 'f1' && nextAge <= 34 && G.f1.vac && G.f1.vac.length && (cat === 'f2' || TIER3_SIDE.includes(cat)) && !M.options.some(o => o.cat === 'f1')) {
         for (const t of [...new Set(G.f1.vac)]) {
           if (isRB(G) && t !== 'Racing Bulls') continue;
+          if (t === 'Racing Bulls' && !isRB(G) && G.f1Years < 4) continue;   // the Red Bull junior team signs from its own academy
           if (!G.history.some(h => h.cat === 'f1') && Object.keys(trS(G, 'f1')).sort((a, b) => trS(G, 'f1')[b] - trS(G, 'f1')[a]).slice(0, 4).includes(t) && !dominatedAll(G) && !(G.reserve === t && rnd() < 0.35)) continue;
           let p = 0;
           if (G.reserve === t) p = clamp(0.1 + 0.4 * L.q, 0, 0.5);
