@@ -253,7 +253,7 @@
         const pr = scripted ? 0 : retP(a) + (a >= 36 ? (RETIRE_BIAS[d.name] || 0) : 0);
         const z = (gridEff - eff) / 2.6 + Math.max(0, mEff - eff - 2) / 3.5;
         const sp = pos[d.name] || 0;   // championship position (F1DB 2010-25: no reigning champion lost a seat, ~4% of top-3 finishers did)
-        const pd = forced || sp === 1 ? 0 : (sp && sp <= 3 ? 0.35 : 1) * (a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? 1.3 : 1) * ((d.yrs || 0) < 1 ? 0.4 : (d.yrs || 0) < 2 ? 0.8 : 1));   // rookies usually get a second year
+        const pd = forced || sp === 1 ? 0 : (sp && sp <= 3 ? 0.35 : 1) * (a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? (CATS.f1.time.dropTop || 1.3) : rankT.indexOf(t) >= 7 ? (CATS.f1.time.dropBack || 1) : (CATS.f1.time.dropMid || 1)) * ((d.yrs || 0) < 1 ? 0.4 : (d.yrs || 0) < 2 ? 0.8 : 1));   // rookies usually get a second year
         d.yrs = (d.yrs || 0) + 1;
         if (forced || rnd() < pr) { out.push({ name: d.name, age: a, team: t, dropped: false }); G.f1.retired.push(d.name); T[t][i] = null; }
         else if (rnd() < pd) { out.push({ name: d.name, age: a, team: t, dropped: true }); d.exT = t; d.exY = G.year; G.f1.free.push(d); T[t][i] = null; }
@@ -270,7 +270,7 @@
       const [t, i] = v[0], r = rankT.indexOf(t);
       const pool = rankT.slice(r + 1).flatMap(t2 => T[t2].filter(d => d && !d.player).map(d => ({ d, t2 })));
       const best = pool.filter(x => age(x.d) <= 33).sort((a, b) => effOf(b.d) - effOf(a.d))[0];
-      const pMove = r < 4 ? 0.45 : r < 7 ? 0.22 : 0.08;
+      const pMove = (r < 4 ? 0.45 : r < 7 ? 0.22 : 0.08) * (CATS.f1.time.poach || 1);
       if (best && effOf(best.d) >= 84 && rnd() < pMove) { T[best.t2][T[best.t2].indexOf(best.d)] = null; T[t][i] = best.d; continue; }
       T[t][i] = fillSlot(G, t);
     }
@@ -282,7 +282,7 @@
       const ds = T[t].filter(d => d && !d.player); if (!ds.length) return;
       const weak = ds.sort((a, b) => effOf(a) - effOf(b))[0];
       const cand = rankT.slice(r + 1).flatMap(t2 => T[t2].filter(d => d && !d.player && age(d) <= 32).map(d => ({ d, t2 }))).sort((a, b) => effOf(b.d) - effOf(a.d))[0];
-      if (cand && effOf(cand.d) - effOf(weak) >= 2.5 && rnd() < 0.15) { const j = T[cand.t2].indexOf(cand.d), wi = T[t].indexOf(weak); T[cand.t2][j] = weak; T[t][wi] = cand.d; }
+      if (cand && effOf(cand.d) - effOf(weak) >= 2.5 && rnd() < (CATS.f1.time.swapP || 0.15)) { const j = T[cand.t2].indexOf(cand.d), wi = T[t].indexOf(weak); T[cand.t2][j] = weak; T[t][wi] = cand.d; }
     });
     return out;
   }
@@ -381,7 +381,7 @@
         if (hu) a.form += g * (g > 0 ? 0.1 * cf(a) : 1);
       }
     }
-    const wet = rnd() < (C.time ? 0.12 : 0.18), out = S.injured > 0;
+    const wet = rnd() < (C.time ? C.time.wetP : 0.18), out = S.injured > 0;
     const evIdx = C.events ? C.events.findIndex(e => ri >= e.from && ri <= e.to) : -1;
     const tmp = S.round < S.tmpUntil ? S.tmp : 0;
     const Dq = 0.35 * st.PAC + 0.45 * st.QUA + 0.1 * st.MEN + 0.1 * st.CON;
@@ -980,6 +980,14 @@
     M.broke = M.options.length > 0 && M.options.every(o => o.blocked);
     return true;
   }
+  // where F1 drivers really go next (54 drivers with 2+ F1 seasons, last F1 year 2008-2023, matched to Wikipedia series standings):
+  // young leavers go to Formula E and WEC, early thirties to IndyCar and DTM, veterans to WEC and IMSA, almost nobody to NASCAR or Supercars
+  const POSTF1 = { young: { fe: 34, wec: 21, dtm: 7, indy: 7, imsa: 7, supercars: 3, gt3w: 6, nascar: 1 }, mid: { indy: 22, dtm: 22, fe: 11, wec: 11, imsa: 6, gt3w: 6, supercars: 3, nascar: 2 }, old: { wec: 28, imsa: 14, indy: 10, fe: 10, dtm: 10, gt3w: 8, supercars: 3, nascar: 3 } };
+  function postF1Pick(age, k) {
+    const w = Object.assign({}, POSTF1[age <= 29 ? 'young' : age <= 33 ? 'mid' : 'old']), out = [];
+    while (out.length < k && Object.keys(w).length) { const ks = Object.keys(w); let r = rnd() * ks.reduce((a, c) => a + w[c], 0), i = 0; for (; i < ks.length - 1; i++) { r -= w[ks[i]]; if (r <= 0) break; } out.push(ks[i]); delete w[ks[i]]; }
+    return out;
+  }
   function buildMarket(G, keepPhase) {
     const L = G.last, C = CATS[G.cat], nextAge = G.age + 1, lh = G.history[G.history.length - 1];
     G._mk = []; G._rescued = false;
@@ -1065,7 +1073,7 @@
         M.options.push(...offersFor(G, cat, attract(G, cat), 3, G.team));
         if (CATS[cat].time && G.contract > 0) M.note = (M.note ? M.note + ' ' : '') + `You are under contract at ${G.team} for ${G.contract} more year${G.contract > 1 ? 's' : ''}: only a clearly faster team will pay to buy you out.`;
         if (G.age >= 21 && (TIER3_SIDE.includes(cat) || cat === 'f1')) {
-          const cats = (cat === 'f1' && nextAge >= 34) ? ['wec', 'imsa', 'gt3w', 'fe', 'indy', 'nascar'].sort(() => rnd() - 0.5).slice(0, 4) : (cat === 'f1' ? SENIOR : TIER3_SIDE).filter(c => c !== cat).sort(() => rnd() - 0.5).slice(0, cat === 'f1' ? 3 : 2);
+          const cats = cat === 'f1' ? postF1Pick(nextAge, nextAge >= 34 ? 4 : 3) : TIER3_SIDE.filter(c => c !== cat).sort(() => rnd() - 0.5).slice(0, 2);
           lat(cats, c => attract(G, c) + (cat === 'f1' ? 8 : 0), 1);
           if (cat === 'f1' && nextAge >= 34) M.note = (M.note ? M.note + ' ' : '') + 'Time to think about a final chapter: WEC, IMSA, GT3, Formula E or even NASCAR, where F1 experience still wins races.';
         }
