@@ -42,6 +42,8 @@ F1 runs on a lap-time model fitted to the F1DB open database (every result, qual
 - Driver ratings for the 2026 grid come from a driver + team-season model on 6,890 qualifying laps (1 rating point is about 0.035 s a lap). Rookies carry a fitted experience penalty for their first three seasons.
 - Car pace, track-by-track fit, knockout track evolution, one-lap noise and its heavy tail, race-day form, grid-position value, safety cars, grid penalties, and mechanical vs incident DNFs (by regulation age and grid slot) are all set from the data.
 - The AI driver market (rookies, drops, retirements, transfers, debut ages, career lengths) is tuned to F1DB seat-change statistics.
+- Race gaps behind the front-runners stay roughly flat over a rules cycle (as in F1DB), while one-lap gaps converge as the rules mature. A dominant car also gets a small one-lap edge, so it locks out the front row more often.
+- Ageing follows the F1DB curve for everyone, including the player: flat to 28, then slower each year from 29.
 - Validation targets the sim is scored against include pole-to-win rate (52-56%), front-row and top-3 win rates, mean finish by grid slot, race gaps, qualifying gaps by position, teammate gaps, DNF rates, the champion's car rank, wins by car rank and the title-margin split.
 
 Data: F1DB (https://github.com/f1db/f1db), CC BY 4.0.

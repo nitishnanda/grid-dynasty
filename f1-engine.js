@@ -24,7 +24,10 @@
     if (age <= 8) return 46; if (age <= 11) return 55; if (age <= 13) return 61; if (age <= 15) return 67;
     return [68, 70, 73, 75.5, 78, 80.5][Math.min(5, age - 16)] || 84;
   }
-  const targetOvr = (G, age) => pathLvl(age) + TIERS[G.tier].adv[band(age)] - (age >= 34 ? (age - 33) * 1.1 : 0);
+  // ageing follows the F1DB curve the AI drivers use (flat to 28, ~0.8 a year slower at 29-31, ~1.1 at 32-34, gentler after);
+  // the Pace/Fitness fade in setStats already covers ~0.1 a year of it
+  const ageDecl = a => a <= 29 ? 0 : a <= 32 ? (a - 29) * 0.8 : a <= 35 ? 2.4 + (a - 32) * 1.1 : 5.7 + (a - 35) * 0.6;
+  const targetOvr = (G, age) => pathLvl(age) + TIERS[G.tier].adv[band(age)] - Math.max(0, ageDecl(age) - Math.max(0, age - 29) * 0.1);
   function rollTier() { let r = rnd(), i = 0; for (; i < TIERS.length; i++) { r -= TIERS[i].p; if (r <= 0) break; } return Math.min(i, TIERS.length - 1); }
   function rollShape(arch) {
     const s = {}; STATS.forEach(k => s[k] = gauss() * 2.2);
@@ -135,9 +138,10 @@
   /* ---------- helpers ---------- */
   const teamDef = (cat, name) => CATS[cat].teams.find(t => t[0] === name);
   const seats = (cat, name) => teamDef(cat, name)[3] || CATS[cat].dpt;
+  const trS = (G, c) => (G.fc && G.fc[c]) || G.tr[c];   // during the summer market: the forecast, not next season's real car
   const pf = (G, cat, name) => {
     const C = CATS[cat];
-    if (C.dyn) return clamp((G.tr[cat][name] - (C.lvl - 10)) / 20, 0, 1);
+    if (C.dyn) return clamp((trS(G, cat)[name] - (C.lvl - 10)) / 20, 0, 1);
     const offs = C.teams.map(t => t[1]); const mn = Math.min(...offs), mx = Math.max(...offs);
     return mx === mn ? 0.5 : (teamDef(cat, name)[1] - mn) / (mx - mn);
   };
@@ -145,7 +149,7 @@
   const salOf = (G, cat, name) => {
     const C = CATS[cat];
     if (cat === 'f1') {
-      const rank = C.teams.map(t => t[0]).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]).indexOf(name), frac = 1 - rank / (C.teams.length - 1);
+      const tr = trS(G, 'f1'), rank = C.teams.map(t => t[0]).sort((a, b) => tr[b] - tr[a]).indexOf(name), frac = 1 - rank / (C.teams.length - 1);
       const titles = Math.min(5, (G.tot.trophies['F1 World Champion'] || 0));
       return Math.round(lerp(1500, 35000, Math.pow(frac, 1.2)) * (0.45 + 1.2 * Math.pow(G.rep / 100, 2) + 0.18 * titles));
     }
@@ -199,9 +203,10 @@
     const ski = R1(clamp(87.5 + gauss() * 3, 80, 95)), age = Math.round(clamp(21.8 + gauss() * 2.2, 18, 27));
     return { name, birth: G.year + 1 - age, ski, pot: R1(ski + (age <= 21 ? 1 + rnd() * 2 : rnd())), yrs: 0 };
   }
-  function fillSlot(G) {
+  function fillSlot(G, team) {
     G.f1.free.sort((a, b) => effOf(b) - effOf(a));
-    if (G.f1.free.length && effOf(G.f1.free[0]) >= 81 && rnd() < 0.5) return G.f1.free.shift();
+    const k = G.f1.free.findIndex(d => !(team && d.exT === team && d.exY === G.year));   // a team does not re-sign the driver it just let go
+    if (k >= 0 && effOf(G.f1.free[k]) >= 81 && rnd() < 0.5) return G.f1.free.splice(k, 1)[0];
     return newRookie(G);
   }
   function vacateF1(G) {
@@ -215,8 +220,8 @@
   }
   const retP = a => a <= 30 ? 0.01 : a <= 33 ? 0.03 : a === 34 ? 0.06 : a === 35 ? 0.1 : a === 36 ? 0.14 : a === 37 ? 0.2 : a === 38 ? 0.28 : a === 39 ? 0.38 : a === 40 ? 0.5 : a === 41 ? 0.7 : 0.95;
   const RETIRE_BIAS = { 'Nico Hülkenberg': 0.18, 'Sergio Pérez': 0.15, 'Valtteri Bottas': 0.15 };
-  function tickF1(G) {
-    const out = [], age = d => G.year - d.birth, T = G.f1.teams;
+  function tickF1(G, pos) {
+    const out = [], age = d => G.year - d.birth, T = G.f1.teams; pos = pos || {};
     const rankT = Object.keys(T).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]);
     // ageing (F1DB: flat to 28, ~0.8 pt a year slower at 29-31, ~1.1 at 32-34, gentler for the survivors after that)
     const step = d => { const a = age(d); d.ski = clamp(R1(d.ski + (a <= 28 ? 0.35 * Math.max(0, (d.pot || d.ski) - d.ski) : a <= 31 ? -0.8 : a <= 34 ? -1.1 : -0.6) + gauss() * 0.5), 68, 97); };
@@ -229,10 +234,11 @@
         const scripted = RETIRE_2028.includes(d.name), forced = scripted && G.year >= 2028;
         const pr = scripted ? 0 : retP(a) + (a >= 36 ? (RETIRE_BIAS[d.name] || 0) : 0);
         const z = (gridEff - eff) / 2.6 + Math.max(0, mEff - eff - 2) / 3.5;
-        const pd = forced ? 0 : a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? 1.3 : 1) * ((d.yrs || 0) < 1 ? 0.4 : (d.yrs || 0) < 2 ? 0.8 : 1);   // rookies usually get a second year
+        const sp = pos[d.name] || 0;   // championship position (F1DB 2010-25: no reigning champion lost a seat, ~4% of top-3 finishers did)
+        const pd = forced || sp === 1 ? 0 : (sp && sp <= 3 ? 0.35 : 1) * (a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? 1.3 : 1) * ((d.yrs || 0) < 1 ? 0.4 : (d.yrs || 0) < 2 ? 0.8 : 1));   // rookies usually get a second year
         d.yrs = (d.yrs || 0) + 1;
         if (forced || rnd() < pr) { out.push({ name: d.name, age: a, team: t, dropped: false }); G.f1.retired.push(d.name); T[t][i] = null; }
-        else if (rnd() < pd) { out.push({ name: d.name, age: a, team: t, dropped: true }); G.f1.free.push(d); T[t][i] = null; }
+        else if (rnd() < pd) { out.push({ name: d.name, age: a, team: t, dropped: true }); d.exT = t; d.exY = G.year; G.f1.free.push(d); T[t][i] = null; }
         else step(d);
       });
     });
@@ -248,7 +254,7 @@
       const best = pool.filter(x => age(x.d) <= 33).sort((a, b) => effOf(b.d) - effOf(a.d))[0];
       const pMove = r < 4 ? 0.45 : r < 7 ? 0.22 : 0.08;
       if (best && effOf(best.d) >= 84 && rnd() < pMove) { T[best.t2][T[best.t2].indexOf(best.d)] = null; T[t][i] = best.d; continue; }
-      T[t][i] = fillSlot(G);
+      T[t][i] = fillSlot(G, t);
     }
     // keep the scale anchored: ratings are relative to the grid (fitted median 84), so the AI field mean does not drift
     { const pool = rankT.flatMap(t => T[t].filter(d => d && !d.player)), m = pool.reduce((a, d) => a + effOf(d), 0) / (pool.length || 1);
@@ -265,7 +271,7 @@
 
   /* ---------- season setup ---------- */
   function startSeason(G) {
-    const C = CATS[G.cat];
+    const C = CATS[G.cat]; G.fc = null;
     churnSeats(G, G.cat);
     const drivers = [];
     if (G.cat === 'f1') enterF1(G, G.team);
@@ -288,7 +294,7 @@
     // F1 know-how carries over to other series
     if (TIER3_SIDE.includes(G.cat) && G.f1Years > 0) S.boost += Math.min(5, G.f1Years * 0.5);
     // champions tend to go back to back; a third in a row is hard unless you are a top-3 tier talent
-    if (G.cat === 'f1' && G.titleStreak > 0) S.carMod += G.titleStreak === 1 ? 1.2 : (G.tier >= 2 ? 0.4 : -3);
+    if (G.cat === 'f1' && G.titleStreak > 0 && !C.time) S.carMod += G.titleStreak === 1 ? 1.2 : (G.tier >= 2 ? 0.4 : -3);
     // seat bill: sponsors cover part, family funds cover the rest (academies pay in F4-F2)
     if (C.pay && !(G.academy && C.tier >= 1 && C.tier <= 3)) {
       const c = G.deal.cost; S.famPaid = Math.max(0, c - Math.min(c, funding(G) * 0.6)); G.family = Math.max(0, G.family - S.famPaid);
@@ -400,10 +406,13 @@
     const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) - (d.rk ? TM.rookieRace : 0) : 0)) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
     const lapNoiseT = () => gauss() * TM.qSd * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
-    const carPctT = (u, race) => { const g = carTopT - uCar(u), kn = race ? (TM.raceKnee || TM.knee) : TM.knee; return betaT * (g <= kn ? g : kn + (g - kn) * Math.min(1, TM.tail * (race ? TM.raceTail : 1)) * Math.pow(geT, 2.5)); };   // race pace converges less than one-lap pace (tyres, traffic)
-    const qPaceT = u => carPctT(u) + tfT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT();
+    const carPctT = (u, race) => { const g = carTopT - uCar(u);
+      // one-lap pace converges as the rules mature; race pace behind the front-runners barely does (F1DB: P10's race gap is ~flat by regulation age)
+      if (race) return betaT * Math.min(g, TM.raceKnee) + TM.beta * TM.raceBack * Math.sqrt(geT) * Math.max(0, g - TM.raceKnee);
+      return betaT * (g <= TM.knee ? g : TM.knee + (g - TM.knee) * TM.tail * Math.pow(geT, 2.5)); };
+    const qPaceT = u => carPctT(u) + tfT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT() - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
     if (TM) {
-      units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.58) * 2.5), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
+      units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.58) * 2.5 + Math.max(0, d.pole / ri - 0.68) * 6), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
       const qo = units.slice().sort((a, b) => a.qp - b.qp), e1 = Math.max(0.3, TM.evoQ1 + gauss() * 0.3), e2 = Math.max(0.1, TM.evoQ2 + gauss() * 0.15);
       // knockout: drivers out in Q2 / Q1 are timed on a slower track than the pole lap
       qo.forEach((u, i) => { u.qs = ((u.qp - qo[0].qp) + (i >= 16 ? e1 : i >= 10 ? e2 : 0)) / 100 * C.lap * (wet ? 1.07 : 1); });
@@ -413,6 +422,7 @@
       units.forEach(u => { u.q += gauss() * (wet ? 2.6 : (C.id === 'f1' ? 1.4 : 2.2)) + (C.id === 'f1' && rnd() < 0.13 ? -(1.2 + rnd() * 3.2) : 0) + (S.dom && S.domTeam === u.team ? 2.4 : 0) - (C.id === 'f1' && ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.63) * 14), 0) : 0); });   // sustained pole streaks regress: nobody takes 19 of 24   // bad Saturdays (traffic, mistakes, red flags); a dominant car also qualifies further clear
     }
     const qOrder = units.slice().sort((a, b) => b.q - a.q);
+    if (C.id === 'f1' && uP) { const um = units.find(u => !u.hasP && u.team === uP.team); if (um) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.q[1]++; if (qOrder.indexOf(uP) < qOrder.indexOf(um)) h.q[0]++; } }
     const qpos = out ? null : qOrder.indexOf(uP) + 1;
     // weekend character: gaps breathe from one event to the next, bigger in the wet and in a dominant era
     const dynS = C.dyn ? G.dyn[S.cat] : null, relOf = u => dynS ? (dynS.relEra || 1) * ((dynS.relTeam && dynS.relTeam[u.team]) || 1) : 1;
@@ -443,7 +453,8 @@
         const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * 0.045, 0.7, 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
         grid.forEach((u, gi) => {
           u.grid = gi + 1;
-          let rp = carPctT(u, true) + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * (wet ? 1.6 : 1);
+          let rp = carPctT(u, true) + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * (wet ? 1.6 : 1)
+            + (!isSpr && ri >= 6 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.w / ri - 0.66) * 3), 0) : 0);   // win streaks fade too (rivals' upgrades, risk, reliability): real record 19 of 22
           let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1);
           let pr = TM.mech[regAgeT] / 100 * mfT(u) / mfM * (isSpr ? 0.35 : 1);
           if (u.hasP) {
@@ -504,11 +515,12 @@
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => gapR(fin[0], u)));
       if (G.dbg && G.dbg.full && !isSpr) G.dbg.rf.push({ grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash, cause: u.cause, g: u.crash ? null : gapR(fin[0], u) })) });
       res.forEach((u, i) => u.members.forEach(d => { if (!rf.stage) d.races++; if (u.crash) { if (!rf.stage) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; } return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
+      if (C.id === 'f1' && !isSpr && uP && !uP.crash) { const um = res.find(u => !u.hasP && u.team === uP.team); if (um && !um.crash) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.r[1]++; if (res.indexOf(uP) < res.indexOf(um)) h.r[0]++; } }
       if (!out) {
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
-        if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (TM ? gapR(fin[0], fin[1]) : rg(fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55)) : gapR(fin[0], uP)); if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
-        entry.races.push({ n: rf.n, grid: uP.grid, pen: (!isSpr && uP.pen) || null, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
+        if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (TM ? gapR(fin[0], fin[1]) : rg(fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55)) : gapR(fin[0], uP)); if (!lead && TM) laps = Math.max(0, Math.ceil((isSpr ? TM.sprintLaps : TM.laps) * gap / uP.tsec) - 1); else if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
+        entry.races.push({ n: rf.n, grid: uP.grid, pen: (!isSpr && uP.pen) || null, qpos: (!isSpr && uP.pen && uP.qpos) || null, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
         if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); }
       }
       return res;
@@ -524,7 +536,7 @@
         grid = qOrder.slice();
         if (TM) {   // power-unit / gearbox / sporting grid penalties: more of them as the season wears on
           const pp = TM.penP * (0.4 + 1.2 * ri / C.rounds), pens = grid.filter(() => rnd() < pp);
-          pens.forEach(u => { const i = grid.indexOf(u), toBack = rnd() < 0.4, back = toBack ? grid.length : i + (rnd() < 0.5 ? 5 : 10); grid.splice(i, 1); grid.splice(Math.min(grid.length, back), 0, u); u.pen = toBack ? 'back' : Math.min(grid.length - 1, back) - i; });
+          pens.forEach(u => { const i = grid.indexOf(u), toBack = rnd() < 0.4, n = rnd() < 0.5 ? 5 : 10, back = toBack ? grid.length : i + n; grid.splice(i, 1); grid.splice(Math.min(grid.length, back), 0, u); u.pen = toBack ? 'back' : n; u.qpos = i + 1; });
         }
       }
       else if (rf.grid === 'prev') grid = prev.slice();
@@ -563,6 +575,12 @@
   }
 
   /* ---------- the wheel (3 stages -> 2 spins a season). good and bad outcomes carry equal total weight ---------- */
+  // F1: a team only drops you mid-season when the team-mate is beating you clearly (never in the first half of a rookie year)
+  const f1Beaten = G => {
+    const S = G.S, P = player(G), m = S.drivers.filter(d => !d.isPlayer && d.team === G.team && !d.gone).sort((a, b) => b.races - a.races)[0], h = S.h2h;
+    if (!m || !h || h.q[1] < 4 || (G.f1Years === 0 && S.round < CATS[S.cat].rounds / 2)) return false;
+    return (P.pts + 5) / (P.pts + m.pts + 10) < 0.35 || (h.q[0] + 1) / (h.q[1] + 2) < 0.35;
+  };
   function wheelList(G) {
     const S = G.S, C = CATS[S.cat], tb = standings(G), pos = tb.findIndex(d => d.isPlayer) + 1, N = tb.length;
     const low = pos > N * 0.7;
@@ -583,7 +601,7 @@
       { id: 'badup', g: -1, w: 7, ok: C.tier >= 1, ic: '🛠️', t: 'Reliability woes', fx: 'A bad development path: car −2 rating for the rest of the season.' },
       { id: 'slump', g: -1, w: 5, ic: '🥶', t: 'Confidence slump', fx: '−2 pace for the rest of the season and −1 Mentality.' },
       { id: 'illness', g: -1, w: 5, ic: '🤒', t: 'Illness', fx: '−3 pace for the next two rounds.' },
-      { id: 'sacked', g: -1, w: low ? 9 : 1.2, ok: C.tier >= 1 && pos > Math.max(3, N * 0.5), ic: '✂️', t: 'Dropped by team', fx: C.tier === 4 ? 'The team drops you mid-season (far likelier in the bottom 30%). You sit out several races or the rest of the year, then get offers from lower F1 teams, a small chance from bigger ones, or other series.' : 'Team sacks you for poor results (far likelier if you are in the bottom 30%). You finish the year in a worse seat: car −3.5, −3 rep, and no re-sign option.' },
+      { id: 'sacked', g: -1, w: C.time ? 2 : low ? 9 : 1.2, ok: C.time ? f1Beaten(G) : C.tier >= 1 && pos > Math.max(3, N * 0.5), ic: '✂️', t: 'Dropped by team', fx: C.tier === 4 ? 'The team drops you mid-season (far likelier in the bottom 30%). You sit out several races or the rest of the year, then get offers from lower F1 teams, a small chance from bigger ones, or other series.' : 'Team sacks you for poor results (far likelier if you are in the bottom 30%). You finish the year in a worse seat: car −3.5, −3 rep, and no re-sign option.' },
       { id: 'careerEnd', g: -1, fixed: true, w: 0.3, ok: C.tier >= 1, ic: '🩹', t: 'Career-ending injury', fx: 'A freak injury ends your racing career immediately. Very rare.' },
       { id: 'fatal', g: -1, fixed: true, w: 0.04, ok: C.tier >= 1, ic: '🕯️', t: 'Fatal accident', fx: 'A tragic accident ends your career. Extremely rare.' },
     ].filter(o => o.ok === undefined || o.ok);
@@ -747,7 +765,9 @@
     G.last = { pos, N, q, champ: anyTitle, cat: S.cat, ovr, wins: P.w, races: P.races };
     if (C.time) {   // F1: teams judge you against the only fair yardstick, your team-mate in the same car
       const mate = S.drivers.filter(d => !d.isPlayer && d.team === G.team && !d.gone).sort((a, b) => b.races - a.races)[0];
-      if (mate) { G.last.mateEff = mate.skill; G.last.tmShare = P.pts + mate.pts > 0 ? P.pts / (P.pts + mate.pts) : 0.5; }
+      const h = S.h2h || { q: [0, 0], r: [0, 0] };
+      // points share pulled towards 50/50 by ~20 points, so one P10 in a backmarker does not swing it
+      if (mate) { G.last.mateEff = mate.skill; G.last.tmShare = (P.pts + 10) / (P.pts + mate.pts + 20); G.last.qH2H = (h.q[0] + 1) / (h.q[1] + 2); G.last.rH2H = (h.r[0] + 1) / (h.r[1] + 2); }
     }
     const summary = makeSummary(G, h, C, P, tbl, pos, N, carRank, G.rep - repBefore, G.history.filter(x => x.cat === S.cat).length === 1);
 
@@ -757,7 +777,7 @@
       const p = (rb ? (q < 0.35 ? 0.7 : q < 0.55 ? 0.35 : q < 0.7 ? 0.1 : 0) : (q < 0.3 ? 0.45 : q < 0.45 ? 0.12 : 0)) * (G.tier >= 3 ? 0.4 : 1);
       if (rnd() < p) { msgs.push(`${G.academy.n} drop you after a poor year.`); G.academy = null; G.reserve = null; }
     }
-    const relLevel = C.time && !champ && G.last.mateEff !== undefined && G.last.tmShare <= 0.5 && f1Value(G) < G.last.mateEff - 3.5 && rnd() < 0.55;
+    const relLevel = C.time && !champ && G.last.mateEff !== undefined && G.last.tmShare <= 0.5 && !(G.last.qH2H > 0.5 || G.last.rH2H > 0.5) && f1Value(G) < G.last.mateEff - 3.5 && rnd() < 0.55;
     const relAge = C.time && !champ && pos > 3 && G.age >= 36 && f1Value(G) < 84 && rnd() < 0.5;
     if (C.tier === 4 && !G.demoted && G.contract === 0 && (C.time ? relLevel || relAge : q < 0.15 && rnd() < 0.5)) { G.demoted = true; G.demotedWhy = relAge && !relLevel ? 'age' : 'level'; msgs.push(relAge && !relLevel ? `${S.teams[S.teams.length - 1]} won't renew your contract: they want a younger driver.` : C.time ? `${S.teams[S.teams.length - 1]} won't renew your contract after your team-mate had the upper hand.` : `${S.teams[S.teams.length - 1]} part ways with you after a rough season.`); }
 
@@ -771,6 +791,8 @@
       else { let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(G.dyn[c].str[t[0]] / 1.6); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; } ct = CC.teams[Math.min(i, CC.teams.length - 1)][0]; }
       G.dyn[c]._champ = ct; evolveCat(G, c, ct);
     });
+    // nobody knows next year's car order in the summer: offers and the pecking order show a forecast (very hazy before new rules)
+    G.fc = {}; Object.keys(G.dyn).forEach(c => { const reg = CATS[c].regYears.includes(G.year + 1); G.fc[c] = {}; Object.keys(G.tr[c]).forEach(t => { const a = G.trPrev[c][t], b = G.tr[c][t]; G.fc[c][t] = a === undefined ? b : R1(a + (reg ? 0.25 : 0.5) * (b - a) + gauss() * (reg ? 2.5 : 1.2)); }); });
     const show = ['f1', 'f2', 'f3', 'f4', 'wec', 'imsa', 'gt3w', 'gt3', 'indy', 'nascar', 'fe', 'dtm', 'supercars', 'sf'];
     if (!show.includes(S.cat)) champs.push({ cat: C.short, who: lead0.name, team: lead0.team });
     show.forEach(c => {
@@ -787,9 +809,10 @@
       }
     });
     if (G.demoted && S.cat === 'f1' && !G.f1.teams[S.teams[S.teams.length - 1]].some(d => d.player)) { /* seat already vacated */ }
-    const outList = tickF1(G); outList.forEach(r => retirees.push(r));
+    const f1pos = {}; if (S.cat === 'f1') mainRows.forEach((r, k) => { f1pos[r.d.name] = k + 1; }); else { const fc = champs.find(c => c.cat === CATS.f1.short); if (fc) f1pos[fc.who] = 1; }
+    const outList = tickF1(G, f1pos); outList.forEach(r => retirees.push(r));
     if (G.demoted) G.f1.vac.push(S.teams[S.teams.length - 1]);
-    const rank = Object.keys(G.tr[S.cat]).map(n => ({ n, r: Math.round(G.tr[S.cat][n]), d: Math.round(G.tr[S.cat][n]) - Math.round(G.trPrev[S.cat][n]), you: n === S.teams[S.teams.length - 1] })).sort((a, b) => b.r - a.r);
+    const fcS = trS(G, S.cat), rank = Object.keys(G.tr[S.cat]).map(n => ({ n, r: Math.round(G.trPrev[S.cat][n]), d: Math.round(fcS[n]) - Math.round(G.trPrev[S.cat][n]), you: n === S.teams[S.teams.length - 1] })).sort((a, b) => b.r - a.r);
     const rising = rank.slice().sort((a, b) => b.d - a.d).slice(0, 3).filter(x => x.d > 0);
     const falling = rank.slice().sort((a, b) => a.d - b.d).slice(0, 3).filter(x => x.d < 0);
     const regs = Object.keys(G.dyn).filter(c => CATS[c].regYears.includes(G.year + 1)).map(c => CATS[c].short);
@@ -809,10 +832,16 @@
   /* ---------- market ---------- */
   const attract = (G, catId) => { const L = G.last, C = CATS[catId], f = catId === 'f1'; return clamp(45 * L.q + (f ? 3.2 : 1.8) * (L.ovr - C.lvl) + (f ? 0.25 : 0.35) * (G.rep - 50) + (L.champ ? 15 : 0) + (f ? 22 : 30) + (f ? G.buzz : 0), 0, 150); };
   const isRB = G => !!(G.academy && G.academy.n.startsWith('Red Bull'));
-  // what F1 teams think you are worth: half your current level, half what your last season against your team-mate showed
-  const f1Value = G => { const L = G.last || {}, eff = ovrOf(G.stats) - penOf(G.f1Years + 1); return L.cat === 'f1' && L.mateEff !== undefined ? 0.45 * eff + 0.55 * (L.mateEff + 14 * (L.tmShare - 0.5)) : eff; };
+  // what F1 teams think you are worth: mostly what they can see (qualifying and points against your team-mate), a little of your actual level
+  const probit = p => { const t = Math.sqrt(-2 * Math.log(Math.min(p, 1 - p))), z = t - (2.515517 + 0.802853 * t + 0.010328 * t * t) / (1 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t); return p < 0.5 ? -z : z; };
+  const f1Value = G => {
+    const L = G.last || {}, eff = ovrOf(G.stats) - penOf(G.f1Years + 1);
+    if (L.cat !== 'f1' || L.mateEff === undefined) return eff;
+    const qd = L.qH2H !== undefined ? clamp(8 * probit(clamp(L.qH2H, 0.05, 0.95)), -10, 10) : 14 * (L.tmShare - 0.5);   // one rating point is ~4% of quali head-to-heads
+    return 0.2 * eff + 0.8 * (L.mateEff + 0.6 * qd + 0.4 * 14 * (L.tmShare - 0.5));
+  };
   function makeOffer(G, kind, catId, team, extra) {
-    const C = CATS[catId], r = G.tr[catId][team], ros = roster(G, catId, team);
+    const C = CATS[catId], r = trS(G, catId)[team], ros = roster(G, catId, team);
     const tm = ros.filter(n => n !== G.name)[0] || ros[0];
     const tmSkill = C.lvl + 0.4 * (r - C.lvl), ovr = ovrOf(G.stats);
     const role = ovr >= tmSkill + 2 ? 'Lead driver' : ovr >= tmSkill - 3 ? 'Equal status' : 'Second driver';
@@ -829,7 +858,7 @@
     const C = CATS[catId], res = [];
     if (catId === 'f1' && isRB(G)) return [makeOffer(G, 'move', 'f1', 'Racing Bulls', { rbRule: true })]; // Red Bull juniors debut at Racing Bulls
     if (catId === 'f1' && !G.history.some(h => h.cat === 'f1')) {   // F1 debut: top-four seats are almost never on offer
-      const rank = C.teams.map(t => t[0]).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]), top4 = rank.slice(0, 4), dom = dominatedAll(G), out = [];
+      const tr = trS(G, 'f1'), rank = C.teams.map(t => t[0]).sort((a, b) => tr[b] - tr[a]), top4 = rank.slice(0, 4), dom = dominatedAll(G), out = [];
       if (G.academy) {
         out.push(G.academy.feeder);   // Ferrari -> Haas, Mercedes/McLaren -> Williams, Red Bull -> Racing Bulls
         G.academy.f1.forEach(t => { if (!out.includes(t) && (!top4.includes(t) || (dom && rnd() < 0.4))) out.push(t); });
@@ -844,9 +873,12 @@
       return (ordered.length ? ordered : [rank[rank.length - 1]]).map(nm => makeOffer(G, 'move', catId, nm));
     }
     if (catId === 'f1' && C.time && G.history.some(h => h.cat === 'f1')) {   // an established F1 driver: a team only calls if you beat the driver you would replace
-      const rank = C.teams.map(t => t[0]).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]), v = f1Value(G), out = [];
+      const tr = trS(G, 'f1'), rank = C.teams.map(t => t[0]).sort((a, b) => tr[b] - tr[a]), v = f1Value(G), out = [], L = G.last || {};
+      const beatMate = L.cat === 'f1' && (L.tmShare > 0.5 || L.qH2H > 0.5);
       rank.forEach((nm, r) => {
         if (nm === excludeTeam) return;
+        if (r < 4 && G.f1Years > 2 && !beatMate && !L.champ) return;   // a top team wants proof: beat your team-mate (rookie years excepted)
+        if (excludeTeam && G.contract > 0 && !G.demoted && (tr[nm] < tr[excludeTeam] + 1.5 || rnd() < 0.5)) return;   // under contract: only a clearly faster team buys you out
         const inc = (G.f1.teams[nm] || []).filter(d => d && !d.player).map(d => d.yrs ? effOf(d) : d.ski - 1), low = inc.length ? Math.min(...inc) : 80;
         const need = low + (r < 4 ? 1 : r < 7 ? -0.5 : -2.5) + (G.age >= 35 ? 1.5 + (G.age - 35) * 0.6 : 0) + (G.age >= 38 ? (G.age - 37) * 2 : 0) + (G.demoted ? 3 : 0) - (G.last && G.last.champ ? 3 : 0);
         if (v + gauss() * 1.6 >= need) out.push(nm);
@@ -963,7 +995,7 @@
       if (cat !== 'f1' && nextAge <= 34 && G.f1.vac && G.f1.vac.length && (cat === 'f2' || TIER3_SIDE.includes(cat)) && !M.options.some(o => o.cat === 'f1')) {
         for (const t of [...new Set(G.f1.vac)]) {
           if (isRB(G) && t !== 'Racing Bulls') continue;
-          if (!G.history.some(h => h.cat === 'f1') && Object.keys(G.tr.f1).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]).slice(0, 4).includes(t) && !dominatedAll(G) && !(G.reserve === t && rnd() < 0.35)) continue;
+          if (!G.history.some(h => h.cat === 'f1') && Object.keys(trS(G, 'f1')).sort((a, b) => trS(G, 'f1')[b] - trS(G, 'f1')[a]).slice(0, 4).includes(t) && !dominatedAll(G) && !(G.reserve === t && rnd() < 0.35)) continue;
           let p = 0;
           if (G.reserve === t) p = clamp(0.2 + 0.55 * L.q, 0, 0.75);
           else if (G.academy && G.academy.f1.includes(t)) p = cat === 'f2' ? 0.12 + 0.35 * L.q : 0.05;
@@ -984,6 +1016,7 @@
       } else {
         M.options.push(stay());
         M.options.push(...offersFor(G, cat, attract(G, cat), 3, G.team));
+        if (CATS[cat].time && G.contract > 0) M.note = (M.note ? M.note + ' ' : '') + `You are under contract at ${G.team} for ${G.contract} more year${G.contract > 1 ? 's' : ''}: only a clearly faster team will pay to buy you out.`;
         if (G.age >= 21 && (TIER3_SIDE.includes(cat) || cat === 'f1')) {
           const cats = (cat === 'f1' && nextAge >= 34) ? ['wec', 'imsa', 'gt3w', 'fe', 'indy', 'nascar'].sort(() => rnd() - 0.5).slice(0, 4) : (cat === 'f1' ? SENIOR : TIER3_SIDE).filter(c => c !== cat).sort(() => rnd() - 0.5).slice(0, cat === 'f1' ? 3 : 2);
           lat(cats, c => attract(G, c) + (cat === 'f1' ? 8 : 0), 1);
@@ -1060,7 +1093,12 @@
       // anchor the field at the fitted level, and take back the old rookie handicap from an F1 season in progress
       [...Object.values(G.f1.teams).flat(), ...(G.f1.free || [])].forEach(d => { if (d && !d.player && d.yrs === undefined) d.yrs = Math.max(3, clamp(G.year - d.birth - 21, 0, 12)); });
       G.f1.anchor = baseAnchor();
-      if (G.S && G.S.cat === 'f1' && !G.S.over) { const k = Math.min(G.f1Years, 4); G.S.boost += G.S.exp !== undefined ? [1.5, 1, 0.5, 0, 0][k] : [8, 6.2, 4.2, 2.4, 1][k] * (G.tier === 4 ? 1 : 1.1); delete G.S.exp; G.S.learn = 0; }
+      if (G.S && G.S.cat === 'f1' && !G.S.over) {
+        const k = Math.min(G.f1Years, 4), pen = [8, 6.2, 4.2, 2.4, 1][k] * (G.tier === 4 ? 1 : 1.1);
+        // that handicap arrived together with G.wealth and S.regime; careers begun before it have neither, so fall back to the size of the saved boost
+        const had = G.wealth !== undefined || G.S.regime !== undefined || G.S.boost < -pen / 2;
+        G.S.boost += G.S.exp !== undefined ? [1.5, 1, 0.5, 0, 0][k] : had ? pen : 0; delete G.S.exp; G.S.learn = 0;
+      }
     }
     return G;
   }
