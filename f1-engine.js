@@ -187,7 +187,8 @@
   function driverMarket(G, cat) {
     const C = CATS[cat], D = G.dyn[cat]; if (!C.dyn || cat === 'f1' || !D) return;
     const teams = C.teams.map(t => t[0]), key = (t, i) => cat + '|' + t + '|' + i;
-    teams.forEach(t => { for (let i = 0; i < seats(cat, t); i++) if (rnd() < (C.newFaces === undefined ? 0.2 : C.newFaces)) G.names[key(t, i)] = freshName(G, cat); });
+    const stars = D.champHist || [];
+    teams.forEach(t => { for (let i = 0; i < seats(cat, t); i++) if (rnd() < (C.newFaces === undefined ? 0.2 : C.newFaces) * (stars.includes(seatName(G, cat, t, i)) ? (C.starKeep === undefined ? 0.2 : C.starKeep) : 1)) G.names[key(t, i)] = freshName(G, cat); });
     const seatsAll = []; teams.forEach(t => { for (let i = 0; i < seats(cat, t); i++) seatsAll.push([t, i]); });
     const pm = C.moveP === undefined ? 0.3 : C.moveP;
     seatsAll.forEach(([t, i]) => {
@@ -813,7 +814,9 @@
         const D = G.dyn[c]; D.forceWho = null;
         // a defending champion often repeats whichever team he is with now (series' real repeat rate); otherwise the title goes by car strength
         const held = D.lastChampD && rnd() < (CC.champDrvRep || 0) ? CC.teams.map(t => t[0]).find(t => roster(G, c, t).includes(D.lastChampD)) : null;
+        const back = !held && CC.champComeback && rnd() < CC.champComeback ? (D.champHist || []).filter(n => n !== D.lastChampD).map(n => [n, CC.teams.map(t => t[0]).find(t => roster(G, c, t).includes(n))]).filter(x => x[1]) : [];
         if (held) { ct = held; D.forceWho = D.lastChampD; }
+        else if (back.length) { const [n, t] = back[Math.floor(rnd() * back.length)]; ct = t; D.forceWho = n; }
         else { let tot = 0; const w = CC.teams.map(t => { const x = Math.exp(D.str[t[0]] / (CC.champT || 1.6)) * (D.lastChampT === t[0] ? (CC.champRep === undefined ? 1 : CC.champRep) : 1); tot += x; return x; }); let r = rnd() * tot, i = 0; for (; i < w.length; i++) { r -= w[i]; if (r <= 0) break; } ct = CC.teams[Math.min(i, CC.teams.length - 1)][0]; }
         D.lastChampT = ct;
       }
@@ -832,7 +835,7 @@
         else {   // either of a team's drivers can take the title, the lead seat more often; last year's champion usually repeats if his team does
           const ros = roster(G, c, ct), D = G.dyn[c];
           who = D.forceWho && ros.includes(D.forceWho) ? D.forceWho : ros[rnd() < 0.62 ? 0 : Math.min(ros.length - 1, 1 + Math.floor(rnd() * (ros.length - 1)))];
-          D.lastChampD = who;
+          D.lastChampD = who; (D.champHist = D.champHist || []).includes(who) || D.champHist.push(who);
         }
         champs.push({ cat: CC.short, who, team: ct });
       } else {
