@@ -94,14 +94,14 @@
       special: { 7: 'Monaco GP win' }, sprints: [1, 5, 6, 10, 13, 17], sigK: 0.8, dnfK: 0.75, spread: 1.65, wS: 0.26, sMax: 13,
       // lap-time model calibrated on F1DB 2010-2026 (see README "Calibration"): everything in % of a lap unless noted
       time: {
-        beta: 0.1, knee: 3, tail: 0.35, raceTail: 2.86,   // car gap beyond `knee` points counts `tail` x as much late in a cycle (field converges at the back)
+        beta: 0.1, knee: 3, tail: 0.35, raceTail: 2.6, raceKnee: 4,   // car gap beyond `knee` points counts `tail` x as much late in a cycle (field converges at the back)
                    // % of lap per car-rating point at a normal stage of the rule cycle (x gapEra: ~0.145 in a reset year, ~0.07 late in a cycle)
         dPt: 0.039,           // % of lap per driver-rating point (fitted scale: 25.7 points per 1%)
         trackSd: 0.2,        // team-by-track car fit, re-drawn every weekend
         tfRace: 0.5,          // (plus raceTeamSd of race-day-only car form)
         raceTeamSd: 0.1,          // how much of the track fit carries into race pace
-        qSd: 0.2,            // one driver's one-lap execution noise
-        badP: 0.13, badMean: 0.55,   // a scrappy lap: traffic, mistake, red flag (heavy tail seen in teammate gaps)
+        qSd: 0.22,            // one driver's one-lap execution noise
+        badP: 0.14, badMean: 0.55,   // a scrappy lap: traffic, mistake, red flag (heavy tail seen in teammate gaps)
         evoQ1: 0.7, evoQ2: 0.35,      // fastest Q1 / Q2 lap vs fastest Q3 lap (track evolution, F1DB medians 2010-2026)
         formSd: 4.0,          // season form, rating points (0.145% of a lap, F1DB REML estimate)
         pen: [3.8, 3.2, 1.8, 0],
@@ -110,13 +110,13 @@
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)   // share of rule resets that produce a dominant car, chance a dominant era ends each year, its edge in car points     // rookie penalty in rating points for F1 seasons 1, 2, 3, 4+
         laps: 57, sprintLaps: 19,
         rSd: 0.19,            // race-day pace noise
-        gridS: 1.4, gridS2: 0.03, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
+        gridS: 1.4, gridS2: 0.02, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
         raceVsQuali: 2.5,     // AI drivers: stable race-craft vs one-lap difference, rating points
         startSd: 4.5,         // first-lap / strategy chaos, seconds
-        scP: 0.58, scSprint: 0.2, restartSd: 2.0,
+        scP: 0.45, scSprint: 0.2, restartSd: 2.0,
         cruiseAt: 4, cruiseK: 0.65,  // a leader more than ~5 s clear backs off: only half of the extra margin shows at the flag
         passS: 2.5,                  // seconds to pass each slower car that started ahead (track position matters more than a fixed per-slot cost)    // safety-car races and restart scatter
-        lossP: 0.15, lossMax: 20, dmgP: 0.04,   // dmg: first-lap damage or a drive-through, 15-60 s    // per driver per race: a slow stop, time penalty or strategy miss costing 4-22 s
+        lossP: 0.18, lossMax: 20, dmgP: 0.04,   // dmg: first-lap damage or a drive-through, 15-60 s    // per driver per race: a slow stop, time penalty or strategy miss costing 4-22 s
         penP: 0.06,                 // per driver per race: a grid penalty (5 or 10 places, or the back of the grid)
         inc: [2.1, 3.0, 4.4, 5.1, 4.6],   // incident DNF % by grid bucket P1-3, 4-6, 7-10, 11-15, 16+ (F1DB 2010-2025, scaled to the 2022-25 level)
         mech: [12, 6.0, 4.2, 3.4],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)

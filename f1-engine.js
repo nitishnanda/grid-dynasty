@@ -400,7 +400,7 @@
     const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) - (d.rk ? TM.rookieRace : 0) : 0)) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
     const lapNoiseT = () => gauss() * TM.qSd * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
-    const carPctT = (u, race) => { const g = carTopT - uCar(u); return betaT * (g <= TM.knee ? g : TM.knee + (g - TM.knee) * Math.min(1, TM.tail * (race ? TM.raceTail : 1)) * Math.pow(geT, 2.5)); };   // race pace converges less than one-lap pace (tyres, traffic)
+    const carPctT = (u, race) => { const g = carTopT - uCar(u), kn = race ? (TM.raceKnee || TM.knee) : TM.knee; return betaT * (g <= kn ? g : kn + (g - kn) * Math.min(1, TM.tail * (race ? TM.raceTail : 1)) * Math.pow(geT, 2.5)); };   // race pace converges less than one-lap pace (tyres, traffic)
     const qPaceT = u => carPctT(u) + tfT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT();
     if (TM) {
       units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.58) * 2.5), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
