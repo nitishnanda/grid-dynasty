@@ -369,8 +369,8 @@
   ];
 
   // ladder logic
-  const PROMO = { f4: ['f3'], frec: ['f3'], gt4: ['gt3'], f3: ['f2'], sfl: ['sf'], nxt: ['indy'], gt3: ['wec'], f2: ['f1'], sf: ['f1'], indy: ['f1'], wec: ['f1'], fe: ['f1'] };
-  const LATERAL = { f4: ['frec', 'gt4'], frec: ['gt4'], gt4: ['frec'], f3: ['sfl', 'nxt', 'gt3'], sfl: ['nxt', 'gt3'], nxt: ['sfl', 'gt3'], gt3: ['sfl', 'nxt'], f2: ['indy', 'sf', 'wec', 'fe', 'imsa', 'gt3w', 'dtm'] };
+  const PROMO = { f4: ['frec'], frec: ['f3'], gt4: ['gt3'], f3: ['f2'], sfl: ['sf'], nxt: ['indy'], gt3: ['wec'], f2: ['f1'], sf: ['f1'], indy: ['f1'], wec: ['f1'], fe: ['f1'] };
+  const LATERAL = { f4: ['gt4'], frec: ['gt4'], gt4: ['frec'], f3: ['sfl', 'nxt', 'gt3'], sfl: ['nxt', 'gt3'], nxt: ['sfl', 'gt3'], gt3: ['sfl', 'nxt'], f2: ['indy', 'sf', 'wec', 'fe', 'imsa', 'gt3w', 'dtm'] };
   const STUCK_CATS = ['f4', 'frec', 'gt4', 'f3', 'sfl', 'nxt', 'gt3', 'f2'];
   const SENIOR = ['wec', 'imsa', 'gt3w', 'fe', 'indy', 'nascar', 'dtm', 'supercars'];   // where F1 drivers and F2 graduates actually go (no Super Formula)
   const TIER3_SIDE = ['sf', ...SENIOR];
@@ -413,8 +413,8 @@
   // junior ladder: chance of a step-up seat by final position [P1, P2-3, P4-5, P6-10, P11+] = share who raced the next series the
   // following season (Wikipedia standings 2005-2025: GP2/F2 -> F1 via F1DB, GP3/F3 -> F2, FR Eurocup/FRECA -> F3, Italian F4 -> FRECA/F3),
   // scaled so that with STEP_TIER and the call-ups below the bot careers reproduce those rates; F2/F3 champions may not return
-  const STEP_P = { f2: [0.45, 0.27, 0.14, 0.04, 0.01], f3: [0.85, 0.85, 0.6, 0.55, 0.1], frec: [0.95, 0.95, 0.8, 0.33, 0.16], f4: [0.52, 0.4, 0.36, 0.26, 0.09] };
-  const STEP_TIER = [0.8, 0.9, 1, 1.15, 1.3];   // at the same result, academies and teams chase the quicker, younger talent (prospect ... generational)
+  const STEP_P = { f2: [0.41, 0.24, 0.16, 0.022, 0.012], f3: [0.82, 0.86, 0.42, 0.5, 0.15], frec: [0.76, 0.78, 0.52, 0.37, 0.12], f4: [0.64, 0.47, 0.4, 0.27, 0.12] };
+  const STEP_TIER = [0.85, 0.93, 1, 1.1, 1.2];   // at the same result, academies and teams chase the quicker, younger talent (prospect ... generational)
   const PROMO_P = [[1, 1, 1, 1, 1], [0.50, 0.45, 0.45, 0.45, 0.38], [0.22, 0.20, 0.20, 0.20, 0.14], [0.06, 0.05, 0.05, 0.05, 0.03], [0.01, 0.01, 0.01, 0.01, 0]];
 
   // F1 driver pool: [birth year, skill]

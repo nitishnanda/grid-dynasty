@@ -989,6 +989,8 @@
           else if (p > 0.02) M.note = `P${pos} gave you a ${Math.round(p * 100)}% chance of a ${CATS[promoCat].short} seat. No call this time.`;
         }
         if (promoted) M.options.push(...offersFor(G, promoCat, attract(G, promoCat) + (pos <= 4 ? 8 : 0), 4, null).map(o => Object.assign(o, { kind: 'promo' })));
+        // most F4 graduates step up to FRECA; about half of F4 champions go straight to FIA F3 (Italian F4 2014-2024)
+        if (promoted && cat === 'f4' && pos === 1 && rnd() < 0.55) { M.options.push(...offersFor(G, 'f3', attract(G, 'f3') + 8, 2, null).map(o => Object.assign(o, { kind: 'promo' }))); M.note = (M.note ? M.note + ' ' : '') + 'F4 champions can go straight to F3.'; }
       }
       // sensational seasons skip a rung
       const dom = lh && lh.races ? lh.wins / lh.races : 0;
