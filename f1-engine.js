@@ -333,7 +333,7 @@
       const cs = S.drivers.map(d => d.car).filter((v, i, a) => a.indexOf(v) === i).sort((x, y) => y - x);
       if (S.fg === undefined) { S.fg = cs[0] - cs[1]; S.dev = {}; S.dom = G.dyn.f1 && G.dyn.f1.regime === 'dominant'; S.domTeam = S.drivers.slice().sort((x, y) => y.car - x.car)[0].team; }
       const open = S.dom ? 0.35 : S.fg < 2.5 ? 1 : 0.55;
-      C.teams.slice(0, 11).forEach(t => { const n = t[0], k = cs.indexOf(G.tr.f1[n]); if (k >= 0 && k <= 3) S.dev[n] = Math.max(-1.6, Math.min(k <= 1 ? 1.6 : 0.5, (S.dev[n] || 0) * 0.93 + gauss() * 0.16 * open)); });
+      C.teams.slice(0, 11).forEach(t => { const n = t[0], k = cs.indexOf(G.tr.f1[n]); if (k >= 0 && k <= 3) { const cap = C.time ? C.time.devCap : 1.6; S.dev[n] = Math.max(-cap, Math.min(k <= 1 ? cap : 0.5, (S.dev[n] || 0) * 0.93 + gauss() * (C.time ? C.time.devSd : 0.16) * open)); } });
       const ranked = S.drivers.filter(d => d.pts > 0 || S.round > 2).slice().sort((x, y) => y.pts - x.pts), lead = ranked[0] ? ranked[0].pts : 0;
       const cf = d => { if (C.time) return 1; const k = cs.indexOf(d.car); return k <= 1 ? 1 : k === 2 ? 0.3 : 0.08; };   // talent can't drag a third-best-or-worse car to a title: only the two fastest cars give a driver full upside
       S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * (C.time ? C.time.formSd : 0.85); d.form = d.sf > 0 ? d.sf * cf(d) : d.sf; });   // season-long form: some drivers click with the car, some don't
@@ -341,8 +341,8 @@
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
       // the season's title script, drawn so that the REALISED margins match 2010-2025: ~31% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~19% runaway (130+)
       // (draw weights are higher than the targets for tight and runaway seasons because some of those leak into the middle buckets)
-      if (!S.scr) { const w = S.dom ? [0.02, 0.04, 0.22, 0.72] : [0.51, 0.17, 0.24, 0.08], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
-        S.scr = { k, M: [rnd() * 10, 11 + rnd() * 52, 80 + rnd() * 50, 150 + rnd() * rnd() * 170][k] }; }
+      if (!S.scr) { const w = S.dom ? [0.02, 0.04, 0.22, 0.72] : [0.55, 0.135, 0.235, 0.08], r0 = rnd() * (w[0] + w[1] + w[2] + w[3]); let k = 0, acc = w[0]; while (k < 3 && r0 > acc) acc += w[++k];
+        S.scr = { k, M: [rnd() * 10, 11 + rnd() * 52, 80 + rnd() * 50, 160 + rnd() * rnd() * 170][k] }; }
       if (!C.time && S.round >= Math.floor(C.rounds / 2) && ranked[0] && cs.indexOf(ranked[0].car) >= 2) {   // a title leader outside the two fastest cars gets reeled in
         const top2 = ranked.filter(d => cs.indexOf(d.car) <= 1 && !d.isPlayer)[0];
         if (top2 && ranked[0].pts - top2.pts < 80 && !ranked[0].isPlayer) { top2.form += 1.6; ranked[0].form -= 1.0; }
