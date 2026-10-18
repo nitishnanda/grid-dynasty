@@ -110,8 +110,8 @@
         pen: [2.0, 0.8, 0, 0],   // rookie penalty in rating points for F1 seasons 1, 2, 3, 4+
         rookieRace: 2,        // AI rookies race worse than they qualify (F1DB: rookies win ~43% of quali duels but take only ~33% of the points)
         domP: 0.25, domEnd: 0.2, domBoost: 3,   // share of rule resets that produce a dominant car, chance a dominant era ends each year, its edge in car points
-        dnfD: {'Fernando Alonso': 0.6, 'Lance Stroll': 1.2, 'Carlos Sainz': 0.7, 'Alex Albon': 1.25, 'Oliver Bearman': 1.35, 'Esteban Ocon': 0.4},   // 2026: Alonso finished far more often than Stroll in the same car (6 vs 11 non-finishes)
-        rc: {'Fernando Alonso': 4, 'Max Verstappen': 4.8, 'Isack Hadjar': -3.4, 'Kimi Antonelli': 1.7, 'George Russell': -1.7, 'Nico Hülkenberg': 1.9, 'Gabriel Bortoleto': -1.9, 'Sergio Pérez': 3.8, 'Valtteri Bottas': -3.8, 'Lando Norris': 0.9, 'Oscar Piastri': -0.9, 'Liam Lawson': 1.1, 'Arvid Lindblad': -1.1, 'Oliver Bearman': 1.0, 'Esteban Ocon': -1.0, 'Carlos Sainz': -2.5, 'Alex Albon': 3.5},   // racecraft: half of each 2026 teammate pair's race-pace gap beyond its qualifying gap, halved again
+        dnfD: {'Fernando Alonso': 0.6, 'Lance Stroll': 1.2, 'Carlos Sainz': 0.7, 'Alex Albon': 1.25, 'Oliver Bearman': 1.35, 'Esteban Ocon': 0.4, 'Arvid Lindblad': 0.3},   // 2026: Alonso finished far more often than Stroll in the same car (6 vs 11 non-finishes)
+        rc: {'Fernando Alonso': 4, 'Max Verstappen': 4.8, 'Isack Hadjar': -3.4, 'Kimi Antonelli': 1.7, 'George Russell': -1.7, 'Nico Hülkenberg': 1.9, 'Gabriel Bortoleto': -1.9, 'Sergio Pérez': 3.8, 'Valtteri Bottas': -3.8, 'Lando Norris': 0.9, 'Oscar Piastri': -0.9, 'Liam Lawson': 2.6, 'Arvid Lindblad': -1.1, 'Oliver Bearman': 1.0, 'Esteban Ocon': -1.0, 'Carlos Sainz': -2.5, 'Alex Albon': 3.5},   // racecraft: half of each 2026 teammate pair's race-pace gap beyond its qualifying gap, halved again
         trendK: 0.31, trendSd: 0.41,   // in-season development: % of lap gained over a season per % of lap behind the best car, and its spread
         trend2026: {'Mercedes': 0.15, 'Ferrari': -0.1, 'McLaren': -0.26, 'Red Bull Racing': -0.9, 'Williams': -0.21, 'Racing Bulls': -0.56, 'Aston Martin': -2.09, 'Alpine': -0.44, 'Haas': -0.44, 'Audi': -0.54, 'Cadillac': -0.73},   // real 2026 start-to-end drift against the best car
         trend2026Shape: 3,     // 2026 development came late: Red Bull stayed behind Mercedes until mid-season, then led from Malaysia
@@ -137,7 +137,7 @@
         mech: [12, 6.0, 4.2, 3.4],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
       },
       // 2026 start: car strengths fitted to the 2026 results so far (mean qualifying position and finish per team, 17 rounds) and each team's real reliability so far
-      edge2026: {'Mercedes': 0.22, 'McLaren': -2.15, 'Ferrari': -1.09, 'Red Bull Racing': 1.5, 'Williams': 3.3, 'Racing Bulls': 3.38, 'Aston Martin': 12.5, 'Alpine': 1.73, 'Haas': 5.7, 'Audi': 1.43, 'Cadillac': 1.45},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
+      edge2026: {'Mercedes': 0.22, 'McLaren': -2.15, 'Ferrari': -1.09, 'Red Bull Racing': 1.5, 'Williams': 3.3, 'Racing Bulls': 4.2, 'Aston Martin': 12.5, 'Alpine': 1.73, 'Haas': 5.7, 'Audi': 1.43, 'Cadillac': 1.45},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
       rel2026: {'Mercedes': 0.5, 'Ferrari': 0.5, 'Red Bull Racing': 1.6, 'McLaren': 0.95, 'Racing Bulls': 0.25, 'Alpine': 0.5, 'Haas': 0.68, 'Audi': 0.8, 'Williams': 1.5, 'Aston Martin': 2.4, 'Cadillac': 1.75},
       teams: [
         ['Mercedes', 9.06, 'George Russell|Kimi Antonelli'],
