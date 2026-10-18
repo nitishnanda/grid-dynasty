@@ -100,7 +100,36 @@
                               // (OpenF1 2023-26 race pace: P10 car ~1.85% off in a reset year, ~1.3% after that; teammates ~0.29% apart)
         domQ: 0.3,            // a dominant car's extra one-lap edge (front-row lockouts: ~0.5 in dominant seasons)
         dPt: 0.039,           // % of lap per driver-rating point (fitted scale: 25.7 points per 1%)
-        trackSd: 0.12,        // team-by-track car fit, re-drawn every weekend
+        tracks: {   // circuit character: pass = how hard it is to overtake, sc / inc = safety-car and incident propensity, deg = tyre wear (1 = break-even between one and two stops), pit = pit-lane loss in s, w = which car traits it rewards [power, aero, mechanical grip]
+          'Australia': { pass: 1.1, sc: 1.35, inc: 1.25, deg: 0.8, pit: 20, w: [0.1, 0.1, 0.2] },
+          'China': { pass: 0.9, sc: 1.0, inc: 1.0, deg: 1.35, pit: 22, w: [0, 0.4, 0.3] },
+          'Japan': { pass: 1.6, sc: 0.8, inc: 0.9, deg: 1.25, pit: 22, w: [0, 1, 0] },
+          'Bahrain': { pass: 0.75, sc: 0.7, inc: 0.8, deg: 1.45, pit: 22, w: [0.2, 0.1, 0.3] },
+          'Saudi Arabia': { pass: 0.9, sc: 1.6, inc: 1.5, deg: 0.55, pit: 20, w: [1, 0, 0.2] },
+          'Miami': { pass: 1.0, sc: 1.2, inc: 1.1, deg: 0.9, pit: 21, w: [0.2, 0.3, 0.3] },
+          'Canada': { pass: 0.9, sc: 1.5, inc: 1.35, deg: 0.7, pit: 20, w: [0.3, 0, 0.6] },
+          'Monaco': { pass: 3.2, sc: 1.15, inc: 1.7, deg: 0.3, pit: 19, w: [0, 0, 1] },
+          'Barcelona': { pass: 1.4, sc: 0.5, inc: 0.7, deg: 1.2, pit: 22, w: [0, 1, 0] },
+          'Austria': { pass: 0.8, sc: 0.9, inc: 0.9, deg: 0.9, pit: 20, w: [0.6, 0.3, 0] },
+          'Great Britain': { pass: 0.95, sc: 1.3, inc: 0.95, deg: 1.3, pit: 20, w: [0, 1, 0] },
+          'Belgium': { pass: 0.7, sc: 0.8, inc: 1.0, deg: 0.9, pit: 20, w: [0.6, 0.7, 0] },
+          'Hungary': { pass: 1.7, sc: 0.5, inc: 0.8, deg: 1.1, pit: 22, w: [0, 0.2, 0.9] },
+          'Netherlands': { pass: 1.7, sc: 0.8, inc: 0.8, deg: 1.2, pit: 21, w: [0, 1, 0.2] },
+          'Italy': { pass: 0.8, sc: 0.8, inc: 0.9, deg: 0.7, pit: 20, w: [1, 0, 0] },
+          'Madrid': { pass: 1.3, sc: 1.1, inc: 1.2, deg: 0.9, pit: 21, w: [0.1, 0.2, 0.5] },
+          'Azerbaijan': { pass: 0.6, sc: 1.8, inc: 1.5, deg: 0.6, pit: 20, w: [1, 0, 0.3] },
+          'Singapore': { pass: 1.8, sc: 1.5, inc: 1.5, deg: 0.9, pit: 27, w: [0, 0, 1] },
+          'United States': { pass: 0.95, sc: 1.0, inc: 1.0, deg: 1.2, pit: 21, w: [0.2, 0.5, 0.3] },
+          'Mexico City': { pass: 1.0, sc: 1.2, inc: 1.0, deg: 0.7, pit: 22, w: [0.7, 0, 0.3] },
+          'Brazil': { pass: 0.9, sc: 1.4, inc: 1.1, deg: 1.0, pit: 21, w: [0.2, 0.3, 0.3] },
+          'Las Vegas': { pass: 0.7, sc: 1.25, inc: 1.1, deg: 0.7, pit: 21, w: [1, 0, 0] },
+          'Qatar': { pass: 1.2, sc: 1.3, inc: 0.9, deg: 1.6, pit: 22, w: [0, 1, 0] },
+          'Abu Dhabi': { pass: 1.15, sc: 0.5, inc: 0.8, deg: 0.8, pit: 21, w: [0.2, 0.2, 0.3] },
+        },
+        trackDefault: { pass: 1, sc: 1, inc: 1, deg: 1, pit: 21, w: [0, 0, 0] },
+        affSd: 0.08,   // spread of each car concept's strengths (% of a lap per trait), fixed for a regulation cycle
+        strat: { k0: 0.081, degScale: 1.3, degSd: 0.18, estSd: 0.2, estGap: 0.012, stopSd: 0.8, w: 1, scGain: 0.45, scLoss: 0.35 },   // tyre strategy: wear read with error (worse for weaker teams), wrong-call cost, safety-car stop windfall / wasted stop
+        trackSd: 0.09,        // team-by-track car fit, re-drawn every weekend
         tfRace: 0.5,          // how much of the track fit carries into race pace
         raceTeamSd: 0.07,      // plus race-day-only car form (tyres, strategy, set-up)
         qSd: 0.22,            // one driver's one-lap execution noise
@@ -111,7 +140,7 @@
         formElite: {from: 86, slope: 0.075, min: 0.55, max: 1.15},   // form spread scales down for the best drivers
         formSd: 4.0,          // season form, rating points (0.145% of a lap, F1DB REML estimate)
         pen: [2.0, 0.8, 0, 0],   // rookie penalty in rating points for F1 seasons 1, 2, 3, 4+
-        rookieRace: 2,        // AI rookies race worse than they qualify (F1DB: rookies win ~43% of quali duels but take only ~33% of the points)
+        rookieRace: 5,        // AI rookies race worse than they qualify (F1DB: rookies win ~43% of quali duels but take only ~33% of the points)
         domP: 0.25, domEnd: 0.2, domBoost: 3,   // share of rule resets that produce a dominant car, chance a dominant era ends each year, its edge in car points
         dnfD: {'Fernando Alonso': 0.6, 'Lance Stroll': 1.2, 'Carlos Sainz': 0.7, 'Alex Albon': 1.25, 'Oliver Bearman': 1.35, 'Esteban Ocon': 0.4, 'Arvid Lindblad': 0.3, 'Lando Norris': 1.3, 'Oscar Piastri': 0.5, 'Nico Hülkenberg': 1.3, 'Gabriel Bortoleto': 0.4, 'Sergio Pérez': 0.75, 'Valtteri Bottas': 1.25, 'Kimi Antonelli': 1.0, 'George Russell': 2.6, 'Lewis Hamilton': 0.5, 'Charles Leclerc': 1.9},
         cons: {'George Russell': 2.5},   // race-day volatility multiplier: Russell's 2026 swung between wins, crashes and strategy losses (6 vs 11 non-finishes)
@@ -431,7 +460,7 @@
     { id: 'prospect', n: 'Prospect', p: 0.51, col: '#8b8fb0', adv: [5, 5, 5, -3.5, -7.5, -7], blurb: 'Below-average F1 ceiling. Podiums in karting, then a midfield grind.' },
     { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [7.5, 7, 7, 0, -3, 0.5], blurb: 'A solid F1 driver. Results depend on the car.' },
     { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [3, 3.5, 12, 5, 3.5, 3.5], blurb: 'Regular points and the odd podium early on, then winning and podiums in the final karting years and the junior formulas.' },
-    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [9, 6.5, 6.5, 4, 3.55, 4.15], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
+    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [9, 6.5, 6.5, 4, 3.3, 3.9], blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
     { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 10, 9, 9.5], blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]

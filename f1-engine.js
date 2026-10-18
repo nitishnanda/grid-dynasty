@@ -422,7 +422,14 @@
     // ---- F1: lap-time model (F1DB-calibrated). Pace is in % of a lap behind the fastest car; lower = faster ----
     const TM = C.time, dynT = TM ? G.dyn[S.cat] : null, geT = TM ? (dynT.gapEra || 1) : 1, betaT = TM ? TM.beta * geT : 0;
     const regAgeT = TM ? Math.min(3, G.year - Math.max(...C.regYears.filter(y => y <= G.year), 2026)) : 0;
-    const tfT = {}, trT = {}, tqT = {}; if (TM) C.teams.forEach(t => { tfT[t[0]] = gauss() * TM.trackSd * Math.sqrt(geT); trT[t[0]] = gauss() * TM.raceTeamSd * Math.sqrt(geT); tqT[t[0]] = gauss() * (TM.qTeamSd || 0); });   // track fit (both days) and race-day-only car form (tyres, strategy, set-up)
+    // circuit character: passing difficulty, safety-car and incident propensity, tyre wear, pit loss, and which car traits it rewards (power / aero / mechanical grip)
+    const TRK = TM ? ((TM.tracks && TM.tracks[C.names[ri]]) || TM.trackDefault) : null;
+    if (TM && !TM.trackNorm) { const nm = C.names.map(n => (TM.tracks && TM.tracks[n]) || TM.trackDefault), av = k => nm.reduce((x, t) => x + t[k], 0) / nm.length; TM.trackNorm = { pass: av('pass'), sc: av('sc'), inc: av('inc') }; }
+    let PROF = null;
+    if (TM && G.dyn && G.dyn.f1) { const dF = G.dyn.f1, regStart = Math.max(...C.regYears.filter(y => y <= G.year), 2026);
+      if (!dF.prof || dF.profReg !== regStart) { dF.prof = {}; dF.profReg = regStart; C.teams.forEach(t => { dF.prof[t[0]] = [gauss() * TM.affSd, gauss() * TM.affSd, gauss() * TM.affSd]; }); }   // each car concept has its own strengths for the whole regulation cycle
+      PROF = dF.prof; }
+    const tfT = {}, trT = {}, tqT = {}; if (TM) C.teams.forEach(t => { tfT[t[0]] = gauss() * TM.trackSd * Math.sqrt(geT) + (PROF && PROF[t[0]] && TRK.w ? (PROF[t[0]][0] * TRK.w[0] + PROF[t[0]][1] * TRK.w[1] + PROF[t[0]][2] * TRK.w[2]) * Math.sqrt(geT) : 0); trT[t[0]] = gauss() * TM.raceTeamSd * Math.sqrt(geT); tqT[t[0]] = gauss() * (TM.qTeamSd || 0); });   // track fit (both days) and race-day-only car form (tyres, strategy, set-up)
     const carTopT = TM ? Math.max(...units.map(uCar)) : 0;
     const wetT = wet ? (st.WET - ovrOf(st)) * 0.3 : 0;   // wet skill relative to your own level (the AI's wet skill is centred on zero too)
     // 2026 per-driver form (one-lap/race offsets, spreads, fragility) is fitted to the 2026 season and fades by half each year after
@@ -489,12 +496,14 @@
         const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
         // chaos weekends: incidents and safety cars cluster in the same races (real: DNFs per race var/mean 1.4, and +25% retirements in safety-car races)
         const cP = TM.chaosP || 0, chaos = !isSpr && cP > 0 && rnd() < cP, chaosK = chaos ? TM.chaosK : (1 - cP * TM.chaosK) / (1 - cP || 1);
+        const degR = TRK.deg * (TM.strat ? TM.strat.degScale : 1) * Math.exp(gauss() * (TM.strat ? TM.strat.degSd : 0)), pit = TRK.pit;   // this weekend's tyre wear (1 = the break-even between one and two stops) and pit-lane loss
+        const trkPass = TRK.pass / TM.trackNorm.pass, trkSC = TRK.sc / TM.trackNorm.sc, trkInc = TRK.inc / TM.trackNorm.inc;
         const spT = {}; if (isSpr) C.teams.forEach(t => { spT[t[0]] = gauss() * (TM.sprintTeamSd || 0); });   // sprint-day car form is its own draw: the 19-lap dash suits cars differently from the Sunday race
         grid.forEach((u, gi) => {
           u.grid = gi + 1;
           let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + wkF(u) + gauss() * Math.sqrt(Math.max(0, TM.rSd * TM.rSd - wkS * wkS)) * consU(u) * (wet ? 1.6 : 1) + (isSpr ? spT[u.team] + gauss() * (TM.sprintDrvSd || 0) : 0)
             + (!isSpr && ri >= 6 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.w / ri - (TM.winFade ? TM.winFade[0] : 0.66)) * (TM.winFade ? TM.winFade[1] : 3) * (S.dom ? (TM.domFade === undefined ? 1 : TM.domFade) : 1)), 0) : 0);   // win streaks fade too (rivals' upgrades, risk, reliability): real record 19 of 22
-          let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1) * (cP && !isSpr ? chaosK : 1);
+          let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1) * (cP && !isSpr ? chaosK : 1) * trkInc;
           let pr = TM.mech[regAgeT] / 100 * (G.year === 2026 ? TM.mech26 || 1 : 1) * mfT(u) / mfM * (isSpr ? 0.35 : 1);   // 2026 is an unusually fragile new-engine year
           if (u.hasP) {
             pe *= clamp(1 + (65 - st.CON) * 0.012, 0.6, 1.5) * (G.f1Years < 2 ? 1.3 : 1);
@@ -504,16 +513,25 @@
           u.tsec = base * (1 + rp / 100) + ((gi > 0 ? TM.poleS : 0) + gi * TM.gridS + gi * gi * TM.gridS2) * gk + gauss() * TM.startSd * (TM.startPos ? TM.startPos[gi < 3 ? 0 : gi < 8 ? 1 : 2] : 1) * consU(u) * sk * (wet ? 1.5 : 1) + (rnd() < TM.lossP * lk ? 4 + rnd() * TM.lossMax : 0) + (rnd() < TM.dmgP * lk ? 15 + rnd() * 45 : 0);   // + first-lap damage / drive-through   // slow stop, time penalty, strategy miss
           { const dk = fMul(TM.dnfD, u.members[0].name); pe *= dk; pr *= dk; }   // some drivers' seasons are more (or less) fragile than their car's
           u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null; u.rp = rp;
+          if (!isSpr && TM.strat) {   // tyre strategy: the team reads the weekend's tyre wear with some error and picks one or two stops; a wrong call costs time
+            const ST = TM.strat, k = ST.k0 * degR, cost = s => s * pit + k * L * L / (2 * (s + 1)), est = degR * (1 + gauss() * (ST.estSd + ST.estGap * Math.min(10, Math.max(0, carTopT - uCar(u)))));
+            u.stops = est > 1 ? 2 : 1; u.regret = cost(u.stops) - Math.min(cost(1), cost(2)) + gauss() * ST.stopSd * u.stops;
+            u.comp = u.stops === 1 ? (rnd() < 0.7 ? 'M-H' : 'H-M') : (rnd() < 0.45 ? 'M-H-M' : rnd() < 0.6 ? 'S-M-H' : 'M-H-H');
+            u.plan = u.stops === 1 ? [L * (0.42 + gauss() * 0.06)] : [L * (0.3 + gauss() * 0.05), L * (0.64 + gauss() * 0.05)]; u.tsec += u.regret * ST.w; }
         });
+        if (!isSpr && TM.strat) { const mr = grid.reduce((x, u) => x + (u.regret || 0), 0) / grid.length; grid.forEach(u => { u.tsec -= mr * TM.strat.w; }); }   // only the difference between teams' calls matters: the average cost is already in the calibrated pace
         if (TM.passS) {   // overtaking: every slower car that started ahead of you costs time to pass
           const raw = grid.map(u => u.tsec);
           grid.forEach((u, gi) => { let k = 0;
             for (let j = 0; j < gi; j++) if (raw[j] > raw[gi]) k += TM.passNear ? TM.passFar + (TM.passNear - TM.passFar) * Math.exp(-(raw[j] - raw[gi]) / (TM.passScale || 15)) : 1;   // passing a car barely slower than you is hard; waltzing past a much slower one is not
-            u.tsec += k * TM.passS * gk; });
+            u.tsec += k * TM.passS * gk * trkPass; });
         }
-        if (rnd() < (isSpr ? TM.scSprint : cP ? (chaos ? TM.chaosSC : (TM.scP - cP * TM.chaosSC) / (1 - cP)) : TM.scP) * (wet ? 1.5 : 1)) {   // safety car: the field is bunched at some point and the order gets a shake at the restart
+        if (rnd() < Math.min(0.97, (isSpr ? TM.scSprint : cP ? (chaos ? TM.chaosSC : (TM.scP - cP * TM.chaosSC) / (1 - cP)) : TM.scP) * (wet ? 1.5 : 1) * trkSC)) {   // safety car: the field is bunched at some point and the order gets a shake at the restart
           // f = share of the gaps erased: about a third of real safety cars come in the first laps and erase almost nothing (OpenF1 2023-26)
           const f = rnd() < (TM.scEarly || 0) ? 0.02 + 0.08 * rnd() : 0.15 + 0.85 * rnd(), live = grid.filter(u => !u.crash), t0 = Math.min(...live.map(u => u.tsec)); scNow = true;
+          if (!isSpr && TM.strat) { const lapSC = L * (0.05 + 0.9 * rnd()), ST = TM.strat; live.forEach(u => { if (!u.plan) return; u.scBen = 0;
+              if (lapSC > 0.1 * L && u.plan.some(l => l > lapSC)) { u.tsec -= ST.scGain * pit; u.scBen = 1; }   // a stop still to make becomes cheap under the safety car
+              else if (u.plan.some(l => l <= lapSC && l > lapSC - 3)) { u.tsec += ST.scLoss * pit; u.scBen = -1; } }); }   // stopped a lap or two earlier: a free stop wasted
           live.forEach(u => { u.tsec = t0 + (u.tsec - t0) * (1 - f) + Math.abs(gauss()) * TM.restartSd + (u.tsec - t0) * 0; });
         }
         { const live = grid.filter(u => !u.crash).sort((a, b) => a.tsec - b.tsec);   // a leader with a big gap manages it rather than flat-out extending it
@@ -557,7 +575,7 @@
       const rScale = (C.rK || 0.1) * (isSpr || rf.n === 'Sprint' || rf.n === 'Heat' ? 0.55 : 1) * wk * wetK * eraK * (rnd() < 0.22 ? 0.5 : 1); // 22%: a safety car bunches the field
       const gapR = (a, b) => TM ? b.tsec - a.tsec : rg(a.s - b.s) * rScale;
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => gapR(fin[0], u)));
-      if (G.dbg && G.dbg.pace && TM && !isSpr) G.dbg.pace.push({ sc: scNow, base: TM.laps * C.lap, u: res.map(u => ({ n: u.members[0].name, t: u.team, qs: u.qs, rp: u.rp, ts: u.tsec, grid: u.grid, crash: !!u.crash, p: !!u.hasP })) });
+      if (G.dbg && G.dbg.pace && TM && !isSpr) G.dbg.pace.push({ sc: scNow, base: TM.laps * C.lap, u: res.map(u => ({ n: u.members[0].name, t: u.team, qs: u.qs, rp: u.rp, ts: u.tsec, grid: u.grid, crash: !!u.crash, p: !!u.hasP, stops: u.stops, scBen: u.scBen })) });
       if (G.dbg && G.dbg.spr && isSpr) G.dbg.spr.push({ ri, grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash })) });
       if (G.dbg && G.dbg.full && !isSpr) G.dbg.rf.push({ grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash, cause: u.cause, g: u.crash ? null : gapR(fin[0], u) })) });
       res.forEach((u, i) => u.members.forEach(d => { if (!rf.stage) d.races++; if (u.crash) { if (!rf.stage) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; } return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
@@ -566,7 +584,7 @@
         const pos = res.indexOf(uP) + 1;
         let gap = null, lead = false, laps = 0;
         if (!uP.crash && fin.length > 1) { lead = pos === 1; gap = Math.max(0.001, lead ? (TM ? gapR(fin[0], fin[1]) : rg(fin[0].s - fin[1].s) * rScale * Math.exp(gauss() * 0.55)) : gapR(fin[0], uP)); if (!lead && TM) laps = Math.max(0, Math.ceil((isSpr ? TM.sprintLaps : TM.laps) * gap / uP.tsec) - 1); else if (!lead && C.lap && gap >= C.lap) laps = gap >= C.lap * 2.4 ? 2 : 1; }
-        entry.races.push({ n: rf.n, grid: uP.grid, pen: (!isSpr && uP.pen) || null, qpos: (!isSpr && uP.pen && uP.qpos) || null, late: !!uP.late, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
+        entry.races.push({ n: rf.n, stops: !isSpr && !uP.crash && uP.stops ? uP.stops : null, comp: !isSpr && uP.stops ? uP.comp : null, scpit: !isSpr ? uP.scBen || 0 : 0, grid: uP.grid, pen: (!isSpr && uP.pen) || null, qpos: (!isSpr && uP.pen && uP.qpos) || null, late: !!uP.late, pos, dnf: uP.crash, cause: uP.crash ? uP.cause : null, pts: uP.crash ? 0 : (rf.pts[pos - 1] || 0), spr: !!isSpr, gap, lead, laps });
         if (!isSpr && pos === 1 && !uP.crash) { if (C.special && C.special[ri]) S.trophies.push(C.special[ri]); }
       }
       return res;
