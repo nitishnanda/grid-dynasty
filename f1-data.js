@@ -161,7 +161,7 @@
         trend2026Shape2: {'Aston Martin': 0.35},   // Aston's gains came early (Honda fixes); after round 17 they hold rather than keep climbing
         trend2026Bump: {'McLaren': [10.5, 1.5, -0.7]},   // team: [centre round, width in rounds, % of lap]
         trend2026Rounds: 17,   // the 2026 drift was measured over rounds 1-17 and holds after that
-        devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
+        devSd: 0.15, devCap: 1.2,   // in-season upgrade race between the top cars (car points per round, and its cap)
         laps: 57, sprintLaps: 19,
         rSd: 0.15,            // race-day pace noise per driver (OpenF1: driver part of the race-vs-quali reshuffle ~0.24%)
         gridS: 1.52, gridS2: 0.02, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
