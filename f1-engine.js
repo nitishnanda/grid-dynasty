@@ -423,9 +423,11 @@
     const tfT = {}, trT = {}, tqT = {}; if (TM) C.teams.forEach(t => { tfT[t[0]] = gauss() * TM.trackSd * Math.sqrt(geT); trT[t[0]] = gauss() * TM.raceTeamSd * Math.sqrt(geT); tqT[t[0]] = gauss() * (TM.qTeamSd || 0); });   // track fit (both days) and race-day-only car form (tyres, strategy, set-up)
     const carTopT = TM ? Math.max(...units.map(uCar)) : 0;
     const wetT = wet ? (st.WET - ovrOf(st)) * 0.3 : 0;   // wet skill relative to your own level (the AI's wet skill is centred on zero too)
-    const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali * ((TM.cons && TM.cons[d.name]) || 1))) - (d.rk ? TM.rookieRace : 0) + ((TM.rc && TM.rc[d.name]) || 0) : 0)) + (d.form || 0), 0) / u.members.length;
+    // 2026 per-driver form (one-lap/race offsets, spreads, fragility) is fitted to the 2026 season and fades by half each year after
+    const fK = G.year > 2026 ? Math.pow(0.5, G.year - 2026) : 1, fAdd = (t, n) => ((t && t[n]) || 0) * fK, fMul = (t, n) => 1 + (((t && t[n]) || 1) - 1) * fK;
+    const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali * fMul(TM.cons, d.name))) - (d.rk ? TM.rookieRace : 0) + fAdd(TM.rc, d.name) : fAdd(TM.qc, d.name))) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
-    const lapNoiseT = () => gauss() * TM.qSd * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
+    const lapNoiseT = (k = 1) => gauss() * TM.qSd * k * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
     let carPctT = (u, race) => { const g = carTopT - uCar(u);
       // one-lap pace converges as the rules mature; race pace behind the front-runners does not: it is far wider in a reset year, then ~flat (OpenF1 2023-26)
       if (race) return betaT * Math.min(g, TM.raceKnee) + TM.beta * TM.raceBack * (regAgeT === 0 ? TM.raceReset : 1) * Math.pow(Math.max(0, g - TM.raceKnee), TM.raceBackPow);
@@ -439,7 +441,7 @@
     const trendNow = u => { const p = trendPOf(u); return ((S.trend || {})[u.team] || 0) * (Math.pow(Math.min(S.round, trendSpan) / Math.max(1, trendSpan), p) - 1 / (p + 1)) + bumpOf(u); };
     const carPct0 = carPctT;
     if (TM) carPctT = (u, race) => carPct0(u, race) + trendNow(u);
-    const qPaceT = u => carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT() - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
+    const qPaceT = u => carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT(u.members.reduce((a, m) => a + fMul(TM.qcons, m.name), 0) / u.members.length) - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
     if (TM) {
       units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.58) * 2.5 + Math.max(0, d.pole / ri - 0.68) * 6), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
       const qo = units.slice().sort((a, b) => a.qp - b.qp), e1 = Math.max(0.3, TM.evoQ1 + gauss() * 0.3), e2 = Math.max(0.1, TM.evoQ2 + gauss() * 0.15);
@@ -480,7 +482,7 @@
         // race time = distance x (1 + race pace deficit) + track position + first-lap/strategy scatter; then reliability, incidents and safety cars
         const L = isSpr ? TM.sprintLaps : TM.laps, base = L * C.lap, sk = isSpr ? 0.5 : 1, gk = isSpr ? 0.45 : 1, lk = isSpr ? TM.sprintLaps / TM.laps : 1;
         const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * 0.045, 0.7, 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
-        const consU = u => u.members.reduce((a, m) => a + ((TM.cons && TM.cons[m.name]) || 1), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
+        const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
         grid.forEach((u, gi) => {
           u.grid = gi + 1;
           let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * consU(u) * (wet ? 1.6 : 1)
@@ -493,7 +495,7 @@
             else if (mode === 'coast') { rp += 0.05; pe *= 0.45; pr *= 0.8; }
           } else if (u.members.some(d => d.rk)) pe *= 1.5;
           u.tsec = base * (1 + rp / 100) + ((gi > 0 ? TM.poleS : 0) + gi * TM.gridS + gi * gi * TM.gridS2) * gk + gauss() * TM.startSd * consU(u) * sk * (wet ? 1.5 : 1) + (rnd() < TM.lossP * lk ? 4 + rnd() * TM.lossMax : 0) + (rnd() < TM.dmgP * lk ? 15 + rnd() * 45 : 0);   // + first-lap damage / drive-through   // slow stop, time penalty, strategy miss
-          { const dk = (TM.dnfD && TM.dnfD[u.members[0].name]) || 1; pe *= dk; pr *= dk; }   // some drivers' seasons are more (or less) fragile than their car's
+          { const dk = fMul(TM.dnfD, u.members[0].name); pe *= dk; pr *= dk; }   // some drivers' seasons are more (or less) fragile than their car's
           u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null; u.rp = rp;
         });
         if (TM.passS) {   // overtaking: every slower car that started ahead of you costs time to pass
