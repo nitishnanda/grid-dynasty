@@ -258,8 +258,8 @@
         const pr = scripted ? 0 : retP(a) + (a >= 36 ? (RETIRE_BIAS[d.name] || 0) : 0);
         const z = (gridEff - eff) / 2.6 + Math.max(0, mEff - eff - 2) / 3.5;
         const sp = pos[d.name] || 0;   // championship position (F1DB 2010-25: no reigning champion lost a seat, ~4% of top-3 finishers did)
-        const elite = (effOf(d) >= gridEff + 4.2 || d.ski >= 90.5) && a < 38;   // a clear star (Verstappen, Norris, Piastri, Leclerc) is never dropped
-        const pd = forced || sp === 1 || elite ? 0 : (sp && sp <= 3 ? 0.35 : 1) * (a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? (CATS.f1.time.dropTop || 1.3) : rankT.indexOf(t) >= 7 ? (CATS.f1.time.dropBack || 1) : (CATS.f1.time.dropMid || 1)) * ((d.yrs || 0) < 1 ? 0.4 : (d.yrs || 0) < 2 ? 0.8 : 1));   // rookies usually get a second year
+        const elite = (effOf(d) >= gridEff + 4.2 || d.ski >= 90.5 || (d.pk || 0) >= 90.5 && a < 34) && a < 38;   // a clear star (Verstappen, Norris, Piastri, Leclerc) is never dropped
+        const pd = forced || sp === 1 || elite ? 0 : (sp && sp <= 3 ? 0.35 : 1) * (a >= 36 ? 0 : clamp(((d.yrs || 0) >= 3 ? 0.26 : 0.15) + 0.15 * z, 0.03, 0.75) * (rankT.indexOf(t) < 4 ? (CATS.f1.time.dropTop || 1.3) : rankT.indexOf(t) >= 7 ? (CATS.f1.time.dropBack || 1) : (CATS.f1.time.dropMid || 1)) * ((d.yrs || 0) < 1 ? 0.3 : (d.yrs || 0) < 2 ? 0.7 : 1) * (CATS.f1.time.dropK || 1) * (eff >= gridEff + 1.5 ? 0.35 : 1));   // rookies usually get a second year; a driver clearly above the grid average rarely loses a seat
         d.yrs = (d.yrs || 0) + 1;
         if (forced || rnd() < pr) { out.push({ name: d.name, age: a, team: t, dropped: false }); G.f1.retired.push(d.name); T[t][i] = null; }
         else if (rnd() < pd) { out.push({ name: d.name, age: a, team: t, dropped: true }); d.exT = t; d.exY = G.year; G.f1.free.push(d); T[t][i] = null; }
@@ -501,7 +501,7 @@
     if (G.dbg && G.dbg.full) G.dbg.qf.push(qOrder.map(u => ({ n: u.members[0].name, t: u.team, g: qGap(u), p: TM ? (u.qp - qOrder[0].qp) / 100 * C.lap : qGap(u) })));
     if (qOrder.length) qOrder[0].members.forEach(d => d.pole++);
 
-    const entry = { ev: evIdx, round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, field: units.length, mode };
+    const entry = { ev: evIdx, round: ri + 1, name: C.names[ri] || ('Round ' + (ri + 1)), wet, qpos, qi, fp, races: [], pole: !out && qOrder[0] === uP, out, why: out ? (S.injWhy || (G.demoted ? 'dropped by the team' : null)) : null, field: units.length, mode };
     let prev = qOrder;
     const run = (rf, grid, isSpr) => {
       const n = grid.length; let scNow = false, vscNow = false;
@@ -640,7 +640,7 @@
     });
     S.log.push(entry);
     S.round++;
-    if (S.injured > 0) S.injured--;
+    if (S.injured > 0) { S.injured--; if (!S.injured) S.injWhy = null; }
     rbEvent(G);
     if (S.round >= C.rounds) S.over = true;
     else if (S.spins < 2 && S.round >= S.stageEnds[S.spins]) S.wheelDue = true;
@@ -706,13 +706,17 @@
     L.forEach((o, i) => o.col = cols[i % cols.length]);
     return L;
   }
+  // what put you on the sidelines (mixed from real cases: Sainz's appendix, Stroll's cycling wrists, Albon's appendix, Bearman's stand-in call, Massa's Hungary spring)
+  const INJ = ['a heavy crash in practice: concussion protocol', 'a big shunt in qualifying left you with cracked ribs', 'appendicitis', 'a fractured wrist from a crash in the race', 'a cycling accident in training (broken wrist)', 'a back injury from a heavy landing over a kerb', 'a bad bout of flu', 'a neck strain from a high-g impact', 'a broken foot in a first-lap crash'];
+  const KART_INJ = ['a broken wrist in a kart flip', 'a rib injury from the seat in a heavy crash', 'a bad bout of flu', 'a sprained ankle in a pile-up'];
+  const END_INJ = ['a huge crash left you with a spinal injury', 'severe leg fractures from a crash that the doctors say will not fully heal', 'a serious head injury from flying debris', 'repeated concussions: the medical team will not clear you to race again', 'a crushed hand in a heavy impact with the wall'];
   function spinWheel(G) {
     const S = G.S, C = CATS[S.cat], st = G.stats, L = wheelList(G);
     let t = L.reduce((a, o) => a + o.w, 0) * rnd(), idx = 0;
     for (let i = 0; i < L.length; i++) { t -= L[i].w; if (t <= 0) { idx = i; break; } }
     const o = L[idx]; let desc = '', ended = false, extra = null;
     switch (o.id) {
-      case 'crash': S.injured = Math.max(S.injured, C.tier === 0 || rnd() < 0.85 ? 1 : 2); st.FIT = Math.max(30, st.FIT - 1); desc = `You miss the next ${S.injured} round${S.injured > 1 ? 's' : ''}.`; break;
+      case 'crash': { S.injured = Math.max(S.injured, C.tier === 0 || rnd() < 0.85 ? 1 : 2); st.FIT = Math.max(30, st.FIT - 1); const why = pick(C.tier === 0 ? KART_INJ : INJ); S.injWhy = why; const miss = S.injured > 1 ? `the next ${S.injured} rounds` : 'the next round'; note(G, `💥 Injury: ${why}. You miss ${miss}.`); desc = `${why[0].toUpperCase() + why.slice(1)}. You miss ${miss}.`; break; }
       case 'academy': G.academy = pick(ACADEMIES); G.rep = Math.min(100, G.rep + 4); desc = `${G.academy.n} signs you. Seat costs are covered from now on.`; break;
       case 'sponsorLost': G.sponsor = Math.max(0.35, G.sponsor * 0.7); desc = 'Funding is down 30%. Expect tighter seat options next summer.'; break;
       case 'sponsorNew': G.sponsor = Math.min(3, G.sponsor * 1.35); desc = 'Funding is up 35%. Bigger seats are in reach.'; break;
@@ -747,8 +751,8 @@
           desc = rest ? 'You are out for the rest of the season. Offers will come in the summer.' : `You sit out ${S.injured} rounds. Offers will come in the summer.`;
         } else { S.carMod -= 3.5; desc = 'You see out the season in a lesser drive.'; }
         break;
-      case 'careerEnd': ended = true; desc = 'Your racing career ends here.'; break;
-      case 'fatal': ended = true; desc = 'A tragic end to a racing life.'; break;
+      case 'careerEnd': { ended = true; G.endWhy = pick(END_INJ); desc = `${G.endWhy[0].toUpperCase() + G.endWhy.slice(1)}. Your racing career ends here.`; break; }
+      case 'fatal': ended = true; G.endWhy = pick(['a high-speed accident in ' + (C.names[Math.max(0, S.round - 1)] || 'testing'), 'a violent crash in a private test']); desc = `A tragic end to a racing life: ${G.endWhy}.`; break;
     }
     S.wheelDue = false; S.spins++;
     if (ended) G.pendingEnd = o.id;
@@ -905,6 +909,7 @@
       if (mate) { G.last.mateEff = mate.skill; G.last.tmShare = (P.pts + 10) / (P.pts + mate.pts + 20); G.last.qH2H = (h.q[0] + 1) / (h.q[1] + 2); G.last.rH2H = (h.r[0] + 1) / (h.r[1] + 2); }
     }
     const summary = makeSummary(G, h, C, P, tbl, pos, N, carRank, G.rep - repBefore, G.history.filter(x => x.cat === S.cat).length === 1);
+    if (summary && summary.card) { h.rating = summary.card.overall; h.grade = summary.card.grade; }
 
     const msgs = [];
     if (G.academy && C.tier >= 1 && C.tier <= 3) {
@@ -1073,6 +1078,8 @@
     const st = STEP_P[fromCat];
     let p = st ? st[pos === 1 ? 0 : pos <= 3 ? 1 : pos <= 5 ? 2 : pos <= 10 ? 3 : 4] * STEP_TIER[G.tier] : PROMO_P[bucket(pos)][G.tier];
     if (TIER3_SIDE.includes(fromCat)) p *= pos <= 3 ? 0.03 : 0;
+    // a generational or wonderkid F2 champion (or podium finisher) gets a seat: a team clears out a weaker driver for them (Leclerc, Russell, Hamilton)
+    if (fromCat === 'f2' && toCat === 'f1' && G.tier >= 3) p = Math.max(p, (G.tier === 4 ? [0.97, 0.85, 0.55] : [0.85, 0.6, 0.35])[pos === 1 ? 0 : pos <= 3 ? 1 : pos <= 5 ? 2 : 3] || 0);
     return clamp(p * (mult || 1), 0, st ? 0.97 : 1);
   }
 
@@ -1224,6 +1231,8 @@
       }
     }
     M.options = M.options.filter((o, i, a) => a.findIndex(x => x.cat === o.cat && x.team === o.team) === i);
+    const LAD = { f1: 1, f2: 1, f3: 1, frec: 1.5, f4: 1 }, rk = o => (CATS[o.cat].tier || 0) * 2 + (LAD[o.cat] || 0);   // the single-seater ladder above a side series of the same tier
+    M.options = M.options.map((o, i) => [o, i]).sort((a, b) => rk(b[0]) - rk(a[0]) || a[1] - b[1]).map(x => x[0]);   // higher categories at the top of the contract desk
     if (!G.academy && !M.forced && C.tier >= 1 && C.tier <= 3 && G.age <= 24 && L.q >= 0.75 && G.rep >= 40 && rnd() < 0.4) M.academy = pick(ACADEMIES);
     M.sponsors = M.forced ? [] : sponsorOffers(G, L, C);
     M.broke = M.options.length > 0 && M.options.every(o => o.blocked);
@@ -1267,10 +1276,34 @@
     const best = G.history.slice().sort((a, b) => (b.champ - a.champ) || (b.wins - a.wins) || (a.pos - b.pos))[0];
     const teams = []; G.history.forEach(h => h.team.split(' → ').forEach(t => { if (!teams.includes(t)) teams.push(t); }));
     const winsBy = {}; G.history.forEach(h => { if (h.wins) winsBy[h.short] = (winsBy[h.short] || 0) + h.wins; });
-    G.retire = { label, score, best, teams, winsBy, age: G.age, seasons: G.history.length, cause: G.pendingEnd || null };
+    G.retire = { label, score, best, teams, winsBy, age: G.age, seasons: G.history.length, cause: G.pendingEnd || null, why: G.endWhy || null };
     return G.retire;
   }
   function endCareerNow(G) { finishSeason(G, true); return retire(G); }
+  // career file: totals per category (karting as one) and a written summary of the whole career
+  function careerFile(G) {
+    const R = G.retire || {}, H = G.history.filter(h => !h.partial || h.races), rows = [], idx = {};
+    H.forEach(h => { const k = /^kart/.test(h.cat) ? 'kart' : h.cat; if (!(k in idx)) { idx[k] = rows.length; rows.push({ k, n: k === 'kart' ? 'Karting' : CATS[h.cat].short, from: h.year, to: h.year, seasons: 0, races: 0, wins: 0, podiums: 0, poles: 0, dnf: 0, pts: 0, titles: 0, rs: [] }); }
+      const r = rows[idx[k]]; r.to = h.year; r.seasons++; r.races += h.races || 0; r.wins += h.wins || 0; r.podiums += h.podiums || 0; r.poles += h.poles || 0; r.dnf += (h.dnfE || 0) + (h.dnfR || 0); r.pts += h.pts || 0; if (h.champ) r.titles++; if (h.rating != null) r.rs.push(h.rating); });
+    const gradeAvg = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null;
+    rows.forEach(r => { r.rating = gradeAvg(r.rs); r.grade = r.rating == null ? null : gradeOf(r.rating); delete r.rs; });
+    const allR = gradeAvg(H.filter(h => h.rating != null).map(h => h.rating)), f1 = rows.find(r => r.k === 'f1'), f1h = H.filter(h => h.cat === 'f1');
+    const story = [], first = H[0], last = H[H.length - 1], wdc = (G.tot.trophies || {})['F1 World Champion'] || 0;
+    if (first) story.push(`${G.name} raced for ${H.length} season${H.length === 1 ? '' : 's'}, from ${first.year} (age ${first.age}) to ${last.year}, as ${R.label || 'a racing driver'}.`);
+    const ladder = rows.filter(r => r.k !== 'kart' && ['f4', 'frec', 'f3', 'f2'].includes(r.k));
+    if (ladder.length) story.push(`The junior ladder went ${ladder.map(r => `${r.n}${r.titles ? ' (champion)' : ''}`).join(', then ')}.`);
+    if (f1) {
+      const deb = f1h[0], bestF1 = f1h.slice().sort((a, b) => (b.champ - a.champ) || (b.wins - a.wins) || (a.pos - b.pos))[0];
+      story.push(`F1 debut at ${deb.age} with ${deb.team.split(' → ')[0]}. ${f1.seasons} season${f1.seasons === 1 ? '' : 's'} on the grid: ${f1.races} starts (sprints included), ${f1.wins} win${f1.wins === 1 ? '' : 's'}, ${f1.podiums} podium${f1.podiums === 1 ? '' : 's'} and ${f1.poles} pole${f1.poles === 1 ? '' : 's'}.`);
+      story.push(wdc ? `${wdc}× World Champion. The best year was ${bestF1.year}: ${bestF1.wins} wins for ${bestF1.team.split(' → ').pop()}.` : bestF1.pos <= 3 ? `No world title, but P${bestF1.pos} in ${bestF1.year} came closest.` : `Best championship finish: P${bestF1.pos} in ${bestF1.year}.`);
+      if (f1.wins && f1.races) story.push(f1.wins / f1.races >= 0.3 ? 'A win rate that puts the career among the very greatest.' : f1.wins / f1.races >= 0.12 ? 'A regular winner across the years.' : f1.wins ? 'Wins came when the car allowed it.' : '');
+    } else story.push(rows.length > 1 ? `F1 never came: the top level reached was ${rows.slice().sort((a, b) => (CATS[b.k === 'kart' ? 'kart4' : b.k].tier || 0) - (CATS[a.k === 'kart' ? 'kart4' : a.k].tier || 0))[0].n}.` : 'The career never left karting.');
+    const other = rows.filter(r => r.k !== 'f1' && r.k !== 'kart' && !['f4', 'frec', 'f3', 'f2'].includes(r.k));
+    if (other.length) story.push(`Outside the ladder: ${other.map(r => `${r.n} (${r.seasons} season${r.seasons === 1 ? '' : 's'}${r.wins ? `, ${r.wins} win${r.wins === 1 ? '' : 's'}` : ''}${r.titles ? `, ${r.titles} title${r.titles === 1 ? '' : 's'}` : ''})`).join(', ')}.`);
+    if (allR != null) story.push(`Season report cards averaged ${gradeOf(allR)} (${allR}).`);
+    story.push(R.cause === 'fatal' ? `The career ended in tragedy at ${R.age}: ${R.why || 'a fatal accident'}.` : R.cause ? `It ended suddenly at ${R.age}: ${R.why || 'a career-ending injury'}.` : `Retired at ${R.age}.`);
+    return { rows, story: story.filter(Boolean), rating: allR, grade: allR == null ? null : gradeOf(allR) };
+  }
 
   // saves from older versions: make sure every series has its world state
   function migrate(G) {
@@ -1295,6 +1328,6 @@
     }
     return G;
   }
-  const api = { migrate, SENIOR, standingsEv, compTable, takeSponsor, canContinue, continueContract, WEALTH, setStats, CATS, TIERS, rnd, newGame, rerollStats, rerollClub, startSeason, playRound, simToEnd, setMode, wheelList, spinWheel, skipWheel, finishSeason, buildMarket, chooseOption, retire, endCareerNow, standings, player, ovrOf, potLabel, funding, costOf, salOf, kartCat, MAX_AGE, tierOf };
+  const api = { careerFile, migrate, SENIOR, standingsEv, compTable, takeSponsor, canContinue, continueContract, WEALTH, setStats, CATS, TIERS, rnd, newGame, rerollStats, rerollClub, startSeason, playRound, simToEnd, setMode, wheelList, spinWheel, skipWheel, finishSeason, buildMarket, chooseOption, retire, endCareerNow, standings, player, ovrOf, potLabel, funding, costOf, salOf, kartCat, MAX_AGE, tierOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.F1E = api;
 })(typeof window !== 'undefined' ? window : globalThis);

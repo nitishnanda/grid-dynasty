@@ -166,7 +166,7 @@ function vSeason(){
   const logs=S.log.slice().reverse().map(l=>{
     if(l.note) return `<div class="note">${esc(l.text)}</div>`;
     let rows='';
-    if(l.out) rows=`<tr class="d"><td class="k">—</td><td colspan="3">Did not take part (injury / sidelined)</td></tr>`;
+    if(l.out) rows=`<tr class="d"><td class="k">—</td><td colspan="3">Did not take part${l.why?': '+esc(l.why):' (injury / sidelined)'}</td></tr>`;
     else{
       rows+=`<tr class="${l.pole?'w':''}"><td class="k">QUALI</td><td>P${l.qpos}${l.pole?' · pole':''}</td><td class="g">${l.qi?(l.pole?gp(l.qi.gap,true,0,true)+' to P2':gp(l.qi.gap,false,0,true)):''}</td><td></td></tr>`;
       rows+=l.races.map(r=>`<tr class="${r.dnf?'d':r.pos===1&&!r.spr?'w':''}"><td class="k">${esc(r.n).toUpperCase()}</td><td>P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.spr?'<br><small>from sprint qualifying</small>':''}${r.dnf?`<br><small>${r.l1?'first-lap collision':r.cause==='error'?'driver error':'reliability'}</small>`:''}${r.late?'<br><small>retired late, still classified</small>':''}${r.stops?`<br><small>${r.stops}-stop (${r.comp})${r.scpit===1?', stopped under the safety car':r.scpit===2?', free tyres under the red flag':r.scpit===3?', stopped under the VSC':r.scpit===-1?', pitted just before the safety car':r.scpit===-3?', pitted just before the VSC':''}</small>`:''}${r.neut&&!r.spr?`<br><small>${r.neut==='red'?'red flag':r.neut==='sc'?'safety car':'virtual safety car'}</small>`:''}${r.pen?`<br><small>${r.pen==='back'?'sent to the back of the grid':r.pen+'-place grid penalty'}${r.qpos?` (qualified P${r.qpos})`:''}</small>`:''}</td><td class="g">${r.dnf?'':gp(r.gap,r.lead,r.laps,false)+(r.lead?' to P2':'')}</td><td class="r">${r.dnf?'0':'+'+r.pts}</td></tr>`).join('');
@@ -238,7 +238,9 @@ function vRetired(){
   const cost=G.history.reduce((a,h)=>a+(h.cost||0),0), b=R.best;
   return `${bar()}<h1>Career file</h1><p class="lede">${esc(G.name)} · retired at ${R.age} · ${R.seasons} seasons · ${esc(R.label)}</p>
   <div style="margin:0 0 14px">${tierStamp(G.tier)} ${stamp(E.WEALTH[G.wealth].n,'#5a5244')}</div>
-  ${R.cause?`<div class="note">${R.cause==='fatal'?'A tragic accident ended the career. The paddock mourns.':'A career-ending injury cut it short.'}</div>`:''}
+  ${R.cause?`<div class="note">${R.cause==='fatal'?'A tragic accident ended the career. The paddock mourns.':'A career-ending injury cut it short.'}${R.why?' Cause: '+esc(R.why)+'.':''}</div>`:''}
+  ${(()=>{const F=E.careerFile(G);return `<div class="sheet"><div class="cap">The career in brief</div>${F.story.map(x=>`<p>${esc(x)}</p>`).join('')}</div>
+  <div class="cap">By category</div><div class="sheet flat sc" style="padding:0"><table class="tbl"><tr><th class="l">Series</th><th>Races</th><th>W</th><th>Pod</th><th>Pole</th><th>DNF</th><th>Pts</th><th>Avg</th></tr>${F.rows.map(r=>`<tr><td class="l"><b>${esc(r.n)}</b><br><small>${r.from===r.to?r.from:r.from+'–'+r.to} · ${r.seasons} season${r.seasons===1?'':'s'}${r.titles?` · ${r.titles}× champion`:''}</small></td><td>${r.races}</td><td>${r.wins}</td><td>${r.podiums}</td><td>${r.poles}</td><td>${r.dnf}</td><td>${Math.round(r.pts)}</td><td>${r.grade?`<b class="g${r.grade[0]}">${r.grade}</b><br><small>${r.rating}</small>`:'–'}</td></tr>`).join('')}</table></div>`;})()}
   <div class="sheet"><div class="cap">Career wins</div><div class="big">${T.wins}</div>
   <div class="meta" style="margin:6px 0 12px">${Object.entries(R.winsBy||{}).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span><b>${c}</b> ${esc(n)}</span>`).join('')||'<span>No wins</span>'}</div>
   <div class="kv"><div>Races<b>${T.races}</b></div><div>Podiums<b>${T.podiums}</b></div><div>Poles<b>${T.poles}</b></div><div>Titles<b>${Object.values(T.titles).reduce((a,x)=>a+x,0)}</b></div><div>Peak rating<b>${T.peak}</b></div><div>Earned<b>${money(T.earn)}</b></div></div>
