@@ -129,6 +129,8 @@
     }
     enforceFloors(G, c);
     setTR(G, c);
+    // McLaren 2012 / Red Bull 2010 / Ferrari 2022: now and then the fastest car of the year is also the most fragile, and the title goes elsewhere
+    if (c === 'f1' && C.time) { d.fragile = null; const srt = names.slice().sort((a, b) => d.str[b] - d.str[a]), top = srt[0]; if (!reg && d.regime !== 'dominant' && d.str[top] - d.str[srt[1]] < 1.3 && rnd() < (C.time.fragileP || 0)) { d.fragile = { team: top, k: 8 + rnd() * 4, year: ny }; } }
   }
   function enforceFloors(G, c) {
     const C = CATS[c], d = G.dyn[c], names = C.teams.map(t => t[0]);
@@ -519,7 +521,7 @@
       if (TM) {
         // race time = distance x (1 + race pace deficit) + track position + first-lap/strategy scatter; then reliability, incidents and safety cars
         const L = isSpr ? TM.sprintLaps : TM.laps, base = L * C.lap, sk = isSpr ? 0.5 : 1, gk = isSpr ? 0.45 : 1, lk = isSpr ? TM.sprintLaps / TM.laps : 1;
-        const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * (TM.relSlope || 0.045), TM.relMin || 0.7, TM.relMax || 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
+        const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * (dynT.fragile && dynT.fragile.year === G.year && dynT.fragile.team === u.team ? dynT.fragile.k : 1) * clamp(0.75 + (carTopT - uCar(u)) * (TM.relSlope || 0.045), TM.relMin || 0.7, TM.relMax || 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
         const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name) * eK(m), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
         // chaos weekends: incidents and safety cars cluster in the same races (real: DNFs per race var/mean 1.4, and +25% retirements in safety-car races)
         const cP = TM.chaosP || 0, chaos = !isSpr && cP > 0 && rnd() < cP, chaosK = chaos ? TM.chaosK : (1 - cP * TM.chaosK) / (1 - cP || 1);
@@ -835,6 +837,7 @@
     if (champ) expect = topKit ? 'met' : 'exceeded';
     let extract = 'even';
     if (mate && !C.crew) extract = P.pts > mate.pts * 1.15 + 2 ? 'more' : P.pts < mate.pts * 0.85 - 2 ? 'less' : 'even';
+    const frg = C.time && G.dyn.f1 && G.dyn.f1.fragile && G.dyn.f1.fragile.year === G.year && G.dyn.f1.fragile.team === G.team;
     const stock = dRep >= 5 ? 'soaring' : dRep >= 2 ? 'rising' : dRep > -1 ? 'steady' : 'falling';
     const para = [];
     // 1. the headline: what actually happened
@@ -882,6 +885,7 @@
     else if (P.races >= 10 && P.dnf === 0) para.push('Not a single DNF all year. Bulletproof.');
     // 5. stock and contract
     para.push(({ soaring: 'Your stock is soaring and people are circling.', rising: 'Your stock is rising. People are noticing.', steady: 'Your stock is steady.', falling: 'Your stock is falling. People are starting to doubt you.' })[stock] + (G.contract > 0 ? ` You have ${G.contract} year${G.contract > 1 ? 's' : ''} left at ${G.team}. Let's plan the summer.` : " Your deal is up, so let's plan the summer."));
+    if (frg) para.push(`This was the fastest car of the year and the most fragile: ${(P.dnfR || 0)} mechanical failure${(P.dnfR || 0) === 1 ? '' : 's'} for you alone. Like McLaren in 2012, the pace was there and the points were not.`);
     if (live) { const hx = Math.floor(S.pCarK.length / 2), kA = mn(S.pCarK.slice(0, hx)), kB = mn(S.pCarK.slice(hx));
       if (kB - kA >= 0.75) para.push(`The car slid from about ${ordStr(Math.round(kA))} to ${ordStr(Math.round(kB))} in the pecking order as the others developed, so the second half was always going to be harder.`);
       else if (kA - kB >= 0.75) para.push(`Upgrades lifted the car from about ${ordStr(Math.round(kA))} to ${ordStr(Math.round(kB))} in the pecking order through the year.`); }
@@ -928,8 +932,14 @@
     }
     const summary = makeSummary(G, h, C, P, tbl, pos, N, carRank, G.rep - repBefore, G.history.filter(x => x.cat === S.cat).length === 1);
     if (summary && summary.card) { h.rating = summary.card.overall; h.grade = summary.card.grade; }
+    // the car's average place in the pecking order: its rank after every round added up and divided by the rounds (F1); other series use the season's car rank
+    h.carAvg = S.pCarK && S.pCarK.length ? Math.round(S.pCarK.reduce((a, b) => a + b, 0) / S.pCarK.length * 10) / 10 : carRank; h.carOf = C.teams.length;
+    if (S.pCarK && S.pCarK.length) { h.carBest = Math.min(...S.pCarK); h.carWorst = Math.max(...S.pCarK); }
 
     const msgs = [];
+    const fr = C.time && G.dyn.f1 && G.dyn.f1.fragile;
+    if (fr && fr.year === G.year) { const ds = S.drivers.filter(d => d.team === fr.team), out = ds.reduce((a, d) => a + (d.dnfR || 0), 0); h.fragile = fr.team;
+      if (G.team !== fr.team) msgs.push(`${fr.team} had the fastest car of the year and the worst reliability: ${out} mechanical failures across their two cars cost them the title fight.`); }
     if (G.academy && C.tier >= 1 && C.tier <= 3) {
       const rb = G.academy.n.startsWith('Red Bull');
       const p = (rb ? (q < 0.35 ? 0.7 : q < 0.55 ? 0.35 : q < 0.7 ? 0.1 : 0) : (q < 0.3 ? 0.45 : q < 0.45 ? 0.12 : 0)) * (G.tier >= 3 ? 0.4 : 1);
@@ -1330,13 +1340,19 @@
     } else story.push(rows.length > 1 ? `F1 never came: the top level reached was ${rows.slice().sort((a, b) => (CATS[b.k === 'kart' ? 'kart4' : b.k].tier || 0) - (CATS[a.k === 'kart' ? 'kart4' : a.k].tier || 0))[0].n}.` : 'The career never left karting.');
     const other = rows.filter(r => r.k !== 'f1' && r.k !== 'kart' && !['f4', 'frec', 'f3', 'f2'].includes(r.k));
     if (other.length) story.push(`Outside the ladder: ${other.map(r => `${r.n} (${r.seasons} season${r.seasons === 1 ? '' : 's'}${r.wins ? `, ${r.wins} win${r.wins === 1 ? '' : 's'}` : ''}${r.titles ? `, ${r.titles} title${r.titles === 1 ? '' : 's'}` : ''})`).join(', ')}.`);
+    const ch = f1h.filter(h => h.carAvg != null);
+    if (ch.length) { const avg = ch.reduce((a, h) => a + h.carAvg, 0) / ch.length, top = ch.filter(h => h.carAvg <= 2.5).length, back = ch.filter(h => h.carAvg > 6.5).length;
+      const fast = top, parts = [`Your F1 cars averaged P${avg.toFixed(1)} in the pecking order across the career`];
+      if (fast) parts.push(`${fast} season${fast === 1 ? '' : 's'} in a top-two car`); if (back) parts.push(`${back} season${back === 1 ? '' : 's'} fighting from the back half`);
+      story.push(parts.join('; ') + (wdc ? (avg <= 2.5 ? '. The car did a lot of the work on those titles.' : '. Those titles were mostly the driver.') : '.')); }
     const inj = G.injuries || [], hurt = inj.filter(x => x.kind === 'injury');
     if (hurt.length) story.push(`Injuries cost ${hurt.reduce((a, x) => a + x.missed, 0)} round${hurt.reduce((a, x) => a + x.missed, 0) === 1 ? '' : 's'} over the years (${hurt.map(x => `${x.why}, ${x.year}`).join('; ')}).`);
     if (allR != null) story.push(`Season report cards averaged ${gradeOf(allR)} (${allR}).`);
     const at = allTimeRank(G, f1, wdc);
     if (at) story.push(`Projected all-time F1 ranking: #${at.rank}${at.above ? `, between ${at.above} and ${at.below || 'the rest'}` : at.below ? `, ahead of ${at.below}` : ''}. ${at.verdict}`);
     story.push(R.cause === 'fatal' ? `The career ended in tragedy at ${R.age}: ${R.why || 'a fatal accident'}.` : R.cause ? `It ended suddenly at ${R.age}: ${R.why || 'a career-ending injury'}.` : `Retired at ${R.age}.`);
-    return { rows, story: story.filter(Boolean), rating: allR, grade: allR == null ? null : gradeOf(allR), injuries: inj, allTime: at };
+    const f1car = ch.length ? Math.round(ch.reduce((a, h) => a + h.carAvg, 0) / ch.length * 10) / 10 : null;
+    return { f1car, rows, story: story.filter(Boolean), rating: allR, grade: allR == null ? null : gradeOf(allR), injuries: inj, allTime: at };
   }
 
   // saves from older versions: make sure every series has its world state

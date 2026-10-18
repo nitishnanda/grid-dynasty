@@ -143,6 +143,7 @@
         winFade: [0.5, 7], domFade: 0.5,   // a driver who has won more than ~half the races so far loses pace (rivals' upgrades, risk, reliability): pace penalty in % of a lap per share above the threshold
         poleFade: [0.5, 3, 0.6, 7],
         formElite: {from: 86, slope: 0.075, min: 0.55, max: 1.15},   // form spread scales down for the best drivers
+        fragileP: 0.2,       // chance a season's fastest car is also the most fragile (McLaren 2012, Red Bull 2010)
         dropK: 0.72,          // overall scale on seat losses (F1DB 2010-25: ~4.9 exits a season including retirements, rarely more than 6)
         eliteCons: 0.035,     // weekend-to-weekend execution noise per rating point above 86 (the best barely have off days), capped at 0.72-1.15x
         arc: {p: [0.4, 0.33, 0.27], amp: [0.8, 2.0]},   // season shape for top drivers: flat, slow start then locked in (Hamilton 2017-18, Vettel 2013), or a flying start; rating points either way
