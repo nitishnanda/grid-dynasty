@@ -27,7 +27,9 @@
   // ageing follows the F1DB curve the AI drivers use (flat to 28, ~0.8 a year slower at 29-31, ~1.1 at 32-34, gentler after);
   // the Pace/Fitness fade in setStats already covers ~0.1 a year of it
   const ageDecl = a => a <= 29 ? 0 : a <= 32 ? (a - 29) * 0.8 : a <= 35 ? 2.4 + (a - 32) * 1.1 : 5.7 + (a - 35) * 0.6;
-  const targetOvr = (G, age) => pathLvl(age) + TIERS[G.tier].adv[band(age)] - Math.max(0, ageDecl(age) - Math.max(0, age - 29) * 0.1);
+  // the best keep their peak longer: a generational driver holds it to ~34-35 (Schumacher, Hamilton, Verstappen), a wonderkid to ~32
+  const primeOf = G => (TIERS[G.tier].prime || 0);
+  const targetOvr = (G, age) => { const a = age - primeOf(G); return pathLvl(age) + TIERS[G.tier].adv[band(age)] - Math.max(0, ageDecl(a) - Math.max(0, a - 29) * 0.1) - Math.max(0, age - 35) * 0.7; };   // past 35 the slide speeds up whoever you are
   function rollTier() { let r = rnd(), i = 0; for (; i < TIERS.length; i++) { r -= TIERS[i].p; if (r <= 0) break; } return Math.min(i, TIERS.length - 1); }
   function rollShape(arch) {
     const s = {}; STATS.forEach(k => s[k] = gauss() * 2.2);
@@ -41,7 +43,7 @@
     const age = G.age, t = targetOvr(G, age), st = {};
     STATS.forEach(k => {
       let v = t + G.shape[k] + (G.train[k] || 0);
-      if (age >= 30 && (k === 'FIT' || k === 'PAC')) v -= (age - 29) * 0.4;
+      if (age - primeOf(G) >= 30 && (k === 'FIT' || k === 'PAC')) v -= (age - primeOf(G) - 29) * 0.4;
       if (age >= 28 && (k === 'MEN' || k === 'RAC')) v += 1;
       st[k] = clamp(Math.round(v), 25, 99);
     });
@@ -244,8 +246,8 @@
   function tickF1(G, pos) {
     const out = [], age = d => G.year - d.birth, T = G.f1.teams; pos = pos || {};
     const rankT = Object.keys(T).sort((a, b) => G.tr.f1[b] - G.tr.f1[a]);
-    // ageing (F1DB: flat to 28, ~0.8 pt a year slower at 29-31, ~1.1 at 32-34, gentler for the survivors after that)
-    const step = d => { const a = age(d); d.ski = clamp(R1(d.ski + (a <= 28 ? 0.35 * Math.max(0, (d.pot || d.ski) - d.ski) : a <= 31 ? -0.8 : a <= 34 ? -1.1 : -0.6) + gauss() * 0.5), 68, 97); };
+    // ageing (F1DB: flat to 28, ~0.8 pt a year slower at 29-31, ~1.1 at 32-34, gentler for the survivors after that); the elite start the slide later (a 92+ driver holds on to ~34)
+    const step = d => { d.pk = Math.max(d.pk || 0, d.ski); const a = age(d) - clamp((d.pk - 87.5) * 1.5, 0, 6); d.ski = clamp(R1(d.ski + (a <= 28 ? 0.35 * Math.max(0, (d.pot || d.ski) - d.ski) : a <= 31 ? -0.8 : a <= 34 ? -1.1 : -0.6) + gauss() * 0.5), 68, 97); };
     // 1) retirements and drops, judged on this season's effective level against the team-mate and the grid
     const gridEff = (() => { const p = rankT.flatMap(t => T[t].filter(d => d && !d.player)); return p.reduce((a, d) => a + effOf(d), 0) / (p.length || 1); })();
     rankT.forEach(t => {
@@ -365,6 +367,11 @@
       const ranked = S.drivers.filter(d => d.pts > 0 || S.round > 2).slice().sort((x, y) => y.pts - x.pts), lead = ranked[0] ? ranked[0].pts : 0;
       const cf = d => { if (C.time) return 1; const k = cs.indexOf(d.car); return k <= 1 ? 1 : k === 2 ? 0.3 : 0.08; };   // talent can't drag a third-best-or-worse car to a title: only the two fastest cars give a driver full upside
       S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * (C.time ? C.time.formSd * formK(d.skill) : 0.85); d.form = d.sf > 0 ? d.sf * cf(d) : d.sf; });   // season-long form: some drivers click with the car, some don't
+      // season arcs for the top drivers (and the player): flat, a slow start then locked in, or a flying start that the chasers eat into
+      if (C.time && C.time.arc) { const A = C.time.arc, t = C.rounds > 1 ? ri / (C.rounds - 1) : 0;
+        S.drivers.forEach(d => { if (d.arc === undefined) { const r = rnd(); d.arc = (d.isPlayer || (G.year > 2026 && d.skill >= 89)) ? (r < A.p[0] ? 0 : r < A.p[0] + A.p[1] ? 1 : -1) * (A.amp[0] + rnd() * (A.amp[1] - A.amp[0])) : 0; }
+          if (d.arc && !d.isPlayer) d.form += d.arc * (1.5 * t - 0.75); });
+        const pd = S.drivers.find(d => d.isPlayer); S.arcNow = pd && pd.arc ? pd.arc * (1.5 * t - 0.75) : 0; }
       if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1 + rnd() * 2) : -rnd() * 0.8 } : false; }
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
       // the season's title script, drawn so that the REALISED margins match 2010-2025: ~31% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~19% runaway (130+)
@@ -392,7 +399,7 @@
     const Dr = 0.28 * st.PAC + 0.28 * st.RAC + 0.14 * st.CON + 0.14 * st.TYR + 0.08 * st.MEN + 0.08 * st.FIT;
     const wetAdj = wet ? (st.WET - 60) * 0.3 : 0;
     if (S.fit === undefined) S.fit = gauss() * (C.time ? C.time.formSd * formK(ovrOf(st) - penOf(G.f1Years + 1)) : C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
-    const bonus = S.boost + tmp + S.fit - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
+    const bonus = S.boost + tmp + S.fit + (C.time ? S.arcNow || 0 : 0) - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
     const mode = S.mode || 'balance', RAC = st.RAC, sigK = (C.sigK || 1) * (S.dom ? 1 : 1), dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
     const active = S.drivers.filter(d => !(d.isPlayer && out) && !d.gone);
     // units: one per driver, or one per car in crew series (WEC / GT): crew-mates share the result
@@ -434,10 +441,13 @@
     const wetT = wet ? (st.WET - ovrOf(st)) * 0.3 : 0;   // wet skill relative to your own level (the AI's wet skill is centred on zero too)
     // 2026 per-driver form (one-lap/race offsets, spreads, fragility) is fitted to the 2026 season and fades by half each year after
     const fK = G.year > 2026 ? Math.pow(0.5, G.year - 2026) : 1, fAdd = (t, n) => ((t && t[n]) || 0) * fK, fMul = (t, n) => 1 + (((t && t[n]) || 1) - 1) * fK;
+    // the very best barely have off weekends: execution noise and scrappy Saturdays shrink with level (the player always; the AI as the fitted 2026 tables fade)
+    const pRt = TM ? ovrOf(st) - penOf(G.f1Years + 1) + (st.CON - ovrOf(st)) * 0.5 : 0, eK0 = r => TM ? clamp(1 - (r - 86) * (TM.eliteCons || 0), 0.72, 1.15) : 1;
+    const eKraw = d => d.isPlayer ? eK0(pRt) : 1 + (eK0(d.skill) - 1) * (1 - fK), eKm = TM ? S.drivers.reduce((a, d) => a + eKraw(d), 0) / S.drivers.length : 1, eK = d => eKraw(d) / eKm;
     const rateT = (u, pv, race, spr) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali * fMul(TM.cons, d.name))) - (d.rk ? TM.rookieRace : 0) + fAdd(TM.rc, d.name) * (spr ? (TM.sprRc === undefined ? 1 : TM.sprRc) : 1) : fAdd(TM.qc, d.name))) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
-    const wkS = TM && TM.wkSd || 0, wkF = u => u.wkf === undefined ? (u.wkf = gauss() * wkS * (wet ? 1.5 : 1)) : u.wkf;   // a driver's good or bad weekend is shared between qualifying and the race
-    const lapNoiseT = (k = 1) => TM ? gauss() * Math.sqrt(Math.max(0, TM.qSd * TM.qSd - wkS * wkS)) * k * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0) : 0;
+    const wkS = TM && TM.wkSd || 0, wkF = u => u.wkf === undefined ? (u.wkf = gauss() * wkS * (wet ? 1.5 : 1) * eK(u.members[0])) : u.wkf;   // a driver's good or bad weekend is shared between qualifying and the race
+    const lapNoiseT = (k = 1, kb = 1) => TM ? gauss() * Math.sqrt(Math.max(0, TM.qSd * TM.qSd - wkS * wkS)) * k * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) * kb ? -Math.log(1 - rnd()) * TM.badMean : 0) : 0;
     let carPctT = (u, race) => { const g = carTopT - uCar(u);
       // one-lap pace converges as the rules mature; race pace behind the front-runners does not: it is far wider in a reset year, then ~flat (OpenF1 2023-26)
       if (race) return betaT * Math.min(g, TM.raceKnee) + TM.beta * TM.raceBack * (regAgeT === 0 ? TM.raceReset : 1) * Math.pow(Math.max(0, g - TM.raceKnee), TM.raceBackPow);
@@ -451,8 +461,14 @@
     const trendNow = u => { const p = trendPOf(u); return ((S.trend || {})[u.team] || 0) * (Math.pow(Math.min(S.round, trendSpan) / Math.max(1, trendSpan), p) - 1 / (p + 1)) + bumpOf(u); };
     const carPct0 = carPctT;
     if (TM) carPctT = (u, race) => carPct0(u, race) + trendNow(u);
+    // the car order as it stands this round (race pace incl. upgrades and development), for the in-season car table
+    if (TM) { const rep = {}; units.forEach(u => { if (!rep[u.team]) rep[u.team] = u; });
+      const rows = Object.values(rep).map(u => ({ t: u.team, p: carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT })).sort((a, b) => a.p - b.p), p0 = rows[0].p;
+      rows.forEach((r, i) => { r.p = Math.round((r.p - p0) * 1000) / 1000; r.k = i + 1; });
+      if (!S.car0) S.car0 = Object.fromEntries(rows.map(r => [r.t, r.k]));
+      rows.forEach(r => { r.k0 = S.car0[r.t] || r.k; }); S.carNow = { round: ri + 1, rows }; }
     const PF = TM && TM.poleFade || [0.58, 2.5, 0.68, 6];
-    const qPaceT = u => wkF(u) + carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT(u.members.reduce((a, m) => a + fMul(TM.qcons, m.name), 0) / u.members.length) - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
+    const qPaceT = u => wkF(u) + carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT(u.members.reduce((a, m) => a + fMul(TM.qcons, m.name) * eK(m), 0) / u.members.length, u.members.reduce((a, m) => a + eK(m) ** 2, 0) / u.members.length) - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
     if (TM) {
       units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - PF[0]) * PF[1] + Math.max(0, d.pole / ri - PF[2]) * PF[3]), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
       const qo = units.slice().sort((a, b) => a.qp - b.qp), e1 = Math.max(0.3, TM.evoQ1 + gauss() * 0.3), e2 = Math.max(0.1, TM.evoQ2 + gauss() * 0.15);
@@ -493,7 +509,7 @@
         // race time = distance x (1 + race pace deficit) + track position + first-lap/strategy scatter; then reliability, incidents and safety cars
         const L = isSpr ? TM.sprintLaps : TM.laps, base = L * C.lap, sk = isSpr ? 0.5 : 1, gk = isSpr ? 0.45 : 1, lk = isSpr ? TM.sprintLaps / TM.laps : 1;
         const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * (TM.relSlope || 0.045), TM.relMin || 0.7, TM.relMax || 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
-        const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
+        const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name) * eK(m), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
         // chaos weekends: incidents and safety cars cluster in the same races (real: DNFs per race var/mean 1.4, and +25% retirements in safety-car races)
         const cP = TM.chaosP || 0, chaos = !isSpr && cP > 0 && rnd() < cP, chaosK = chaos ? TM.chaosK : (1 - cP * TM.chaosK) / (1 - cP || 1);
         const degR = TRK.deg * (TM.strat ? TM.strat.degScale : 1) * Math.exp(gauss() * (TM.strat ? TM.strat.degSd : 0)), pit = TRK.pit;   // this weekend's tyre wear (1 = the break-even between one and two stops) and pit-lane loss
@@ -675,7 +691,7 @@
       { id: 'academy', g: 1, w: 9, ok: !G.academy && G.rep >= 40 && C.tier >= 1 && C.tier <= 3 && G.age <= 24, ic: '🎓', t: 'Academy signing', fx: 'A manufacturer academy pays your seat in F4–F2, +4 rep, yearly development boost and priority from its F1 team. It can drop you after a bad year (Red Bull drops far more often).' },
       { id: 'standIn', g: 1, w: G.reserve ? 14 : 4, ok: f1Path, ic: '🚨', t: 'F1 stand-in', fx: 'You replace an injured F1 driver for 1–4 grands prix (you miss 1–2 rounds here). Your F1 results show up, then you return to your series. Points boost rep and F1 interest.' },
       { id: 'fp1', g: 1, w: 8, ok: !!G.academy && C.tier >= 1 && C.tier <= 3, ic: '🏎️', t: 'FP1 outing', fx: 'Your academy puts you in an F1 car for Friday practice. Where you finish decides how much rep you earn (+1 to +3).' },
-      { id: 'crash', g: -1, w: 3, ic: '💥', t: 'Heavy crash', fx: 'A big shunt. You miss the next round (very rarely two) and lose 1 Fitness. Rare in real life, so the slice is small.' },
+      { id: 'crash', g: -1, fixed: true, w: 1.5, ic: '💥', t: 'Heavy crash', fx: 'A big shunt. You miss the next round (very rarely two) and lose 1 Fitness. Rare in real life (an F1 driver misses a race through injury or illness about once in 20 seasons), so the slice is small.' },
       { id: 'sponsorLost', g: -1, w: 9, ok: C.pay && C.tier <= 3, ic: '📉', t: 'Sponsor backs out', fx: 'Funding −30% for good. Pay-to-drive series get pricier to afford, so next summer you see fewer or weaker seats.' },
       { id: 'badup', g: -1, w: 7, ok: C.tier >= 1, ic: '🛠️', t: 'Reliability woes', fx: 'A bad development path: car −2 rating for the rest of the season.' },
       { id: 'slump', g: -1, w: 5, ic: '🥶', t: 'Confidence slump', fx: '−2 pace for the rest of the season and −1 Mentality.' },
@@ -751,23 +767,36 @@
     const S = G.S, cl = x => Math.max(3, Math.min(99, Math.round(x))), mean = a => a.reduce((x, y) => x + y, 0) / a.length;
     const ws = S.log.filter(l => !l.note && !l.out), gp = ws.flatMap(l => l.races.filter(r => !r.spr).map(r => Object.assign({ q: l.qpos }, r))), fin = gp.filter(r => !r.dnf);
     if (gp.length < 3) return null;
+    // F1: expected finish from how close the other cars are (a car in a tight midfield pack can land anywhere in it), not just its rank
+    if (C.time) { const cars = {}; S.drivers.forEach(d => { if (!d.isPlayer && d.car != null) cars[d.team] = d.car; }); const mine = cars[G.team];
+      if (mine != null) expPos = Math.round((1 + Object.entries(cars).reduce((a, [t, c]) => a + (t === G.team ? 0.5 : 2 / (1 + Math.exp(-(c - mine) / 1.2))), 0)) * 2) / 2; }
     const diff = expPos - pos, card = [], add = (k, label, score, note) => card.push({ k, label, score: cl(score), grade: gradeOf(cl(score)), note });
     const h = S.h2h || { q: [0, 0], r: [0, 0] };
     const rookie = C.time ? G.f1Years <= 1 : G.history.filter(x => x.cat === C.id).length <= 1;   // a first season is judged more kindly
-    add('ctx', 'Season in context', 52 + 13 * diff + (champ ? 18 : 0) + (pos <= 3 ? 6 : 0) + (rookie ? 7 : 0), `P${pos} against P${expPos} expected for the ${ordStr(tr)}-ranked car${diff > 0 ? ': you beat the car' : diff < 0 ? ': the car was better than the result' : ''}.`);
+    // a season that does what the car and team-mate say it should is a B; beating them is an A; only a clear failure gets a D or E
+    const fs = 22 / N, egOf = g => { const x = g * fs; return x <= 3 ? -1 : x <= 9.5 ? -0.4 : (x - 9.5) * 0.55; };   // places a car normally gains from each grid slot (finishers, 2023-26)
+    const dz = diff >= 0 ? diff : Math.min(0, diff + 1.5);   // a place or so behind the car is still par
+    add('ctx', 'Season in context', 66 + 7.5 * dz * fs + (champ ? 16 : 0) + (pos <= 3 ? 4 : 0) + (rookie ? 6 : 0), `P${pos} against about P${expPos} expected for the ${ordStr(tr)}-ranked car${diff > 0 ? ': you beat the car' : diff < -1 ? ': the car was better than the result' : ''}.`);
+    const carX = 66 + 7.5 * dz * fs + (pos === 1 ? 8 : 0);   // finishing where the car belongs (or above) is extracting it, whatever the team-mate did
     if (mate && !C.crew) {
       const share = (P.pts + 3) / (P.pts + mate.pts + 6), qh = (h.q[0] + 1) / (h.q[1] + 2);
-      // against a much better team-mate (or as a rookie) trailing is expected: judge the share against what the rating gap predicts
-      const gap = C.time ? (G.stats ? ovrOf(G.stats) - penOf(G.f1Years) - mate.skill : 0) : 0, exS = Math.max(0.15, Math.min(0.85, 0.5 + gap * 0.025)), exQ = Math.max(0.15, Math.min(0.85, 0.5 + gap * 0.02));
-      add('extract', 'Car extraction', 50 + (share - exS) * 140 + (qh - exQ) * 40, `${P.pts} points to ${mate.name}'s ${mate.pts}` + (h.q[1] ? `; ahead in qualifying ${h.q[0]} of ${h.q[1]}` : '') + (h.r[1] ? `, in the race ${h.r[0]} of ${h.r[1]}.` : '.'));
-    } else add('extract', 'Car extraction', 50 + 11 * diff, `No team-mate to measure against: judged on ${diff >= 0 ? 'beating' : 'missing'} the car's expected finish.`);
-    const aq = mean(gp.map(r => r.q)); add('quali', 'One-lap pace', 56 + (expPos - aq) * (230 / N), `Qualified P${aq.toFixed(1)} on average` + (h.q[1] ? ` and beat your team-mate on ${Math.round(100 * h.q[0] / h.q[1])}% of Saturdays.` : '.'));
+      // the share of the team's points is the core of it; against a much better team-mate (or as a rookie) trailing is expected, against a weaker one more is expected
+      const gap = C.time ? (G.stats ? ovrOf(G.stats) - penOf(G.f1Years) - mate.skill : 0) : 0, exS = Math.max(0.2, Math.min(0.8, 0.5 + gap * 0.025)), exQ = Math.max(0.2, Math.min(0.8, 0.5 + gap * 0.02));
+      add('extract', 'Car extraction', Math.max(66 + (share - exS) * 110 + (share - 0.5) * 25 + (qh - exQ) * 25 + (qh - 0.5) * 10, carX), `${P.pts} points to ${mate.name}'s ${mate.pts}` + (h.q[1] ? `; ahead in qualifying ${h.q[0]} of ${h.q[1]}` : '') + (h.r[1] ? `, in the race ${h.r[0]} of ${h.r[1]}.` : '.'));
+    } else add('extract', 'Car extraction', carX, `No team-mate to measure against: judged on ${diff >= 0 ? 'beating' : 'missing'} the car's expected finish.`);
+    // one-lap pace: against the car, but there is nothing above P1, so a front-row average is top marks whatever the car
+    const aq = mean(gp.map(r => r.q)), qRel = 66 + (expPos - aq) * 6 * fs + (h.q[1] ? ((h.q[0] + 1) / (h.q[1] + 2) - 0.5) * 30 : 0), qAbs = 100 - (aq - 1) * 7.5 * fs;
+    add('quali', 'One-lap pace', Math.max(qRel, qAbs), `Qualified P${aq.toFixed(1)} on average` + (h.q[1] ? ` and beat your team-mate on ${Math.round(100 * h.q[0] / h.q[1])}% of Saturdays.` : '.'));
     if (fin.length) {
-      const gain = mean(fin.map(r => r.grid - r.pos)); add('race', 'Racecraft', 42 + gain * (240 / N), `${gain >= 0 ? '+' : ''}${gain.toFixed(1)} places a race from the grid to the flag.`);
-      const m = mean(fin.map(r => r.pos)), sd = Math.sqrt(mean(fin.map(r => (r.pos - m) ** 2))); add('cons', 'Consistency', 92 - (sd / N) * 270, `Finishes ranged around P${m.toFixed(1)} give or take ${sd.toFixed(1)} places.`);
-      const half = Math.floor(fin.length / 2), a = mean(fin.slice(0, half || 1).map(r => r.pos)), b = mean(fin.slice(half).map(r => r.pos)); add('prog', 'Progress through the year', 50 + (a - b) * (260 / N), `Averaged P${a.toFixed(1)} in the first half and P${b.toFixed(1)} in the second.`);
+      const gain = mean(fin.map(r => r.grid - r.pos)), xg = mean(fin.map(r => r.grid - r.pos - egOf(r.grid))), af = mean(fin.map(r => r.pos));
+      add('race', 'Racecraft', Math.max(66 + xg * 9 * fs, 100 - (af - 1) * 7 * fs - 4), `${gain >= 0 ? '+' : ''}${gain.toFixed(1)} places a race from the grid to the flag` + (Math.abs(xg - gain) > 0.4 ? ` (${xg >= 0 ? '+' : ''}${xg.toFixed(1)} against what a car normally gains from those grid slots).` : '.'));
+      // consistency: the spread of finishes against what is normal at that end of the field (front-runners swing ~1-2 places, the midfield ~3-4)
+      const m = af, sd = Math.sqrt(mean(fin.map(r => (r.pos - m) ** 2))), mm = m * fs, xs = Math.max(0.8, Math.min(3.6, 0.3 + 0.62 * mm, 0.3 + 0.62 * (23 - mm))) / fs;
+      add('cons', 'Consistency', 72 - (sd - xs) * 7 * fs + Math.max(0, 2.5 - sd * fs) * 6, `Finishes ranged around P${m.toFixed(1)} give or take ${sd.toFixed(1)} places` + (sd <= xs ? ', steadier than usual for that part of the grid.' : '.'));
+      const half = Math.floor(fin.length / 2), a = mean(fin.slice(0, half || 1).map(r => r.pos)), b = mean(fin.slice(half).map(r => r.pos)), dp = a - b;
+      add('prog', 'Progress through the year', Math.max(66 + (dp >= 0 ? dp : Math.min(0, dp + 1)) * 9 * fs, b * fs <= 2.5 ? 82 : 0), `Averaged P${a.toFixed(1)} in the first half and P${b.toFixed(1)} in the second.`);
     }
-    const errs = P.dnfE || 0, rel = P.dnfR || 0; add('clean', 'Clean driving', 100 - (errs / Math.max(1, P.races)) * 520, errs ? `${errs} DNF${errs > 1 ? 's' : ''} down to your own mistakes` + (rel ? `, plus ${rel} reliability failure${rel > 1 ? 's' : ''} that were not your fault.` : '.') : `No DNFs from driver error` + (rel ? `; ${rel} reliability failure${rel > 1 ? 's' : ''} were not your fault.` : '.'));
+    const errs = P.dnfE || 0, rel = P.dnfR || 0; add('clean', 'Clean driving', 100 - (errs / Math.max(1, P.races)) * 420, errs ? `${errs} DNF${errs > 1 ? 's' : ''} down to your own mistakes` + (rel ? `, plus ${rel} reliability failure${rel > 1 ? 's' : ''} that were not your fault.` : '.') : `No DNFs from driver error` + (rel ? `; ${rel} reliability failure${rel > 1 ? 's' : ''} were not your fault.` : '.'));
     const wts = { ctx: 30, extract: 20, quali: 15, race: 10, cons: 10, clean: 10, prog: 5 }, tw = card.reduce((a, c) => a + wts[c.k], 0), ov = card.reduce((a, c) => a + c.score * wts[c.k], 0) / tw;
     return { overall: cl(ov), grade: gradeOf(cl(ov)), rows: card };
   }

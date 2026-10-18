@@ -72,6 +72,7 @@ table{width:100%;border-collapse:collapse}
 .tbl small{color:var(--ink2);font-size:11px}
 .you{display:inline-block;background:var(--org);border:2px solid var(--ink);font-size:10px;font-weight:900;padding:0 4px;margin-left:6px;letter-spacing:.08em}
 .up{color:var(--grn);font-weight:800}.dn{color:var(--red);font-weight:800}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .meter{display:grid;grid-template-columns:44px 1fr 30px;gap:8px;align-items:center;margin:5px 0;font-size:12px;font-weight:700}
 .meter .bl{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}.meter .bl i{height:12px;border:1.5px solid var(--ink);background:transparent}.meter .bl i.f{background:var(--ink)}.meter .bl.hi i.f{background:var(--org)}.meter .bl.mid i.f{background:var(--blue)}.meter .bl.lo i.f{background:var(--red)}
 .meter b{text-align:right;font-size:14px}
@@ -176,7 +177,8 @@ function vSeason(){
   <div class="team"><div class="sw" style="background:${teamColor(G.team)}"></div><div class="tx"><b>${esc(G.team)}</b><div class="meta" style="margin:2px 0 0"><span>${esc(C.name)}</span><span>${G.year}</span><span>age <b>${G.age}</b></span></div></div><div class="rn">R${S.round}/${C.rounds}</div></div>
   <div class="strip"><div><b>${S.round?pos:'–'}</b><span>Pos</span></div><div><b>${P.w}</b><span>Wins</span></div><div><b>${P.p}</b><span>Podiums</span></div><div><b>${P.pts}</b><span>Points</span></div></div>
   <div class="meta"><span>stage <b>${Math.min(3,S.spins+1)}/3</b></span><span>contract <b>${G.contract}y</b></span><span>poles <b>${P.pole}</b></span>${G.academy?`<span>academy <b>${esc(G.academy.n.split(' ')[0])}</b></span>`:''}</div>
-  <div class="row" style="margin:0 0 14px"><button class="btn sm" data-act="tbl">Standings</button><button class="btn sm" data-act="drv">Driver file</button></div>
+  ${S.carNow?(()=>{const r=S.carNow.rows.find(x=>x.t===G.team);if(!r)return '';const mv=r.k0-r.k;return `<div class="meta"><span>car pace <b>P${r.k}/${S.carNow.rows.length}</b></span><span>${r.k===1?'fastest car':'<b>+'+r.p.toFixed(2)+'%</b> a lap off'}</span>${mv?`<span class="${mv>0?'up':'dn'}">${mv>0?'▲':'▼'}${Math.abs(mv)} since R1</span>`:''}</div>`;})():''}
+  <div class="row" style="margin:0 0 14px"><button class="btn sm" data-act="tbl">Standings</button>${S.carNow?'<button class="btn sm" data-act="cars">Car pace</button>':''}<button class="btn sm" data-act="drv">Driver file</button></div>
   ${compBlock(E.compTable(G))}
   <div class="cap">Round by round</div>
   ${logs||'<div class="note">Season loaded. Pick your approach below and send it.</div>'}
@@ -259,6 +261,10 @@ function modal(){
     const rows=rowsAll.map((r,i)=>({r,i})).filter(x=>x.i<15||x.r.d.isPlayer);
     return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="cap">Standings</div><h2>${esc(C.name)}</h2>${evs.length>1?`<div class="tiles" style="margin-bottom:10px">${evs.map((x,i)=>`<div class="tile ${ui.stEv===i?'on':''}" data-act="stev" data-i="${i}" style="min-height:0;padding:8px"><b style="font-size:12px">${esc(x.n)}${x.main?' ★':''}</b></div>`).join('')}</div>`:''}<table class="tbl"><tr><th>#</th><th class="l">Driver</th><th>W</th><th>Pts</th></tr>${rows.map(({r,i})=>`<tr class="${r.d.isPlayer?'me':''}"><td>${i+1}</td><td class="l">${esc(r.d.name)}<br><small>${esc(r.d.team)}</small></td><td>${r.d.w}</td><td>${r.v}</td></tr>`).join('')}</table><div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
   }
+  if(m==='cars'&&G.S.carNow){
+    const cn=G.S.carNow, secs=p=>(p/100*CATS[G.S.cat].lap).toFixed(3);
+    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="cap">Car pace · as of R${cn.round}</div><h2>Who has the fastest car</h2><p class="lede" style="margin-bottom:8px">Race pace as it stands, upgrades included. Development can flip the order mid-season (Red Bull and McLaren in 2024).</p><table class="tbl"><tr><th class="l">#</th><th class="l">Team</th><th>Gap a lap</th><th>Since R1</th></tr>${cn.rows.map(r=>{const mv=r.k0-r.k;return `<tr class="${r.t===G.team?'me':''}"><td class="l">${r.k}</td><td class="l"><i class="dot" style="background:${teamColor(r.t)}"></i>${esc(r.t)}</td><td>${r.k===1?'—':'+'+secs(r.p)+'s'}</td><td class="${mv>0?'up':mv<0?'dn':''}">${mv>0?'▲'+mv:mv<0?'▼'+(-mv):'–'}</td></tr>`;}).join('')}</table><button class="btn" data-act="close" style="margin-top:12px">Close</button></div></div>`;
+  }
   if(m==='drv'){
     const C=CATS[G.cat];
     return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="id"><div class="ovr">${E.ovrOf(G.stats)}<small>RTG</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>age ${G.age}</span><span>${C.pay?money(G.deal.cost)+' seat':money(G.deal.sal)+'/yr'}</span></div>${tierStamp(G.tier)}</div></div>${meters(G.stats)}<div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
@@ -315,7 +321,7 @@ document.addEventListener('click',e=>{
     case 'rs': E.rerollStats(G); save(); rerender(); return;
     case 'rc': E.rerollClub(G); save(); rerender(); return;
     case 'begin': E.startSeason(G); save(); render(true); return;
-    case 'tbl': case 'drv': ui.modal=a; rerender(); return;
+    case 'tbl': case 'drv': case 'cars': ui.modal=a; rerender(); return;
     case 'close': ui.modal=null; rerender(); return;
     case 'next': E.playRound(G); afterRound(); save(); render(); return;
     case 'sim': E.simToEnd(G); afterRound(); save(); render(); return;
