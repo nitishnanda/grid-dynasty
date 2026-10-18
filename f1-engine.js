@@ -457,11 +457,14 @@
       const g0 = {}; Object.keys(tops).forEach(n => { const g = g0[n] = carPctT(tops[n], true); S.trend[n] = (TM.trend2026 && G.year === 2026 && TM.trend2026[n] != null) ? TM.trend2026[n] : -TM.trendK * g + gauss() * TM.trendSd * (regAgeT === 0 ? 1.3 : 1); });
       // development reshuffles, but within limits: the fastest car loses one place at most (rarely two), a top-four car one or two, and the midfield closes up but rarely breaks into the top four
       if (!(TM.trend2026 && G.year === 2026)) { const ns = Object.keys(tops), st0 = n => g0[n] - S.trend[n] / 2, en = n => g0[n] + S.trend[n] / 2, r0 = ns.slice().sort((a, b) => st0(a) - st0(b));
-        const allow = {}; r0.forEach((n, i) => { allow[n] = i === 0 ? (rnd() < 0.12 ? 2 : 1) : i < 4 ? (rnd() < 0.25 ? 2 : 1) : 99; }); const crash = r0.slice(4).filter(() => rnd() < 0.03);
-        for (let it = 0; it < 8; it++) { const e = ns.slice().sort((a, b) => en(a) - en(b)); let ok = true;
-          r0.forEach((n, i) => { const q = e.indexOf(n), lim = i + allow[n]; if (q > lim) { ok = false; S.trend[n] = 2 * (en(e[lim]) - 0.004 - g0[n]); } });
-          r0.slice(4).forEach(n => { if (crash.includes(n)) return; const q = e.indexOf(n); if (q < 4) { ok = false; const oth = e.filter(x => x !== n); S.trend[n] = 2 * (en(oth[3]) + 0.004 - g0[n]); } });
-          if (ok) break; } } }
+        const allow = {}; r0.forEach((n, i) => { allow[n] = i === 0 ? (rnd() < 0.05 ? 2 : 1) : i < 4 ? (rnd() < 0.08 ? 2 : 1) : 99; }); const crash = r0.slice(4).filter(() => rnd() < 0.02);   // real 2023-26: the fastest car dropped two places once (Red Bull 2024), a top-four car left the top four once (Aston 2023)
+        // both orders are recomputed every pass (a car's trend shifts its starting place too); anyone who breaks a limit has its drift pulled towards the cars it jumped
+        for (let it = 0; it < 60; it++) { const so = ns.slice().sort((x, y) => st0(x) - st0(y)), e = ns.slice().sort((x, y) => en(x) - en(y)); let bad = null;
+          so.some((n, i) => { const q = e.indexOf(n);
+            if (i < 4 && q > i + allow[n]) { bad = [n, e.filter((x, j) => j < q && so.indexOf(x) > i && j !== q)]; return true; }   // a top-four car fell too far
+            if (i >= 4 && q < 4 && !crash.includes(n)) { bad = [n, e.slice(0, 4).filter(x => so.indexOf(x) < 4)]; return true; }   // a midfield car broke into the top four
+            return false; });
+          if (!bad) break; const grp = [bad[0]].concat(bad[1]), m = grp.reduce((x, n) => x + S.trend[n], 0) / grp.length; grp.forEach(n => { S.trend[n] += 0.35 * (m - S.trend[n]); }); } } }
     const trendSpan = TM && TM.trend2026 && G.year === 2026 ? (TM.trend2026Rounds || C.rounds) - 1 : C.rounds - 1;   // 2026: the real drift was measured over the races run so far, then holds
     const trendPOf = u => TM && TM.trend2026 && G.year === 2026 ? ((TM.trend2026Shape2 && TM.trend2026Shape2[u.team]) || TM.trend2026Shape || 1) : 1;   // 2026 development came late (Red Bull still behind Mercedes at mid-season, ahead from Malaysia)
     const bumpOf = u => { const b = TM && TM.trend2026 && G.year === 2026 && TM.trend2026Bump && TM.trend2026Bump[u.team]; return b ? b[2] * Math.exp(-Math.pow((S.round - b[0]) / b[1], 2)) : 0; };   // a one-off spell of form (McLaren, mid-2026)
