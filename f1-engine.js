@@ -429,7 +429,8 @@
     const fK = G.year > 2026 ? Math.pow(0.5, G.year - 2026) : 1, fAdd = (t, n) => ((t && t[n]) || 0) * fK, fMul = (t, n) => 1 + (((t && t[n]) || 1) - 1) * fK;
     const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali * fMul(TM.cons, d.name))) - (d.rk ? TM.rookieRace : 0) + fAdd(TM.rc, d.name) : fAdd(TM.qc, d.name))) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
-    const lapNoiseT = (k = 1) => gauss() * TM.qSd * k * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
+    const wkS = TM && TM.wkSd || 0, wkF = u => u.wkf === undefined ? (u.wkf = gauss() * wkS * (wet ? 1.5 : 1)) : u.wkf;   // a driver's good or bad weekend is shared between qualifying and the race
+    const lapNoiseT = (k = 1) => TM ? gauss() * Math.sqrt(Math.max(0, TM.qSd * TM.qSd - wkS * wkS)) * k * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0) : 0;
     let carPctT = (u, race) => { const g = carTopT - uCar(u);
       // one-lap pace converges as the rules mature; race pace behind the front-runners does not: it is far wider in a reset year, then ~flat (OpenF1 2023-26)
       if (race) return betaT * Math.min(g, TM.raceKnee) + TM.beta * TM.raceBack * (regAgeT === 0 ? TM.raceReset : 1) * Math.pow(Math.max(0, g - TM.raceKnee), TM.raceBackPow);
@@ -444,7 +445,7 @@
     const carPct0 = carPctT;
     if (TM) carPctT = (u, race) => carPct0(u, race) + trendNow(u);
     const PF = TM && TM.poleFade || [0.58, 2.5, 0.68, 6];
-    const qPaceT = u => carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT(u.members.reduce((a, m) => a + fMul(TM.qcons, m.name), 0) / u.members.length) - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
+    const qPaceT = u => wkF(u) + carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT(u.members.reduce((a, m) => a + fMul(TM.qcons, m.name), 0) / u.members.length) - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
     if (TM) {
       units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - PF[0]) * PF[1] + Math.max(0, d.pole / ri - PF[2]) * PF[3]), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
       const qo = units.slice().sort((a, b) => a.qp - b.qp), e1 = Math.max(0.3, TM.evoQ1 + gauss() * 0.3), e2 = Math.max(0.1, TM.evoQ2 + gauss() * 0.15);
@@ -484,14 +485,14 @@
       if (TM) {
         // race time = distance x (1 + race pace deficit) + track position + first-lap/strategy scatter; then reliability, incidents and safety cars
         const L = isSpr ? TM.sprintLaps : TM.laps, base = L * C.lap, sk = isSpr ? 0.5 : 1, gk = isSpr ? 0.45 : 1, lk = isSpr ? TM.sprintLaps / TM.laps : 1;
-        const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * 0.045, 0.7, 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
+        const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * (TM.relSlope || 0.045), TM.relMin || 0.7, TM.relMax || 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
         const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
         // chaos weekends: incidents and safety cars cluster in the same races (real: DNFs per race var/mean 1.4, and +25% retirements in safety-car races)
         const cP = TM.chaosP || 0, chaos = !isSpr && cP > 0 && rnd() < cP, chaosK = chaos ? TM.chaosK : (1 - cP * TM.chaosK) / (1 - cP || 1);
         const spT = {}; if (isSpr) C.teams.forEach(t => { spT[t[0]] = gauss() * (TM.sprintTeamSd || 0); });   // sprint-day car form is its own draw: the 19-lap dash suits cars differently from the Sunday race
         grid.forEach((u, gi) => {
           u.grid = gi + 1;
-          let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * consU(u) * (wet ? 1.6 : 1) + (isSpr ? spT[u.team] + gauss() * (TM.sprintDrvSd || 0) : 0)
+          let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + wkF(u) + gauss() * Math.sqrt(Math.max(0, TM.rSd * TM.rSd - wkS * wkS)) * consU(u) * (wet ? 1.6 : 1) + (isSpr ? spT[u.team] + gauss() * (TM.sprintDrvSd || 0) : 0)
             + (!isSpr && ri >= 6 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.w / ri - (TM.winFade ? TM.winFade[0] : 0.66)) * (TM.winFade ? TM.winFade[1] : 3) * (S.dom ? (TM.domFade === undefined ? 1 : TM.domFade) : 1)), 0) : 0);   // win streaks fade too (rivals' upgrades, risk, reliability): real record 19 of 22
           let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1) * (cP && !isSpr ? chaosK : 1);
           let pr = TM.mech[regAgeT] / 100 * (G.year === 2026 ? TM.mech26 || 1 : 1) * mfT(u) / mfM * (isSpr ? 0.35 : 1);   // 2026 is an unusually fragile new-engine year

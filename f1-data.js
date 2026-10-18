@@ -100,13 +100,13 @@
                               // (OpenF1 2023-26 race pace: P10 car ~1.85% off in a reset year, ~1.3% after that; teammates ~0.29% apart)
         domQ: 0.3,            // a dominant car's extra one-lap edge (front-row lockouts: ~0.5 in dominant seasons)
         dPt: 0.039,           // % of lap per driver-rating point (fitted scale: 25.7 points per 1%)
-        trackSd: 0.2,        // team-by-track car fit, re-drawn every weekend
+        trackSd: 0.12,        // team-by-track car fit, re-drawn every weekend
         tfRace: 0.5,          // how much of the track fit carries into race pace
-        raceTeamSd: 0.1,      // plus race-day-only car form (tyres, strategy, set-up)
+        raceTeamSd: 0.07,      // plus race-day-only car form (tyres, strategy, set-up)
         qSd: 0.22,            // one driver's one-lap execution noise
         badP: 0.14, badMean: 0.55,   // a scrappy lap: traffic, mistake, red flag (heavy tail seen in teammate gaps)
         evoQ1: 0.7, evoQ2: 0.35,      // fastest Q1 / Q2 lap vs fastest Q3 lap (track evolution, F1DB medians 2010-2026)
-        winFade: [0.52, 5], domFade: 0.45,   // a driver who has won more than ~half the races so far loses pace (rivals' upgrades, risk, reliability): pace penalty in % of a lap per share above the threshold
+        winFade: [0.5, 7], domFade: 0.5,   // a driver who has won more than ~half the races so far loses pace (rivals' upgrades, risk, reliability): pace penalty in % of a lap per share above the threshold
         poleFade: [0.5, 3, 0.6, 7],
         formElite: {from: 86, slope: 0.075, min: 0.55, max: 1.15},   // form spread scales down for the best drivers
         formSd: 4.0,          // season form, rating points (0.145% of a lap, F1DB REML estimate)
@@ -115,10 +115,10 @@
         domP: 0.25, domEnd: 0.2, domBoost: 3,   // share of rule resets that produce a dominant car, chance a dominant era ends each year, its edge in car points
         dnfD: {'Fernando Alonso': 0.6, 'Lance Stroll': 1.2, 'Carlos Sainz': 0.7, 'Alex Albon': 1.25, 'Oliver Bearman': 1.35, 'Esteban Ocon': 0.4, 'Arvid Lindblad': 0.3, 'Lando Norris': 1.3, 'Oscar Piastri': 0.5, 'Nico Hülkenberg': 1.3, 'Gabriel Bortoleto': 0.4, 'Sergio Pérez': 0.75, 'Valtteri Bottas': 1.25, 'Kimi Antonelli': 1.0, 'George Russell': 2.6, 'Lewis Hamilton': 0.5, 'Charles Leclerc': 1.9},
         cons: {'George Russell': 2.5},   // race-day volatility multiplier: Russell's 2026 swung between wins, crashes and strategy losses (6 vs 11 non-finishes)
-        qc: {'Kimi Antonelli': -1.2, 'Max Verstappen': 3.8, 'Isack Hadjar': -4.7, 'Liam Lawson': 4.2, 'Arvid Lindblad': 3.8, 'Pierre Gasly': 4.8, 'Esteban Ocon': 3.9, 'Carlos Sainz': -2.2, 'Alex Albon': -4.5, 'Oscar Piastri': -1.7, 'Lewis Hamilton': 2.8, 'Charles Leclerc': 2.2, 'Nico Hülkenberg': 3.5, 'George Russell': 2.0, 'Lando Norris': 0.6, 'Franco Colapinto': -0.2, 'Gabriel Bortoleto': 1.7, 'Oliver Bearman': 0.2, 'Fernando Alonso': 2.9},   // one-lap offset (rating points, qualifying only): fitted to each driver's 2026 average grid slot, so Saturday and Sunday form can differ
-        qcons: {'Kimi Antonelli': 2.2, 'George Russell': 1.1, 'Lewis Hamilton': 0.4, 'Charles Leclerc': 0.6, 'Lando Norris': 0.7, 'Oscar Piastri': 0.4, 'Max Verstappen': 1.4, 'Isack Hadjar': 1.4, 'Liam Lawson': 0.4, 'Arvid Lindblad': 1.2, 'Pierre Gasly': 1.9, 'Franco Colapinto': 1.7, 'Oliver Bearman': 1.9, 'Esteban Ocon': 0.7, 'Nico Hülkenberg': 0.7, 'Gabriel Bortoleto': 1.9, 'Carlos Sainz': 0.9, 'Alex Albon': 1.4, 'Fernando Alonso': 2.2},   // one-lap spread multiplier: Antonelli and Verstappen swung between pole and bad Saturdays in 2026, Ferrari sat steadily P3-P6
-        rc: {'Franco Colapinto': 4.0, 'Fernando Alonso': 4.8, 'Max Verstappen': 4.9, 'Isack Hadjar': -1.9, 'Kimi Antonelli': 4.2, 'George Russell': -1.9, 'Nico Hülkenberg': 1.4, 'Gabriel Bortoleto': 0.8, 'Sergio Pérez': 3.8, 'Valtteri Bottas': -3.8, 'Lando Norris': 3.8, 'Oscar Piastri': -5.2, 'Liam Lawson': 4.0, 'Arvid Lindblad': 0.3, 'Oliver Bearman': 2.3, 'Esteban Ocon': -0.8, 'Carlos Sainz': -1.1, 'Alex Albon': 6.0, 'Lewis Hamilton': 0.5, 'Charles Leclerc': 0.8, 'Pierre Gasly': -0.7},   // racecraft: half of each 2026 teammate pair's race-pace gap beyond its qualifying gap, halved again
-        trendK: 0.31, trendSd: 0.41,   // in-season development: % of lap gained over a season per % of lap behind the best car, and its spread
+        qc: {'Kimi Antonelli': -1.1, 'Max Verstappen': 4.4, 'Isack Hadjar': -3.9, 'Liam Lawson': 4.2, 'Arvid Lindblad': 3.8, 'Pierre Gasly': 5.1, 'Esteban Ocon': 4.5, 'Carlos Sainz': -1.6, 'Alex Albon': -4.5, 'Oscar Piastri': -1.0, 'Lewis Hamilton': 3.6, 'Charles Leclerc': 2.5, 'Nico Hülkenberg': 3.9, 'George Russell': 2.9, 'Lando Norris': 1.0, 'Franco Colapinto': 0.2, 'Gabriel Bortoleto': 2.2, 'Oliver Bearman': 0.8, 'Fernando Alonso': 4.4},   // one-lap offset (rating points, qualifying only): fitted to each driver's 2026 average grid slot, so Saturday and Sunday form can differ
+        qcons: {'Kimi Antonelli': 2.2, 'George Russell': 0.87, 'Lewis Hamilton': 0.4, 'Charles Leclerc': 0.5, 'Lando Norris': 0.57, 'Oscar Piastri': 0.4, 'Max Verstappen': 1.9, 'Isack Hadjar': 2.2, 'Liam Lawson': 0.4, 'Arvid Lindblad': 1.67, 'Pierre Gasly': 2.2, 'Franco Colapinto': 2.2, 'Oliver Bearman': 2.2, 'Esteban Ocon': 0.94, 'Nico Hülkenberg': 0.91, 'Gabriel Bortoleto': 2.2, 'Carlos Sainz': 1.28, 'Alex Albon': 2.01, 'Fernando Alonso': 2.2},   // one-lap spread multiplier: Antonelli and Verstappen swung between pole and bad Saturdays in 2026, Ferrari sat steadily P3-P6
+        rc: {'Franco Colapinto': 4.0, 'Fernando Alonso': 4.2, 'Max Verstappen': 4.6, 'Isack Hadjar': -0.4, 'Kimi Antonelli': 4.8, 'George Russell': -2.2, 'Nico Hülkenberg': 1.9, 'Gabriel Bortoleto': 0.7, 'Sergio Pérez': 3.8, 'Valtteri Bottas': -3.8, 'Lando Norris': 5.4, 'Oscar Piastri': -3.4, 'Liam Lawson': 4.2, 'Arvid Lindblad': 0.3, 'Oliver Bearman': 3.1, 'Esteban Ocon': -1.1, 'Carlos Sainz': -2.3, 'Alex Albon': 5.2, 'Lewis Hamilton': 1.0, 'Charles Leclerc': 1.9, 'Pierre Gasly': -1.2},   // racecraft: half of each 2026 teammate pair's race-pace gap beyond its qualifying gap, halved again
+        trendK: 0.31, trendSd: 0.3,   // in-season development: % of lap gained over a season per % of lap behind the best car, and its spread
         trend2026: {'Mercedes': 0.15, 'Ferrari': -0.1, 'McLaren': -0.26, 'Red Bull Racing': -0.9, 'Williams': -0.21, 'Racing Bulls': -0.56, 'Aston Martin': -2.09, 'Alpine': -0.44, 'Haas': -0.44, 'Audi': -0.54, 'Cadillac': -0.73},   // real 2026 start-to-end drift against the best car
         trend2026Shape: 3,     // 2026 development came late: Red Bull stayed behind Mercedes until mid-season, then led from Malaysia
         trend2026Shape2: {'Aston Martin': 0.35},   // Aston's gains came early (Honda fixes); after round 17 they hold rather than keep climbing
@@ -127,28 +127,30 @@
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
         laps: 57, sprintLaps: 19,
         rSd: 0.15,            // race-day pace noise per driver (OpenF1: driver part of the race-vs-quali reshuffle ~0.24%)
-        gridS: 1.2, gridS2: 0.02, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
+        gridS: 1.23, gridS2: 0.02, poleS: 2.5,   // seconds lost per grid slot (+ traffic for cars starting deep), plus the clean-air / first-corner value of pole
         raceVsQuali: 2.0,     // AI drivers: stable race-craft vs one-lap difference, rating points
         startSd: 4.5,         // first-lap / strategy chaos, seconds
         scP: 0.45, scSprint: 0.3, restartSd: 2.0,   // safety-car races and restart scatter (OpenF1 2023-26: SC 48% of GPs plus 9% red flags, 35% of sprints)
         scEarly: 0.3,               // share of safety cars in the opening laps, which erase almost none of the final gaps (real median: 40% of the gaps erased)
         cruiseAt: 4, cruiseK: 0.6,   // a leader more than ~4 s clear backs off: only 60% of the extra margin shows at the flag
-        startPos: [0.6, 1.4, 2.6],      // first-lap / strategy chaos by grid slot (P1-3, P4-8, P9+): front-runners get cleaner air, the pack and the back reshuffle more
+        startPos: [0.44, 1.31, 4.12],      // first-lap / strategy chaos by grid slot (P1-3, P4-8, P9+): front-runners get cleaner air, the pack and the back reshuffle more
         sprintTeamSd: 0.15, sprintDrvSd: 0.08,   // sprint-day car and driver form are their own draws (real sprint and Sunday orders agree less than the sim's did: Spearman 0.67 vs 0.75)
-        passS: 2.5, passNear: 4.5, passFar: 0.4, passScale: 8,   // cost of passing a slower car scales with how close it is: a rival barely slower holds you up, a backmarker does not
+        passS: 2.5, passNear: 3.52, passFar: 0.22, passScale: 8,   // cost of passing a slower car scales with how close it is: a rival barely slower holds you up, a backmarker does not
+        wkSd: 0.138,          // a driver's good or bad weekend (% of a lap), shared by qualifying and the race; the independent qualifying and race noise is reduced to keep each total spread
         chaosP: 0.22, chaosK: 2.3, chaosSC: 0.8,   // chaos weekends: incidents and safety cars cluster in the same races (real: retirements +25% in safety-car races, DNFs per race over-dispersed)                  // seconds to pass each slower car that started ahead (track position matters more than a fixed per-slot cost)
-        lossP: 0.26, lossMax: 12, dmgP: 0.05,   // per driver per race: a slow stop or time penalty costing 4-16 s (OpenF1: ~0.14 slow stops and ~0.13 time penalties a race); dmg: first-lap damage or a drive-through, 15-60 s
+        lossP: 0.22, lossMax: 12, dmgP: 0.042,   // per driver per race: a slow stop or time penalty costing 4-16 s (OpenF1: ~0.14 slow stops and ~0.13 time penalties a race); dmg: first-lap damage or a drive-through, 15-60 s
         lateP: 0.02,                // per driver per race: retires in the last 10% of the race but is still classified, laps down
         dropTop: 0.6, dropMid: 1.35, dropBack: 1.65, poach: 0.95, swapP: 0.1,   // drivers at the top teams stay put; the lower teams churn (F1DB 2010-25: 10% / 26% / 31% of drivers move from top-3 / 4-6 / 7+ teams)
         wetP: 0.075,                // share of grands prix that are properly wet (OpenF1 2023-26: 6% start on inters/wets, 18% see any rain)
         mech26: 1.4,                // 2026 only: mechanical failures so far run 40% above the usual reset-year level (21% of starts failed to finish)
         penP: 0.06,                 // per driver per race: a grid penalty (5 or 10 places, or the back of the grid)
-        inc: [2.1, 3.0, 4.4, 5.1, 4.6],   // incident DNF % by grid bucket P1-3, 4-6, 7-10, 11-15, 16+ (F1DB 2010-2025, scaled to the 2022-25 level)
-        mech: [12, 6.0, 4.2, 3.4],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
+        inc: [1.8, 2.7, 4.0, 5.0, 6.8],   // incident DNF % by grid bucket P1-3, 4-6, 7-10, 11-15, 16+ (F1DB 2010-2025, scaled to the 2022-25 level)
+        relSlope: 0.075, relMin: 0.6, relMax: 2.4,   // weaker cars break more: reliability factor = 0.75 + gap x slope (clamped); back-of-grid starters retire ~19% of the time, front-row ~5% (OpenF1 2023-26)
+        mech: [12, 6.0, 4.2, 3.5],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
       },
       // 2026 start: car strengths fitted to the 2026 results so far (mean qualifying position and finish per team, 17 rounds) and each team's real reliability so far
-      edge2026: {'Mercedes': 2.5, 'McLaren': -1.8, 'Ferrari': -1.09, 'Red Bull Racing': 1.5, 'Williams': 5.3, 'Racing Bulls': 4.2, 'Aston Martin': 13, 'Alpine': 3.2, 'Haas': 6.2, 'Audi': 2.3, 'Cadillac': 1.45},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
-      rel2026: {'Mercedes': 0.5, 'Ferrari': 0.5, 'Red Bull Racing': 1.6, 'McLaren': 0.95, 'Racing Bulls': 0.25, 'Alpine': 0.5, 'Haas': 0.68, 'Audi': 0.8, 'Williams': 1.5, 'Aston Martin': 2.4, 'Cadillac': 1.75},
+      edge2026: {'Mercedes': 2.26, 'McLaren': -1.79, 'Ferrari': -0.55, 'Red Bull Racing': 1.67, 'Williams': 6.21, 'Racing Bulls': 5.52, 'Aston Martin': 13.51, 'Alpine': 4.5, 'Haas': 6.89, 'Audi': 2.79, 'Cadillac': 1.34},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
+      rel2026: {'Mercedes': 0.48, 'Ferrari': 0.82, 'Red Bull Racing': 1.48, 'McLaren': 1.16, 'Racing Bulls': 0.2, 'Alpine': 0.44, 'Haas': 0.6, 'Audi': 0.6, 'Williams': 1.2, 'Aston Martin': 1.84, 'Cadillac': 1.39},
       teams: [
         ['Mercedes', 9.06, 'George Russell|Kimi Antonelli'],
         ['McLaren', 7.79, 'Lando Norris|Oscar Piastri'],
