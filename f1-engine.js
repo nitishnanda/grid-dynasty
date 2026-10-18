@@ -423,7 +423,7 @@
     const tfT = {}, trT = {}, tqT = {}; if (TM) C.teams.forEach(t => { tfT[t[0]] = gauss() * TM.trackSd * Math.sqrt(geT); trT[t[0]] = gauss() * TM.raceTeamSd * Math.sqrt(geT); tqT[t[0]] = gauss() * (TM.qTeamSd || 0); });   // track fit (both days) and race-day-only car form (tyres, strategy, set-up)
     const carTopT = TM ? Math.max(...units.map(uCar)) : 0;
     const wetT = wet ? (st.WET - ovrOf(st)) * 0.3 : 0;   // wet skill relative to your own level (the AI's wet skill is centred on zero too)
-    const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) - (d.rk ? TM.rookieRace : 0) : 0)) + (d.form || 0), 0) / u.members.length;
+    const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) - (d.rk ? TM.rookieRace : 0) + ((TM.rc && TM.rc[d.name]) || 0) : 0)) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
     const lapNoiseT = () => gauss() * TM.qSd * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
     let carPctT = (u, race) => { const g = carTopT - uCar(u);
