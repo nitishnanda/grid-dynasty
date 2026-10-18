@@ -210,6 +210,8 @@
   // career length median 3 seasons (21% one season, 36% 5+); last-season age median 28, ~34 for drivers with 5+ seasons.
   const penOf = n => CATS.f1.time ? CATS.f1.time.pen[Math.max(0, Math.min(3, n - 1))] : 0;   // rookie penalty for F1 season n
   const effOf = d => d.ski - penOf((d.yrs || 0) + 1);
+  // season-to-season form swings shrink for the very best (F1DB: top-10 drivers' season residual sd ~2.3 rating points against ~2.9 for the wider field)
+  const formK = r => { const f = CATS.f1.time && CATS.f1.time.formElite; return f ? Math.max(f.min, Math.min(f.max, 1 - f.slope * (r - f.from))) : 1; };
   // mean effective level of the fitted 2026 grid: the AI field is held to this level as drivers come and go
   const baseAnchor = () => { const v = Object.values(F1P); return v.reduce((a, [b, k, y]) => a + k - penOf((y || 0) + 1), 0) / v.length; };
   function initF1(G) {
@@ -362,7 +364,7 @@
       C.teams.slice(0, 11).forEach(t => { const n = t[0], k = cs.indexOf(G.tr.f1[n]); if (k >= 0 && k <= 3) { const cap = C.time ? C.time.devCap : 1.6; S.dev[n] = Math.max(-cap, Math.min(k <= 1 ? cap : 0.5, (S.dev[n] || 0) * 0.93 + gauss() * (C.time ? C.time.devSd : 0.16) * open)); } });
       const ranked = S.drivers.filter(d => d.pts > 0 || S.round > 2).slice().sort((x, y) => y.pts - x.pts), lead = ranked[0] ? ranked[0].pts : 0;
       const cf = d => { if (C.time) return 1; const k = cs.indexOf(d.car); return k <= 1 ? 1 : k === 2 ? 0.3 : 0.08; };   // talent can't drag a third-best-or-worse car to a title: only the two fastest cars give a driver full upside
-      S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * (C.time ? C.time.formSd : 0.85); d.form = d.sf > 0 ? d.sf * cf(d) : d.sf; });   // season-long form: some drivers click with the car, some don't
+      S.drivers.forEach(d => { if (d.sf === undefined) d.sf = d.isPlayer ? 0 : gauss() * (C.time ? C.time.formSd * formK(d.skill) : 0.85); d.form = d.sf > 0 ? d.sf * cf(d) : d.sf; });   // season-long form: some drivers click with the car, some don't
       if (S.dom && S.t2 === undefined) { const tm = S.drivers.filter(d => d.team === S.domTeam && !d.isPlayer).sort((x, y) => y.skill - x.skill); S.t2 = tm.length > 1 ? { id: tm[1].id, v: rnd() < 0.5 ? -(1 + rnd() * 2) : -rnd() * 0.8 } : false; }
       if (S.dom && S.t2) { const d2 = S.drivers.find(d => d.id === S.t2.id); if (d2) d2.form += S.t2.v; }
       // the season's title script, drawn so that the REALISED margins match 2010-2025: ~31% finale-tight (<=10), ~25% 11-70, ~25% 71-130, ~19% runaway (130+)
@@ -389,7 +391,7 @@
     const Dq = 0.35 * st.PAC + 0.45 * st.QUA + 0.1 * st.MEN + 0.1 * st.CON;
     const Dr = 0.28 * st.PAC + 0.28 * st.RAC + 0.14 * st.CON + 0.14 * st.TYR + 0.08 * st.MEN + 0.08 * st.FIT;
     const wetAdj = wet ? (st.WET - 60) * 0.3 : 0;
-    if (S.fit === undefined) S.fit = gauss() * (C.time ? C.time.formSd : C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
+    if (S.fit === undefined) S.fit = gauss() * (C.time ? C.time.formSd * formK(ovrOf(st) - penOf(G.f1Years + 1)) : C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
     const bonus = S.boost + tmp + S.fit - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
     const mode = S.mode || 'balance', RAC = st.RAC, sigK = (C.sigK || 1) * (S.dom ? 1 : 1), dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
     const active = S.drivers.filter(d => !(d.isPlayer && out) && !d.gone);
@@ -441,9 +443,10 @@
     const trendNow = u => { const p = trendPOf(u); return ((S.trend || {})[u.team] || 0) * (Math.pow(Math.min(S.round, trendSpan) / Math.max(1, trendSpan), p) - 1 / (p + 1)) + bumpOf(u); };
     const carPct0 = carPctT;
     if (TM) carPctT = (u, race) => carPct0(u, race) + trendNow(u);
+    const PF = TM && TM.poleFade || [0.58, 2.5, 0.68, 6];
     const qPaceT = u => carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT(u.members.reduce((a, m) => a + fMul(TM.qcons, m.name), 0) / u.members.length) - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
     if (TM) {
-      units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.58) * 2.5 + Math.max(0, d.pole / ri - 0.68) * 6), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
+      units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - PF[0]) * PF[1] + Math.max(0, d.pole / ri - PF[2]) * PF[3]), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
       const qo = units.slice().sort((a, b) => a.qp - b.qp), e1 = Math.max(0.3, TM.evoQ1 + gauss() * 0.3), e2 = Math.max(0.1, TM.evoQ2 + gauss() * 0.15);
       // knockout: drivers out in Q2 / Q1 are timed on a slower track than the pole lap
       qo.forEach((u, i) => { u.qs = ((u.qp - qo[0].qp) + (i >= 16 ? e1 : i >= 10 ? e2 : 0)) / 100 * C.lap * (wet ? 1.07 : 1); });
@@ -483,10 +486,11 @@
         const L = isSpr ? TM.sprintLaps : TM.laps, base = L * C.lap, sk = isSpr ? 0.5 : 1, gk = isSpr ? 0.45 : 1, lk = isSpr ? TM.sprintLaps / TM.laps : 1;
         const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * 0.045, 0.7, 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
         const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
+        const spT = {}; if (isSpr) C.teams.forEach(t => { spT[t[0]] = gauss() * (TM.sprintTeamSd || 0); });   // sprint-day car form is its own draw: the 19-lap dash suits cars differently from the Sunday race
         grid.forEach((u, gi) => {
           u.grid = gi + 1;
-          let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * consU(u) * (wet ? 1.6 : 1)
-            + (!isSpr && ri >= 6 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.w / ri - 0.66) * 3), 0) : 0);   // win streaks fade too (rivals' upgrades, risk, reliability): real record 19 of 22
+          let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * consU(u) * (wet ? 1.6 : 1) + (isSpr ? spT[u.team] + gauss() * (TM.sprintDrvSd || 0) : 0)
+            + (!isSpr && ri >= 6 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.w / ri - (TM.winFade ? TM.winFade[0] : 0.66)) * (TM.winFade ? TM.winFade[1] : 3) * (S.dom ? (TM.domFade === undefined ? 1 : TM.domFade) : 1)), 0) : 0);   // win streaks fade too (rivals' upgrades, risk, reliability): real record 19 of 22
           let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1);
           let pr = TM.mech[regAgeT] / 100 * (G.year === 2026 ? TM.mech26 || 1 : 1) * mfT(u) / mfM * (isSpr ? 0.35 : 1);   // 2026 is an unusually fragile new-engine year
           if (u.hasP) {
@@ -494,7 +498,7 @@
             if (mode === 'push') { rp -= 0.05 + (RAC - 60) * 0.001; pe *= clamp(1.6 + (60 - RAC) * 0.03, 1.15, 3.4); pr *= 1.15; }
             else if (mode === 'coast') { rp += 0.05; pe *= 0.45; pr *= 0.8; }
           } else if (u.members.some(d => d.rk)) pe *= 1.5;
-          u.tsec = base * (1 + rp / 100) + ((gi > 0 ? TM.poleS : 0) + gi * TM.gridS + gi * gi * TM.gridS2) * gk + gauss() * TM.startSd * consU(u) * sk * (wet ? 1.5 : 1) + (rnd() < TM.lossP * lk ? 4 + rnd() * TM.lossMax : 0) + (rnd() < TM.dmgP * lk ? 15 + rnd() * 45 : 0);   // + first-lap damage / drive-through   // slow stop, time penalty, strategy miss
+          u.tsec = base * (1 + rp / 100) + ((gi > 0 ? TM.poleS : 0) + gi * TM.gridS + gi * gi * TM.gridS2) * gk + gauss() * TM.startSd * (TM.startPos ? TM.startPos[gi < 3 ? 0 : gi < 8 ? 1 : 2] : 1) * consU(u) * sk * (wet ? 1.5 : 1) + (rnd() < TM.lossP * lk ? 4 + rnd() * TM.lossMax : 0) + (rnd() < TM.dmgP * lk ? 15 + rnd() * 45 : 0);   // + first-lap damage / drive-through   // slow stop, time penalty, strategy miss
           { const dk = fMul(TM.dnfD, u.members[0].name); pe *= dk; pr *= dk; }   // some drivers' seasons are more (or less) fragile than their car's
           u.crash = rnd() < pe + pr; u.cause = u.crash ? (rnd() < pe / (pe + pr) ? 'error' : 'reliability') : null; u.rp = rp;
         });
@@ -549,6 +553,7 @@
       const gapR = (a, b) => TM ? b.tsec - a.tsec : rg(a.s - b.s) * rScale;
       if (G.dbg && !isSpr) G.dbg.r.push(fin.map(u => gapR(fin[0], u)));
       if (G.dbg && G.dbg.pace && TM && !isSpr) G.dbg.pace.push({ sc: scNow, base: TM.laps * C.lap, u: res.map(u => ({ n: u.members[0].name, t: u.team, qs: u.qs, rp: u.rp, ts: u.tsec, grid: u.grid, crash: !!u.crash, p: !!u.hasP })) });
+      if (G.dbg && G.dbg.spr && isSpr) G.dbg.spr.push({ ri, grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash })) });
       if (G.dbg && G.dbg.full && !isSpr) G.dbg.rf.push({ grid: grid.map(u => u.members[0].name), res: res.map(u => ({ n: u.members[0].name, t: u.team, crash: !!u.crash, cause: u.cause, g: u.crash ? null : gapR(fin[0], u) })) });
       res.forEach((u, i) => u.members.forEach(d => { if (!rf.stage) d.races++; if (u.crash) { if (!rf.stage) { d.dnf++; if (u.cause === 'error') d.dnfE = (d.dnfE || 0) + 1; else d.dnfR = (d.dnfR || 0) + 1; } return; } d.pts += rf.pts[i] || 0; if (evIdx >= 0 && !isSpr) { d.ev = d.ev || []; d.ev[evIdx] = (d.ev[evIdx] || 0) + (rf.pts[i] || 0); } if (!isSpr) { if (i === 0) d.w++; if (i < 3) d.p++; } }));
       if (!C.crew && !isSpr && uP && !uP.crash) { const um = res.find(u => !u.hasP && u.team === uP.team); if (um && !um.crash) { const h = S.h2h || (S.h2h = { q: [0, 0], r: [0, 0] }); h.r[1]++; if (res.indexOf(uP) < res.indexOf(um)) h.r[0]++; } }
