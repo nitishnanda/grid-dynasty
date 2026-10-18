@@ -486,12 +486,14 @@
         const L = isSpr ? TM.sprintLaps : TM.laps, base = L * C.lap, sk = isSpr ? 0.5 : 1, gk = isSpr ? 0.45 : 1, lk = isSpr ? TM.sprintLaps / TM.laps : 1;
         const mfT = u => ((dynT.relTeam && dynT.relTeam[u.team]) || 1) * clamp(0.75 + (carTopT - uCar(u)) * 0.045, 0.7, 1.9), mfM = grid.reduce((a, u) => a + mfT(u), 0) / grid.length;
         const consU = u => u.members.reduce((a, m) => a + fMul(TM.cons, m.name), 0) / u.members.length;   // some drivers turn their pace into results more steadily than others
+        // chaos weekends: incidents and safety cars cluster in the same races (real: DNFs per race var/mean 1.4, and +25% retirements in safety-car races)
+        const cP = TM.chaosP || 0, chaos = !isSpr && cP > 0 && rnd() < cP, chaosK = chaos ? TM.chaosK : (1 - cP * TM.chaosK) / (1 - cP || 1);
         const spT = {}; if (isSpr) C.teams.forEach(t => { spT[t[0]] = gauss() * (TM.sprintTeamSd || 0); });   // sprint-day car form is its own draw: the 19-lap dash suits cars differently from the Sunday race
         grid.forEach((u, gi) => {
           u.grid = gi + 1;
           let rp = carPctT(u, true) - ((dynT.edge && dynT.edge[u.team]) || 0) * betaT + tfT[u.team] * TM.tfRace + trT[u.team] + drvPctT(rateT(u, Dr, true)) + gauss() * TM.rSd * consU(u) * (wet ? 1.6 : 1) + (isSpr ? spT[u.team] + gauss() * (TM.sprintDrvSd || 0) : 0)
             + (!isSpr && ri >= 6 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.w / ri - (TM.winFade ? TM.winFade[0] : 0.66)) * (TM.winFade ? TM.winFade[1] : 3) * (S.dom ? (TM.domFade === undefined ? 1 : TM.domFade) : 1)), 0) : 0);   // win streaks fade too (rivals' upgrades, risk, reliability): real record 19 of 22
-          let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1);
+          let pe = TM.inc[gi < 3 ? 0 : gi < 6 ? 1 : gi < 10 ? 2 : gi < 15 ? 3 : 4] / 100 * (wet ? 1.8 : 1) * (isSpr ? 0.45 : 1) * (cP && !isSpr ? chaosK : 1);
           let pr = TM.mech[regAgeT] / 100 * (G.year === 2026 ? TM.mech26 || 1 : 1) * mfT(u) / mfM * (isSpr ? 0.35 : 1);   // 2026 is an unusually fragile new-engine year
           if (u.hasP) {
             pe *= clamp(1 + (65 - st.CON) * 0.012, 0.6, 1.5) * (G.f1Years < 2 ? 1.3 : 1);
@@ -504,9 +506,11 @@
         });
         if (TM.passS) {   // overtaking: every slower car that started ahead of you costs time to pass
           const raw = grid.map(u => u.tsec);
-          grid.forEach((u, gi) => { let k = 0; for (let j = 0; j < gi; j++) if (raw[j] > raw[gi]) k++; u.tsec += k * TM.passS * gk; });
+          grid.forEach((u, gi) => { let k = 0;
+            for (let j = 0; j < gi; j++) if (raw[j] > raw[gi]) k += TM.passNear ? TM.passFar + (TM.passNear - TM.passFar) * Math.exp(-(raw[j] - raw[gi]) / (TM.passScale || 15)) : 1;   // passing a car barely slower than you is hard; waltzing past a much slower one is not
+            u.tsec += k * TM.passS * gk; });
         }
-        if (rnd() < (isSpr ? TM.scSprint : TM.scP) * (wet ? 1.5 : 1)) {   // safety car: the field is bunched at some point and the order gets a shake at the restart
+        if (rnd() < (isSpr ? TM.scSprint : cP ? (chaos ? TM.chaosSC : (TM.scP - cP * TM.chaosSC) / (1 - cP)) : TM.scP) * (wet ? 1.5 : 1)) {   // safety car: the field is bunched at some point and the order gets a shake at the restart
           // f = share of the gaps erased: about a third of real safety cars come in the first laps and erase almost nothing (OpenF1 2023-26)
           const f = rnd() < (TM.scEarly || 0) ? 0.02 + 0.08 * rnd() : 0.15 + 0.85 * rnd(), live = grid.filter(u => !u.crash), t0 = Math.min(...live.map(u => u.tsec)); scNow = true;
           live.forEach(u => { u.tsec = t0 + (u.tsec - t0) * (1 - f) + Math.abs(gauss()) * TM.restartSd + (u.tsec - t0) * 0; });

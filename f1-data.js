@@ -106,7 +106,7 @@
         qSd: 0.22,            // one driver's one-lap execution noise
         badP: 0.14, badMean: 0.55,   // a scrappy lap: traffic, mistake, red flag (heavy tail seen in teammate gaps)
         evoQ1: 0.7, evoQ2: 0.35,      // fastest Q1 / Q2 lap vs fastest Q3 lap (track evolution, F1DB medians 2010-2026)
-        winFade: [0.5, 5.5], domFade: 0.5,   // a driver who has won more than ~half the races so far loses pace (rivals' upgrades, risk, reliability): pace penalty in % of a lap per share above the threshold
+        winFade: [0.52, 5], domFade: 0.45,   // a driver who has won more than ~half the races so far loses pace (rivals' upgrades, risk, reliability): pace penalty in % of a lap per share above the threshold
         poleFade: [0.5, 3, 0.6, 7],
         formElite: {from: 86, slope: 0.075, min: 0.55, max: 1.15},   // form spread scales down for the best drivers
         formSd: 4.0,          // season form, rating points (0.145% of a lap, F1DB REML estimate)
@@ -133,10 +133,11 @@
         scP: 0.45, scSprint: 0.3, restartSd: 2.0,   // safety-car races and restart scatter (OpenF1 2023-26: SC 48% of GPs plus 9% red flags, 35% of sprints)
         scEarly: 0.3,               // share of safety cars in the opening laps, which erase almost none of the final gaps (real median: 40% of the gaps erased)
         cruiseAt: 4, cruiseK: 0.6,   // a leader more than ~4 s clear backs off: only 60% of the extra margin shows at the flag
-        startPos: [0.8, 1, 1.3],      // first-lap / strategy chaos by grid slot (P1-3, P4-8, P9+): front-runners get cleaner air, the pack and the back reshuffle more
+        startPos: [0.6, 1.4, 2.6],      // first-lap / strategy chaos by grid slot (P1-3, P4-8, P9+): front-runners get cleaner air, the pack and the back reshuffle more
         sprintTeamSd: 0.15, sprintDrvSd: 0.08,   // sprint-day car and driver form are their own draws (real sprint and Sunday orders agree less than the sim's did: Spearman 0.67 vs 0.75)
-        passS: 2.0,                  // seconds to pass each slower car that started ahead (track position matters more than a fixed per-slot cost)
-        lossP: 0.26, lossMax: 12, dmgP: 0.04,   // per driver per race: a slow stop or time penalty costing 4-16 s (OpenF1: ~0.14 slow stops and ~0.13 time penalties a race); dmg: first-lap damage or a drive-through, 15-60 s
+        passS: 2.5, passNear: 4.5, passFar: 0.4, passScale: 8,   // cost of passing a slower car scales with how close it is: a rival barely slower holds you up, a backmarker does not
+        chaosP: 0.22, chaosK: 2.3, chaosSC: 0.8,   // chaos weekends: incidents and safety cars cluster in the same races (real: retirements +25% in safety-car races, DNFs per race over-dispersed)                  // seconds to pass each slower car that started ahead (track position matters more than a fixed per-slot cost)
+        lossP: 0.26, lossMax: 12, dmgP: 0.05,   // per driver per race: a slow stop or time penalty costing 4-16 s (OpenF1: ~0.14 slow stops and ~0.13 time penalties a race); dmg: first-lap damage or a drive-through, 15-60 s
         lateP: 0.02,                // per driver per race: retires in the last 10% of the race but is still classified, laps down
         dropTop: 0.6, dropMid: 1.35, dropBack: 1.65, poach: 0.95, swapP: 0.1,   // drivers at the top teams stay put; the lower teams churn (F1DB 2010-25: 10% / 26% / 31% of drivers move from top-3 / 4-6 / 7+ teams)
         wetP: 0.075,                // share of grands prix that are properly wet (OpenF1 2023-26: 6% start on inters/wets, 18% see any rain)
