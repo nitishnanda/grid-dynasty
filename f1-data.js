@@ -110,6 +110,8 @@
         pen: [2.0, 0.8, 0, 0],   // rookie penalty in rating points for F1 seasons 1, 2, 3, 4+
         rookieRace: 2,        // AI rookies race worse than they qualify (F1DB: rookies win ~43% of quali duels but take only ~33% of the points)
         domP: 0.25, domEnd: 0.2, domBoost: 3,   // share of rule resets that produce a dominant car, chance a dominant era ends each year, its edge in car points
+        trendK: 0.31, trendSd: 0.41,   // in-season development: % of lap gained over a season per % of lap behind the best car, and its spread
+        trend2026: {'Mercedes': 0.15, 'Ferrari': -0.1, 'McLaren': -0.26, 'Red Bull Racing': -0.9, 'Williams': -0.21, 'Racing Bulls': -0.56, 'Aston Martin': -2.09, 'Alpine': -0.44, 'Haas': -0.44, 'Audi': -0.54, 'Cadillac': -0.73},   // real 2026 start-to-end drift against the best car
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
         laps: 57, sprintLaps: 19,
         rSd: 0.15,            // race-day pace noise per driver (OpenF1: driver part of the race-vs-quali reshuffle ~0.24%)

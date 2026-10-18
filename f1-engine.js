@@ -426,10 +426,16 @@
     const rateT = (u, pv, race) => u.members.reduce((a, d) => a + (d.isPlayer ? pv + bonus + wetT - penOf(G.f1Years + 1) : d.skill + (wet ? (d.wsk || (d.wsk = gauss() * 2.5)) : 0) + (race ? (d.rcr || (d.rcr = gauss() * TM.raceVsQuali)) - (d.rk ? TM.rookieRace : 0) : 0)) + (d.form || 0), 0) / u.members.length;
     const drvPctT = r => -(r - 84) * TM.dPt;
     const lapNoiseT = () => gauss() * TM.qSd * (wet ? 1.8 : 1) + (rnd() < TM.badP * (wet ? 1.6 : 1) ? -Math.log(1 - rnd()) * TM.badMean : 0);
-    const carPctT = (u, race) => { const g = carTopT - uCar(u);
+    let carPctT = (u, race) => { const g = carTopT - uCar(u);
       // one-lap pace converges as the rules mature; race pace behind the front-runners does not: it is far wider in a reset year, then ~flat (OpenF1 2023-26)
       if (race) return betaT * Math.min(g, TM.raceKnee) + TM.beta * TM.raceBack * (regAgeT === 0 ? TM.raceReset : 1) * Math.pow(Math.max(0, g - TM.raceKnee), TM.raceBackPow);
       return betaT * (g <= TM.knee ? g : TM.knee + (g - TM.knee) * TM.tail * Math.pow(geT, 2.5)); };
+    // in-season development (OpenF1 2023-26): over a season a team gains about 0.3% of a lap per 1% it starts behind the best car, +-0.4% either way; 2026 uses the real trends
+    if (TM && !S.trend) { S.trend = {}; const tops = {}; S.drivers.forEach(d => { tops[d.team] = d; });
+      Object.keys(tops).forEach(n => { const g = carPctT(tops[n], true); S.trend[n] = (TM.trend2026 && G.year === 2026 && TM.trend2026[n] != null) ? TM.trend2026[n] : -TM.trendK * g + gauss() * TM.trendSd * (regAgeT === 0 ? 1.3 : 1); }); }
+    const trendNow = u => ((S.trend || {})[u.team] || 0) * (Math.min(S.round, C.rounds - 1) / Math.max(1, C.rounds - 1) - 0.5);
+    const carPct0 = carPctT;
+    if (TM) carPctT = (u, race) => carPct0(u, race) + trendNow(u);
     const qPaceT = u => carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT() - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
     if (TM) {
       units.forEach(u => { u.qp = qPaceT(u) + (ri >= 5 ? u.members.reduce((m, d) => Math.max(m, Math.max(0, d.pole / ri - 0.58) * 2.5 + Math.max(0, d.pole / ri - 0.68) * 6), 0) : 0); u.q = -u.qp; });   // nobody takes 19 poles from 24: long streaks regress (real max 79%, Vettel 2011)
