@@ -115,6 +115,7 @@
         trendK: 0.31, trendSd: 0.41,   // in-season development: % of lap gained over a season per % of lap behind the best car, and its spread
         trend2026: {'Mercedes': 0.15, 'Ferrari': -0.1, 'McLaren': -0.26, 'Red Bull Racing': -0.9, 'Williams': -0.21, 'Racing Bulls': -0.56, 'Aston Martin': -2.09, 'Alpine': -0.44, 'Haas': -0.44, 'Audi': -0.54, 'Cadillac': -0.73},   // real 2026 start-to-end drift against the best car
         trend2026Shape: 3,     // 2026 development came late: Red Bull stayed behind Mercedes until mid-season, then led from Malaysia
+        trend2026Shape2: {'Aston Martin': 0.35},   // Aston's gains came early (Honda fixes); after round 17 they hold rather than keep climbing
         trend2026Rounds: 17,   // the 2026 drift was measured over rounds 1-17 and holds after that
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
         laps: 57, sprintLaps: 19,
@@ -136,7 +137,7 @@
         mech: [12, 6.0, 4.2, 3.4],      // mechanical DNF % by regulation age 0, 1, 2, 3+ (F1DB)
       },
       // 2026 start: car strengths fitted to the 2026 results so far (mean qualifying position and finish per team, 17 rounds) and each team's real reliability so far
-      edge2026: {'Mercedes': 0.22, 'McLaren': -2.15, 'Ferrari': -1.09, 'Red Bull Racing': 1.5, 'Williams': 3.3, 'Racing Bulls': 3.38, 'Aston Martin': 10, 'Alpine': 1.73, 'Haas': 6.4, 'Audi': 1.43, 'Cadillac': 1.45},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
+      edge2026: {'Mercedes': 0.22, 'McLaren': -2.15, 'Ferrari': -1.09, 'Red Bull Racing': 1.5, 'Williams': 3.3, 'Racing Bulls': 3.38, 'Aston Martin': 12.5, 'Alpine': 1.73, 'Haas': 6.4, 'Audi': 1.43, 'Cadillac': 1.45},   // 2026 only: how much better (+) or worse (-) each team's race pace is than its qualifying pace, in car points; halves each winter
       rel2026: {'Mercedes': 0.5, 'Ferrari': 0.5, 'Red Bull Racing': 1.6, 'McLaren': 0.95, 'Racing Bulls': 0.25, 'Alpine': 0.5, 'Haas': 0.68, 'Audi': 0.8, 'Williams': 1.5, 'Aston Martin': 2.4, 'Cadillac': 1.75},
       teams: [
         ['Mercedes', 9.06, 'George Russell|Kimi Antonelli'],

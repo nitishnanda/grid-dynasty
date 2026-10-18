@@ -434,8 +434,8 @@
     if (TM && !S.trend) { S.trend = {}; const tops = {}; S.drivers.forEach(d => { tops[d.team] = d; });
       Object.keys(tops).forEach(n => { const g = carPctT(tops[n], true); S.trend[n] = (TM.trend2026 && G.year === 2026 && TM.trend2026[n] != null) ? TM.trend2026[n] : -TM.trendK * g + gauss() * TM.trendSd * (regAgeT === 0 ? 1.3 : 1); }); }
     const trendSpan = TM && TM.trend2026 && G.year === 2026 ? (TM.trend2026Rounds || C.rounds) - 1 : C.rounds - 1;   // 2026: the real drift was measured over the races run so far, then holds
-    const trendP = TM && TM.trend2026 && G.year === 2026 ? TM.trend2026Shape || 1 : 1;   // 2026 development came late (Red Bull still behind Mercedes at mid-season, ahead from Malaysia)
-    const trendNow = u => ((S.trend || {})[u.team] || 0) * (Math.pow(Math.min(S.round, trendSpan) / Math.max(1, trendSpan), trendP) - 1 / (trendP + 1));
+    const trendPOf = u => TM && TM.trend2026 && G.year === 2026 ? ((TM.trend2026Shape2 && TM.trend2026Shape2[u.team]) || TM.trend2026Shape || 1) : 1;   // 2026 development came late (Red Bull still behind Mercedes at mid-season, ahead from Malaysia)
+    const trendNow = u => { const p = trendPOf(u); return ((S.trend || {})[u.team] || 0) * (Math.pow(Math.min(S.round, trendSpan) / Math.max(1, trendSpan), p) - 1 / (p + 1)); };
     const carPct0 = carPctT;
     if (TM) carPctT = (u, race) => carPct0(u, race) + trendNow(u);
     const qPaceT = u => carPctT(u) + tfT[u.team] + tqT[u.team] + drvPctT(rateT(u, Dq)) + lapNoiseT() - (TM.domQ && S.dom && S.domTeam === u.team ? TM.domQ : 0);   // a dominant car is further clear over one lap (front-row lockouts)
