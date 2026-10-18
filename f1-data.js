@@ -113,6 +113,8 @@
         rc: {'Max Verstappen': 4.8, 'Isack Hadjar': -3.4, 'Kimi Antonelli': 1.7, 'George Russell': -1.7, 'Nico Hülkenberg': 1.9, 'Gabriel Bortoleto': -1.9, 'Sergio Pérez': 3.8, 'Valtteri Bottas': -3.8, 'Lando Norris': 0.9, 'Oscar Piastri': -0.9, 'Liam Lawson': 1.1, 'Arvid Lindblad': -1.1, 'Oliver Bearman': -1.2, 'Esteban Ocon': 1.2, 'Carlos Sainz': -0.9, 'Alex Albon': 0.9},   // racecraft: half of each 2026 teammate pair's race-pace gap beyond its qualifying gap, halved again
         trendK: 0.31, trendSd: 0.41,   // in-season development: % of lap gained over a season per % of lap behind the best car, and its spread
         trend2026: {'Mercedes': 0.15, 'Ferrari': -0.1, 'McLaren': -0.26, 'Red Bull Racing': -0.9, 'Williams': -0.21, 'Racing Bulls': -0.56, 'Aston Martin': -2.09, 'Alpine': -0.44, 'Haas': -0.44, 'Audi': -0.54, 'Cadillac': -0.73},   // real 2026 start-to-end drift against the best car
+        trend2026Shape: 3,     // 2026 development came late: Red Bull stayed behind Mercedes until mid-season, then led from Malaysia
+        trend2026Rounds: 17,   // the 2026 drift was measured over rounds 1-17 and holds after that
         devSd: 0.3, devCap: 2.5,   // in-season upgrade race between the top cars (car points per round, and its cap)
         laps: 57, sprintLaps: 19,
         rSd: 0.15,            // race-day pace noise per driver (OpenF1: driver part of the race-vs-quali reshuffle ~0.24%)
