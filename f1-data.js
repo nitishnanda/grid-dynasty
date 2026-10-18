@@ -143,6 +143,7 @@
         winFade: [0.5, 7], domFade: 0.5,   // a driver who has won more than ~half the races so far loses pace (rivals' upgrades, risk, reliability): pace penalty in % of a lap per share above the threshold
         poleFade: [0.5, 3, 0.6, 7],
         formElite: {from: 86, slope: 0.075, min: 0.55, max: 1.15},   // form spread scales down for the best drivers
+        compK: 2, compF: 1.0, compGap: 3.5,   // between rule resets the chasing pack sits this far behind the top two cars: real 2010-25 has three teams each winning 3+ races in ~31% of seasons
         fragileP: 0.2,       // chance a season's fastest car is also the most fragile (McLaren 2012, Red Bull 2010)
         dropK: 0.72,          // overall scale on seat losses (F1DB 2010-25: ~4.9 exits a season including retirements, rarely more than 6)
         eliteCons: 0.035,     // weekend-to-weekend execution noise per rating point above 86 (the best barely have off days), capped at 0.72-1.15x
@@ -469,8 +470,8 @@
     { id: 'prospect', n: 'Prospect', p: 0.51, col: '#8b8fb0', adv: [5, 5, 5, -3.5, -7.5, -7], blurb: 'Below-average F1 ceiling. Podiums in karting, then a midfield grind.' },
     { id: 'talented', n: 'Talented', p: 0.30, col: '#4da3ff', adv: [7.5, 7, 7, 0, -3.75, -0.25], blurb: 'A solid F1 driver. Results depend on the car.' },
     { id: 'late', n: 'Late bloomer', p: 0.09, col: '#ff8a5c', adv: [3, 3.5, 12, 5, 3.5, 3.5], prime: 1, blurb: 'Regular points and the odd podium early on, then winning and podiums in the final karting years and the junior formulas.' },
-    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [9, 6.5, 6.5, 4, 5, 5.3], prime: 3, blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
-    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 10, 10.5, 11.2], prime: 5, blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
+    { id: 'wonder', n: 'Wonderkid', p: 0.08, col: '#ffd23f', adv: [9, 6.5, 6.5, 4, 3.5, 3.8], prime: 3, blurb: 'Quick everywhere and regularly in the karting top five. A future title contender.' },
+    { id: 'gen', n: 'Generational', p: 0.02, col: '#ff6fae', adv: [12.5, 5.5, 5, 10, 9.5, 10.2], prime: 5, blurb: 'Once in a generation. Wins national titles early, then mixes big wins with top-five finishes and bad international events. The drives get noticed.' },
   ];
   // chance of a step-up by finishing bucket [<=4, 5-7, 8-10, 11-15, 16+], per tier [prospect, talented, late, wonder, gen]
   // junior ladder: chance of a step-up seat by final position [P1, P2-3, P4-5, P6-10, P11+] = share who raced the next series the

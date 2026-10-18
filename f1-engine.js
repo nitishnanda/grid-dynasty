@@ -95,11 +95,11 @@
     return false;
   };
   // the front of the grid is usually tight (think 2024 McLaren v Red Bull); a runaway team (2026 Mercedes) is the exception
-  function compressTop(d, names, k, f) {
+  function compressTop(d, names, k, f, gapBelow) {
     const sorted = names.slice().sort((a, b) => d.str[b] - d.str[a]), top = sorted.slice(0, k), m = top.reduce((a, n) => a + d.str[n], 0) / k;
     top.forEach(n => { d.str[n] = m + f * (d.str[n] - m); });
     // the chasing pack sits clearly behind the contenders, so the title is a fight between 2-3 teams
-    const floor = Math.min(...top.map(n => d.str[n])) - 2.5;
+    const floor = Math.min(...top.map(n => d.str[n])) - (gapBelow || 2.5);
     sorted.slice(k).forEach(n => { if (d.str[n] > floor) d.str[n] = floor - Math.random() * 0.8; });
   }
   function evolveCat(G, c, champ) {
@@ -124,7 +124,7 @@
         if (d.streak === 1) d.str[champ] += 0.9; else if (d.streak === 2) d.str[champ] -= el ? 0.4 : 1.8; else d.str[champ] -= el ? 1.8 : 3.2;
         if (d.streak >= 2) names.filter(n => n !== champ).sort((a, b) => d.str[b] - d.str[a]).slice(0, 3).forEach(n => d.str[n] += 1.0);
       }
-      if (d.regime !== 'dominant') compressTop(d, names, 4, C.time ? 0.96 : 0.85);
+      if (d.regime !== 'dominant') compressTop(d, names, C.time ? (C.time.compK || 4) : 4, C.time ? (C.time.compF || 0.96) : 0.85, C.time ? C.time.compGap : 0);
       names.forEach(n => d.str[n] = clamp(R1(d.str[n]), -(C.sMax || 8) - 1, (C.sMax || 8) + 1));
     }
     enforceFloors(G, c);
