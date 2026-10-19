@@ -224,7 +224,7 @@ function licHtml(){
   const L=E.licenceView&&E.licenceView(G); if(!L||G.age<14) return '';
   return `<div class="cap" style="margin-top:12px">FIA Super Licence</div><div class="kv"><div>Points<b>${L.pts}/${L.need}</b></div><div>FP1 licence<b>${L.fp1?'yes':'no'}</b></div><div>Next year<b style="font-size:12px">${esc(L.ageText)}</b></div></div>
   <div class="rcb" style="margin:6px 0"><i style="width:${Math.min(100,L.pts/L.need*100)}%"></i></div>
-  ${L.rows.length?`<div class="meta">${L.rows.map(r=>`<span>${r.year}: <b>${r.pts+r.win}</b> ${esc(r.src||'winter')}${r.win?` (incl. ${r.win} winter)`:''}</span>`).join('')}</div>`:''}
+  ${L.rows.length||L.bonus?`<div class="meta">${L.bonus?`<span>FP1 clean running: <b>${L.bonus}</b>/10</span>`:''}${L.rows.map(r=>`<span>${r.year}: <b>${r.pts+r.win}</b> ${esc(r.src||'winter')}${r.win?` (incl. ${r.win} winter)`:''}</span>`).join('')}</div>`:''}
   <div class="note" style="margin-top:6px">${esc(L.note)}${L.rb?' Red Bull stacks winter series, TPC mileage and double FP1 slots to get there first.':''}${G.academy&&L.tpc?' TPC 300 km test: done.':''}</div>`;
 }
 function vMarket(){
