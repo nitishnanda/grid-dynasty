@@ -220,6 +220,13 @@ function offerHtml(o,i){
   <div class="og"><div>${esc(C.short)}<b>${o.r} (${dl})</b></div><div>${pay[1]}${o.scholarship?' (grant)':''}<b>${pay[0]}</b></div><div>term<b>${o.years} yr</b></div></div>
   <div class="ot">${esc(o.role)} · teammate ${esc(o.tm)}</div>${extra}</div>`;
 }
+function licHtml(){
+  const L=E.licenceView&&E.licenceView(G); if(!L||G.age<14) return '';
+  return `<div class="cap" style="margin-top:12px">FIA Super Licence</div><div class="kv"><div>Points<b>${L.pts}/${L.need}</b></div><div>FP1 licence<b>${L.fp1?'yes':'no'}</b></div><div>Next year<b style="font-size:12px">${esc(L.ageText)}</b></div></div>
+  <div class="rcb" style="margin:6px 0"><i style="width:${Math.min(100,L.pts/L.need*100)}%"></i></div>
+  ${L.rows.length?`<div class="meta">${L.rows.map(r=>`<span>${r.year}: <b>${r.pts+r.win}</b> ${esc(r.src||'winter')}${r.win?` (incl. ${r.win} winter)`:''}</span>`).join('')}</div>`:''}
+  <div class="note" style="margin-top:6px">${esc(L.note)}${L.rb?' Red Bull stacks winter series, TPC mileage and double FP1 slots to get there first.':''}${G.academy&&L.tpc?' TPC 300 km test: done.':''}</div>`;
+}
 function vMarket(){
   const M=G.market,last=G.history[G.history.length-1];
   const opts=M.options.map(offerHtml).join('');
@@ -229,6 +236,7 @@ function vMarket(){
   return `${bar()}<h1>Contract desk</h1><p class="lede">Season ${last.season} is in the books. Pick a seat for next year and a simulator focus.</p>
   <div class="kv"><div>Reputation<b>${Math.round(G.rep)}</b></div><div>Deal<b>${G.contract>0?G.contract+' yr left':'expired'}</b></div><div>Earnings<b>${money(G.tot.earn)}</b></div><div>Sponsors<b>${money(E.funding(G))}</b></div><div>Family<b>${money(G.family)}</b></div><div>Status<b style="font-size:14px">${G.academy?'Academy':G.reserve?'Reserve':'Free'}</b></div></div>
   ${(M.msgs||[]).map(m=>`<div class="note">${esc(m)}</div>`).join('')}${M.note?`<div class="note">${esc(M.note)}</div>`:''}
+  ${licHtml()}
   ${(G.sponsorDeals||[]).length?`<div class="meta"><span>active sponsors:</span>${G.sponsorDeals.map(d=>`<span><b>${esc(d.name)}</b> (to ${d.until})</span>`).join('')}</div>`:''}
   ${sponsorCards()}${ac}${opts}${ret}
   <div class="cap" style="margin-top:6px">Simulator block · +2 to one attribute</div><div class="sim">${sim()}</div>
@@ -272,7 +280,7 @@ function modal(){
   }
   if(m==='drv'){
     const C=CATS[G.cat];
-    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="id"><div class="ovr">${E.ovrOf(G.stats)}<small>RTG</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>age ${G.age}</span><span>${C.pay?money(G.deal.cost)+' seat':money(G.deal.sal)+'/yr'}</span></div>${tierStamp(G.tier)}</div></div>${meters(G.stats)}<div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
+    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="id"><div class="ovr">${E.ovrOf(G.stats)}<small>RTG</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>age ${G.age}</span><span>${C.pay?money(G.deal.cost)+' seat':money(G.deal.sal)+'/yr'}</span></div>${tierStamp(G.tier)}</div></div>${meters(G.stats)}${licHtml()}<div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
   }
   if(m==='wheel'){
     const r=ui.wheelRes, L=ui.wlist||[];

@@ -432,6 +432,9 @@
     { n: 'Aston Martin Driver Development', f1: ['Aston Martin'], feeder: 'Aston Martin' },
   ];
 
+  // FIA Super Licence points by finishing position (2025 table, rounded): 40 points over the three seasons before the F1 season, plus age 18
+  const SLP = { f2: [40, 40, 40, 30, 20, 10, 8, 6, 4, 3], indy: [40, 30, 20, 10, 8, 6, 4, 3, 2, 1], f3: [30, 25, 20, 15, 10, 7, 5, 3, 2, 1], fe: [30, 24, 18, 12, 8, 6, 4, 3, 2, 1], frec: [25, 20, 15, 10, 7, 5, 3, 2, 1], sf: [25, 20, 15, 10, 7, 5, 3, 2, 1], f4: [12, 10, 8, 6, 4, 2, 1] };
+
   // ladder logic
   const PROMO = { f4: ['frec'], frec: ['f3'], gt4: ['gt3'], f3: ['f2'], sfl: ['sf'], nxt: ['indy'], gt3: ['wec'], f2: ['f1'], sf: ['f1'], indy: ['f1'], wec: ['f1'], fe: ['f1'] };
   const LATERAL = { f4: ['gt4'], frec: ['gt4'], gt4: ['frec'], f3: ['sfl', 'nxt', 'gt3'], sfl: ['nxt', 'gt3'], nxt: ['sfl', 'gt3'], gt3: ['sfl', 'nxt'], f2: ['indy', 'sf', 'wec', 'fe', 'imsa', 'gt3w', 'dtm'] };
@@ -498,6 +501,6 @@
   const ROOKIES = ['Rafael Câmara', 'Dino Beganovic', 'Nikola Tsolov', 'Sebastián Montoya', 'Kush Maini', 'Gabriele Minì', 'Ugo Ugochukwu', 'Martinius Stenshorne', 'Noah Strømsted', 'Freddie Slater', 'Théophile Naël', 'Tuukka Taponen', 'Ritomo Miyata', 'Oliver Goethe', 'Laurens van Hoepen', 'Mari Boya'];
   const RETIRE_2028 = ['Lewis Hamilton', 'Fernando Alonso'];
 
-  const D = { SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 };
+  const D = { SLP, SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 };
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else root.F1D = D;
 })(typeof window !== 'undefined' ? window : globalThis);
