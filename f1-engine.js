@@ -816,7 +816,7 @@
       if (mine != null) expPos = Math.round((1 + Object.entries(cars).reduce((a, [t, c]) => a + (t === G.team ? 0.5 : 2 / (1 + Math.exp(-(c - mine) / 1.2))), 0)) * 2) / 2; }
     const diff = expPos - pos, card = [], add = (k, label, score, note) => card.push({ k, label, score: cl(score), grade: gradeOf(cl(score)), note });
     const h = S.h2h || { q: [0, 0], r: [0, 0] };
-    const rookie = C.time ? G.f1Years <= 1 : G.history.filter(x => x.cat === C.id).length <= 1;   // a first season is judged more kindly
+    const rookie = C.time ? G.f1Years <= 1 : C.tier >= 3 && C.id !== 'f2' && G.history.filter(x => x.cat === C.id).length <= 1;   // a first season is judged more kindly
     // a season that does what the car and team-mate say it should is a B; beating them is an A; only a clear failure gets a D or E
     const fs = 22 / N, egOf = g => { const x = g * fs; return x <= 3 ? -1 : x <= 9.5 ? -0.4 : (x - 9.5) * 0.55; };   // places a car normally gains from each grid slot (finishers, 2023-26)
     const dz = diff >= 0 ? diff : Math.min(0, diff + 1.5);   // a place or so behind the car is still par
@@ -847,6 +847,7 @@
     return { overall: cl(ov), grade: gradeOf(cl(ov)), rows: card };
   }
   function makeSummary(G, h, C, P, tbl, pos, N, tr, dRep, debut) {
+    const rk = debut && C.tier >= 3 && C.id !== 'f2';   // "rookie" wording only where a first year is a real thing (F1 and the senior series): not in karting, where nobody is experienced, nor in F4/F3/F2, where most drivers have one year anyway
     const T = C.teams.length;
     const mate = tbl.find(d => d.team === G.team && !d.isPlayer);
     const comp = h.events || [], main = comp.find(c => c.main) || comp[0] || { n: C.short + ' championship', pos, N, pts: P.pts, lead: pos === 1, gap: 0 };
@@ -895,7 +896,7 @@
     if (champ && poorKit) para.push(`And you did it in the ${ordStr(tr)}-best equipment of ${T}. That is all driver.`);
     else if (champ && topKit) para.push(`You had ${tr <= 2 ? 'top-two' : 'front-running'} equipment, so now the pressure is to prove it when the kit is level.`);
     else if (!champ && topKit && expect === 'below') para.push(`${G.team} ranked ${ordStr(tr)} on pace and you still finished ${ordStr(pos)}. That one is on you.`);
-    else if (!champ) para.push((debut ? {
+    else if (!champ) para.push((rk ? {
       exceeded: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is ${diff} place${diff > 1 ? 's' : ''} better: a standout rookie year.`,
       met: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is right where it should be for a rookie.`,
       below: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is ${-diff} place${-diff > 1 ? 's' : ''} short, but first seasons are about learning.`,
@@ -905,7 +906,7 @@
       below: `${G.team} ranked ${ordStr(tr)} on pace, so P${expPos} was the target. P${pos} is ${-diff} place${-diff > 1 ? 's' : ''} short: you underperformed.`,
     })[expect]);
     // 4. teammate and reliability
-    if (mate && !C.crew) para.push(debut ? ({ more: `You out-scored ${mate.name} (${P.pts} to ${mate.pts}) in your rookie year, which says a lot.`, less: `${mate.name} knows the place better, so trailing them (${mate.pts} to ${P.pts}) is normal for a rookie.`, even: `You matched ${mate.name} (${P.pts} to ${mate.pts}) as a rookie. Strong start.` })[extract] : ({ more: `You beat ${mate.name} (${P.pts} to ${mate.pts}), so you clearly extracted more from the car.`, less: `${mate.name} out-scored you (${mate.pts} to ${P.pts}), so you left something in the car.`, even: `You and ${mate.name} were evenly matched (${P.pts} to ${mate.pts}).` })[extract]);
+    if (mate && !C.crew) para.push(rk ? ({ more: `You out-scored ${mate.name} (${P.pts} to ${mate.pts}) in your rookie year, which says a lot.`, less: `${mate.name} knows the place better, so trailing them (${mate.pts} to ${P.pts}) is normal for a rookie.`, even: `You matched ${mate.name} (${P.pts} to ${mate.pts}) as a rookie. Strong start.` })[extract] : ({ more: `You beat ${mate.name} (${P.pts} to ${mate.pts}), so you clearly extracted more from the car.`, less: `${mate.name} out-scored you (${mate.pts} to ${P.pts}), so you left something in the car.`, even: `You and ${mate.name} were evenly matched (${P.pts} to ${mate.pts}).` })[extract]);
     const dE = P.dnfE || 0, dR = P.dnfR || 0;
     if (P.races >= 10 && P.dnf >= 3) para.push(dE >= dR * 2 ? `${P.dnf} DNFs, ${dE} of them your own errors. That is where the points went.` : dR >= dE * 2 ? `${P.dnf} DNFs, but ${dR} were reliability, not driver error. Bad luck, not bad driving.` : `${P.dnf} DNFs: ${dR} reliability and ${dE} driver error. Half of that is on the team, half on you.`);
     else if (P.races >= 10 && P.dnf > 0 && dE === 0) para.push(`${P.dnf} DNF${P.dnf > 1 ? 's' : ''}, all mechanical. No driver errors all year.`);
