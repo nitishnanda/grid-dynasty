@@ -502,6 +502,9 @@
   const ROOKIES = ['Rafael Câmara', 'Dino Beganovic', 'Nikola Tsolov', 'Sebastián Montoya', 'Kush Maini', 'Gabriele Minì', 'Ugo Ugochukwu', 'Martinius Stenshorne', 'Noah Strømsted', 'Freddie Slater', 'Théophile Naël', 'Tuukka Taponen', 'Ritomo Miyata', 'Oliver Goethe', 'Laurens van Hoepen', 'Mari Boya'];
   const RETIRE_2028 = ['Lewis Hamilton', 'Fernando Alonso'];
 
-  const D = { SLP, SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 };
+    // TEST SWITCH: every generational talent is signed by the Red Bull Junior Team when they reach the single-seater ladder (set false to go back to the random academy draw)
+  const TEST = { genRedBull: true };
+
+const D = { TEST, SLP, SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 };
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else root.F1D = D;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,7 +1,7 @@
 /* Apex Ladder – career engine (no DOM). Karting -> F4 -> F3 -> F2 -> F1 with lateral moves. */
 (function (root) {
   const D = typeof require !== 'undefined' && typeof module !== 'undefined' ? require('./f1-data.js') : root.F1D;
-  const { SLP, CATS, NATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, SENIOR, STATS, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 } = D;
+  const { TEST, SLP, CATS, NATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, SENIOR, STATS, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 } = D;
 
   const rnd = Math.random;
   const gauss = () => { let u = 0, v = 0; while (!u) u = rnd(); while (!v) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
@@ -320,6 +320,7 @@
     });
     const S = G.S = { cat: G.cat, round: 0, drivers, log: [], boost: gauss() * 1.3, carMod: 0, injured: 0, tmp: 0, tmpUntil: 0, wheelDue: false, spins: 0, stageEnds: [Math.floor(C.rounds / 3), Math.floor(2 * C.rounds / 3)], euro: false, wcWin: false, trophies: [], over: false, notes: [], mode: 'balance', teams: [G.team], famPaid: 0, regime: G.dyn[G.cat] ? G.dyn[G.cat].regime : 'dominant' };
     if (C.time) { S.rbc = rbCurse(G, drivers); S.tpts = {}; }
+    if (TEST && TEST.genRedBull && G.tier === 4 && !G.academy && C.tier >= 1 && C.tier <= 3 && !G.history.some(h => h.cat === 'f1')) { G.academy = ACADEMIES[0]; G.rep = Math.min(100, G.rep + 4); note(G, '🧪 Test mode: the Red Bull Junior Team signs every generational talent. Seat costs are covered and the fast track to F1 is open.'); }
     // first year in a new category is a learning year: slow start, form arriving late in the season
     S.learn = G.history.some(h => h.cat === G.cat) ? 0 : (G.cat === 'f1' ? (C.time ? 2.5 : 1.5) : C.tier === 0 ? (G.history.length ? 2.2 : 0) : 5.5);   // juniors: rookies finish ~0.1 of the field lower than second-year drivers (Wikipedia standings)
     // F1 rookies take time: years 1-2 are a learning curve, year 3 is where it starts to click, then full ceiling
@@ -1090,21 +1091,24 @@
     const key = G.year + ':' + G.age; if (G.licRoll && G.licRoll.key === key) return G.licRoll;
     const age = G.age + 1, pts = slView(G).pts, rb = isRB(G), acad = !!G.academy, last = G.history[G.history.length - 1], champ = !!(last && last.champ);
     const inj = (G.injuries || []).some(x => x.year >= G.year - 1 && x.kind === 'injury'), who = acad ? G.academy.feeder : 'an F1 team';
-    let ok = false, via = null, why = '', p = 0;
+    let ok = false, via = null, why = '', p = 0, pet = null;
     if (age >= 18 && pts >= 40) { ok = true; via = 'points'; }
     else if (age >= 18 && pts >= 30) { p = clamp((rb ? 0.45 : acad ? 0.3 : 0.1) * (inj ? 1.6 : 1) * (champ ? 1.2 : 1), 0, 0.8); ok = rnd() < p; via = ok ? 'force majeure' : null;
-      why = ok ? '' : `you have ${pts} of the 40 super licence points and ${who}'s petition to the FIA was refused (no valid force majeure: the same fate as Colton Herta's 32 points in 2022).`; }
+      why = ok ? '' : `you have ${pts} of the 40 super licence points and ${who}'s petition to the FIA was refused (no valid force majeure: the same fate as Colton Herta's 32 points in 2022).`; pet = { team: who, kind: 'force majeure', ok, p }; }
     else if (age === 17 && pts >= 40) { p = clamp((rb ? 0.7 : acad ? 0.35 : 0.12) + (G.tier === 4 ? 0.15 : G.tier === 3 ? 0.08 : 0) + (champ ? 0.1 : 0), 0, 0.92); ok = rnd() < p; via = ok ? 'age dispensation' : null;
-      why = ok ? '' : `you will be 17 and the FIA refused ${who}'s petition for an age dispensation (you have the 40 points, but the rule is 18 unless the FIA decides otherwise).`; }
+      why = ok ? '' : `you will be 17 and the FIA refused ${who}'s petition for an age dispensation (you have the 40 points, but the rule is 18 unless the FIA decides otherwise).`; pet = { team: who, kind: 'age dispensation', ok, p }; }
     else why = age < 17 ? `you will only be ${age}, and the FIA does not license anyone under 17.` : age === 17 ? `you will be 17 with ${pts} of 40 super licence points: the age dispensation needs the full 40.` : `you have ${pts} of the 40 super licence points needed (30 is the minimum for a petition).`;
-    return G.licRoll = { key, ok, via, pts, age, p, why };
+    if (pet) { const rbT = rb ? ' Red Bull push the FIA hard on these.' : ''; pet.text = `📝 Super licence petition: ${pet.team} asked the FIA for ${pet.kind === 'force majeure' ? `a force majeure exception (you have ${pts} of 40 points)` : `an age dispensation so you can race at 17 (you have ${pts} points)`}. ${pet.ok ? 'The FIA GRANTED it' : 'The FIA REFUSED it'} (about ${Math.round(pet.p * 100)}% chance).${rbT}`; }
+    return G.licRoll = { key, ok, via, pts, age, p, why, pet };
   }
   function licenceView(G) {
     if (!G.history.length || G.history.some(h => h.cat === 'f1')) return null; const v = slView(G), age = G.age + 1, rb = isRB(G);
     const ageText = age >= 18 ? 'age ok' : age === 17 ? (rb ? 'dispensation likely' : G.academy ? 'dispensation possible' : 'dispensation unlikely') : 'too young';
     const note = v.pts >= 40 ? (age >= 18 ? 'You hold the 40 points: any F1 team can sign you.' : age === 17 ? 'You have the 40 points. At 17 a team must petition the FIA for an age dispensation.' : 'You have the points but will be too young next year.')
       : v.pts >= 30 ? `${40 - v.pts} points short: a team can petition for a force majeure exception (rarely granted).` : `${40 - v.pts} more points needed over the three-season window. An F2 top three gives 40 on its own.`;
-    return { pts: v.pts, need: 40, rows: v.rows, bonus: v.bonus, fp1: fp1Elig(G), ageText, note, tpc: !!G.academy && G.age >= 16 && (rb || v.pts >= 30), rb };
+    const lr = G.licRoll && G.licRoll.key === G.year + ':' + G.age ? G.licRoll : null;
+    const gr = lr && lr.ok && lr.via && lr.via !== 'points' ? `Licence secured by petition (${lr.via}): any F1 team can sign you.` : null;
+    return { petition: lr && lr.pet ? lr.pet.text : null, pts: v.pts, need: 40, rows: v.rows, bonus: v.bonus, fp1: fp1Elig(G), ageText, note: gr || note, tpc: !!G.academy && G.age >= 16 && (rb || v.pts >= 30), rb };
   }
   // what F1 teams think you are worth: mostly what they can see (qualifying and points against your team-mate), a little of your actual level
   const probit = p => { const t = Math.sqrt(-2 * Math.log(Math.min(p, 1 - p))), z = t - (2.515517 + 0.802853 * t + 0.010328 * t * t) / (1 + 1.432788 * t + 0.189269 * t * t + 0.001308 * t * t * t); return p < 0.5 ? -z : z; };
@@ -1370,6 +1374,7 @@
     const LAD = { f1: 1, f2: 1, f3: 1, frec: 1.5, f4: 1 }, rk = o => (CATS[o.cat].tier || 0) * 2 + (LAD[o.cat] || 0);   // the single-seater ladder above a side series of the same tier
     M.options = M.options.map((o, i) => [o, i]).sort((a, b) => rk(b[0]) - rk(a[0]) || a[1] - b[1]).map(x => x[0]);   // higher categories at the top of the contract desk
     if (!G.academy && !M.forced && C.tier >= 1 && C.tier <= 3 && G.age <= 24 && L.q >= 0.75 && G.rep >= 40 && rnd() < 0.4) M.academy = pick(ACADEMIES);
+    if (G.licRoll && G.licRoll.key === G.year + ':' + G.age && G.licRoll.pet && !M.msgs.includes(G.licRoll.pet.text)) M.msgs.push(G.licRoll.pet.text);   // a team asking the FIA to speed up the super licence is shown on the contract desk
     M.sponsors = M.forced ? [] : sponsorOffers(G, L, C);
     M.broke = M.options.length > 0 && M.options.every(o => o.blocked);
     G.market = M; if (!keepPhase) G.phase = 'market';
