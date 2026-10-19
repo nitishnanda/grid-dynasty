@@ -144,6 +144,7 @@
         poleFade: [0.5, 3, 0.6, 7],
         formElite: {from: 86, slope: 0.075, min: 0.55, max: 1.15},   // form spread scales down for the best drivers
         compK: 2, compF: 1.0, compGap: 3.5,   // between rule resets the chasing pack sits this far behind the top two cars: real 2010-25 has three teams each winning 3+ races in ~31% of seasons
+        rbCurse: [3.0, 1.8], rbPress: 1.25, rbSackP: 0.4,   // Red Bull's number 1 priority: the second car is this many rating points slower when the lead is generational / a wonderkid champion of 2+ years there; the second driver's extra error rate; chance a struggling second driver is replaced mid-season
         fragileP: 0.2,       // chance a season's fastest car is also the most fragile (McLaren 2012, Red Bull 2010)
         dropK: 0.72,          // overall scale on seat losses (F1DB 2010-25: ~4.9 exits a season including retirements, rarely more than 6)
         eliteCons: 0.035,     // weekend-to-weekend execution noise per rating point above 86 (the best barely have off days), capped at 0.72-1.15x
