@@ -330,7 +330,9 @@
     });
     const S = G.S = { cat: G.cat, round: 0, drivers, log: [], boost: gauss() * 1.3, carMod: 0, injured: 0, tmp: 0, tmpUntil: 0, wheelDue: false, spins: 0, stageEnds: [Math.floor(C.rounds / 3), Math.floor(2 * C.rounds / 3)], euro: false, wcWin: false, trophies: [], over: false, notes: [], mode: 'balance', teams: [G.team], famPaid: 0, regime: G.dyn[G.cat] ? G.dyn[G.cat].regime : 'dominant' };
     if (C.time) { S.rbc = rbCurse(G, drivers); S.tpts = {}; }
-    if (G.injCarry) { S.injured = G.injCarry.n; S.injWhy = G.injCarry.why; note(G, `🩹 Still recovering from ${G.injCarry.why}: you miss the first ${G.injCarry.n} round${G.injCarry.n > 1 ? 's' : ''} of the season.`); G.injCarry = null; }
+    if (G.injCarry) { const ic = G.injCarry; G.injCarry = null; if (ic.n > 0) { S.injured = ic.n; S.injWhy = ic.why; note(G, `🩹 Still recovering from ${ic.why}: you miss the first ${ic.n} round${ic.n > 1 ? 's' : ''} of the season.`); }
+      if (ic.weeks > 0 && C.tier >= 1) { const second = !!(S.rbc && S.rbc.other === G.name), pen = clamp(0.5 + ic.weeks * 0.3, 0.6, 3) * (second ? 1.6 : 1), rounds = 2 + Math.ceil(ic.weeks / 4) + (second ? 2 : 0); S.rehab = { pen, rounds };
+        note(G, `🩹 The first weeks of winter went on rehab after ${ic.why}, so you have not fully calibrated to the new car${second ? ', and Red Bull\'s second car is already further from what you drive best, so it hurts more' : ''}: expect a slow start (about −${pen.toFixed(1)} pace, fading over ${rounds} rounds).`); } }
     if (TEST && TEST.genRedBull && G.tier === 4 && !G.academy && C.tier >= 1 && C.tier <= 3 && !G.history.some(h => h.cat === 'f1')) { G.academy = ACADEMIES[0]; G.rep = Math.min(100, G.rep + 4); note(G, '🧪 Test mode: the Red Bull Junior Team signs every generational talent. Seat costs are covered and the fast track to F1 is open.'); }
     // first year in a new category is a learning year: slow start, form arriving late in the season
     S.learn = G.history.some(h => h.cat === G.cat) ? 0 : (G.cat === 'f1' ? (C.time ? 2.5 : 1.5) : C.tier === 0 ? (G.history.length ? 2.2 : 0) : 5.5);   // juniors: rookies finish ~0.1 of the field lower than second-year drivers (Wikipedia standings)
@@ -453,7 +455,7 @@
     const Dr = 0.28 * st.PAC + 0.28 * st.RAC + 0.14 * st.CON + 0.14 * st.TYR + 0.08 * st.MEN + 0.08 * st.FIT;
     const wetAdj = wet ? (st.WET - 60) * 0.3 : 0;
     if (S.fit === undefined) S.fit = gauss() * (C.time ? C.time.formSd * formK(ovrOf(st) - penOf(G.f1Years + 1)) : C.fitK !== undefined ? C.fitK : (C.tier >= 1 && C.tier <= 3 ? 3.2 : 1.2));   // how well the car/series suits you this year
-    const bonus = S.boost + tmp + S.fit + (C.time ? S.arcNow || 0 : 0) - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
+    const bonus = S.boost + tmp + S.fit + (C.time ? S.arcNow || 0 : 0) - (S.rehab && S.round < S.rehab.rounds ? S.rehab.pen * (1 - S.round / S.rehab.rounds) : 0) - (S.learn || 0) * Math.max(0, 1 - 1.25 * ri / C.rounds);
     const mode = S.mode || 'balance', RAC = st.RAC, sigK = (C.sigK || 1) * (S.dom ? 1 : 1), dnfK = C.dnfK || 1, K = C.spread || 1, wS = C.wS || 0.55;
     const active = S.drivers.filter(d => !(d.isPlayer && out) && !d.gone);
     // units: one per driver, or one per car in crew series (WEC / GT): crew-mates share the result
@@ -809,7 +811,7 @@
       case 'crash': { const [why, lo, hi] = pick(C.tier === 0 ? KART_INJ : INJ), rounds = lo + Math.floor(rnd() * (hi - lo + 1)); st.FIT = Math.max(30, st.FIT - 1); S.injured = Math.max(S.injured, rounds); S.injWhy = why;
         const left = C.rounds - S.round, over = Math.max(0, rounds - left), weeks = rounds * 2, miss = rounds > 1 ? `the next ${rounds} rounds (about ${weeks} weeks)` : 'the next round (about 2 weeks)';
         (G.injuries = G.injuries || []).push({ year: G.year, age: G.age, cat: C.short, why, missed: rounds, kind: 'injury', carried: over });
-        note(G, `💥 Injury: ${why}. You miss ${miss}${over ? `, and the last ${over} carry into next season` : ''}.`); desc = `${why[0].toUpperCase() + why.slice(1)}. You miss ${miss}${over ? `; the last ${over} carry into next season` : ''}.`; break; }
+        note(G, `💥 Injury: ${why}. You miss ${miss}${over ? `; the rest of the recovery runs into the winter, so expect a slow start next season` : ''}.`); desc = `${why[0].toUpperCase() + why.slice(1)}. You miss ${miss}${over ? `; the rest of the recovery runs into the winter break, so expect a slow start to next season` : ''}.`; break; }
       case 'academy': G.academy = pick(ACADEMIES); G.rep = Math.min(100, G.rep + 4); desc = `${G.academy.n} signs you. Seat costs are covered from now on.`; break;
       case 'sponsorLost': G.sponsor = Math.max(0.35, G.sponsor * 0.7); desc = 'Funding is down 30%. Expect tighter seat options next summer.'; break;
       case 'sponsorNew': G.sponsor = Math.min(3, G.sponsor * 1.35); desc = 'Funding is up 35%. Bigger seats are in reach.'; break;
@@ -1070,9 +1072,10 @@
     if (S.pCarK && S.pCarK.length) { h.carBest = Math.min(...S.pCarK); h.carWorst = Math.max(...S.pCarK); }
 
     const msgs = [];
-    if (!G.demoted && S.injured > 0 && S.injured < 20) G.injCarry = { n: S.injured, why: S.injWhy || 'an injury' };   // a break that is not mended by the finale carries into next season
-    else if (!G.demoted && C.tier >= 1 && rnd() < 0.012) { const [why, lo, hi] = pick(WINTER_INJ), n = lo + Math.floor(rnd() * (hi - lo + 1)); G.injCarry = { n, why }; (G.injuries = G.injuries || []).push({ year: G.year, age: G.age, cat: C.short, why, missed: n, kind: 'injury', carried: n }); msgs.push(`🩹 Injury over the winter: ${why}. You will miss the first ${n} round${n > 1 ? 's' : ''} of next season.`); }
-    if (h.contr && h.contr.kind === 'news') msgs.push('⚖️ ' + h.contr.text);
+    // the winter break is 3-4 months: a late-season injury heals before the lights go out, but weeks of rehab at the start of the winter leave you short of calibration with the new car
+    if (!G.demoted && S.injured > 0 && S.injured < 20) { const wk = S.injured * 2; G.injCarry = { n: 0, weeks: wk, why: S.injWhy || 'an injury' }; }
+    else if (!G.demoted && C.tier >= 1 && rnd() < 0.012) { const [why, lo, hi] = pick(WINTER_INJ), n = lo + Math.floor(rnd() * (hi - lo + 1)), wk = n * 2, t0 = rnd() * 14, endsAt = t0 + wk, missed = Math.max(0, Math.ceil((endsAt - 14) / 2)), rehabWk = Math.max(0, Math.min(wk, 4 - Math.max(0, 14 - endsAt)));
+      G.injCarry = { n: missed, weeks: rehabWk, why, winter: true }; (G.injuries = G.injuries || []).push({ year: G.year, age: G.age, cat: C.short, why, missed, kind: 'injury', carried: 0 }); msgs.push(`🩹 Injury over the winter: ${why}. ${missed ? `You miss the first ${missed} round${missed > 1 ? 's' : ''} of next season.` : rehabWk ? 'You will be back for the season, but short on preparation.' : 'It will be healed well before testing.'}`); }
     if (h.winter) msgs.push(`🧊 Winter series (${isRB(G) ? 'Formula Regional Middle East, Red Bull stacks these' : 'Toyota Racing Series'}): +${h.winter} super licence points on top of the ${C.short} result.`);
     const fr = C.time && G.dyn.f1 && G.dyn.f1.fragile;
     if (fr && fr.year === G.year) { const ds = S.drivers.filter(d => d.team === fr.team), out = ds.reduce((a, d) => a + (d.dnfR || 0), 0); h.fragile = fr.team;
