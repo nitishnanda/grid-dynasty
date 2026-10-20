@@ -72,6 +72,7 @@ table{width:100%;border-collapse:collapse}
 .tbl small{color:var(--ink2);font-size:11px}
 .you{display:inline-block;background:var(--org);border:2px solid var(--ink);font-size:10px;font-weight:900;padding:0 4px;margin-left:6px;letter-spacing:.08em}
 .up{color:var(--grn);font-weight:800}.dn{color:var(--red);font-weight:800}
+.sto{font-style:italic;opacity:.85}
 .tbl tr.spr td{font-size:12px;color:var(--ink2);border-top:0}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
 .meter{display:grid;grid-template-columns:44px 1fr 30px;gap:8px;align-items:center;margin:5px 0;font-size:12px;font-weight:700}
@@ -170,14 +171,14 @@ function vSeason(){
     if(l.out) rows=`<tr class="d"><td class="k">—</td><td colspan="3">Did not take part${l.why?': '+esc(l.why):' (injury / sidelined)'}</td></tr>`;
     else{
       rows+=`<tr class="${l.pole?'w':''}"><td class="k">QUALI</td><td>P${l.qpos}${l.pole?' · pole':''}</td><td class="g">${l.qi?(l.pole?gp(l.qi.gap,true,0,true)+' to P2':gp(l.qi.gap,false,0,true)):''}</td><td></td></tr>`;
-      rows+=l.races.map(r=>`<tr class="${r.dnf?'d':r.pos===1&&!r.spr?'w':''}"><td class="k">${esc(r.n).toUpperCase()}</td><td>P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.spr?'<br><small>from sprint qualifying</small>':''}${r.dnf?`<br><small>${r.l1?'first-lap collision':r.cause==='error'?'driver error':'reliability'}</small>`:''}${r.late?'<br><small>retired late, still classified</small>':''}${r.stops?`<br><small>${r.stops}-stop (${r.comp})${r.scpit===1?', stopped under the safety car':r.scpit===2?', free tyres under the red flag':r.scpit===3?', stopped under the VSC':r.scpit===-1?', pitted just before the safety car':r.scpit===-3?', pitted just before the VSC':''}</small>`:''}${r.neut&&!r.spr?`<br><small>${r.neut==='red'?'red flag':r.neut==='sc'?'safety car':'virtual safety car'}</small>`:''}${r.pen?`<br><small>${r.pen==='back'?'sent to the back of the grid':r.pen+'-place grid penalty'}${r.qpos?` (qualified P${r.qpos})`:''}</small>`:''}</td><td class="g">${r.dnf?'':gp(r.gap,r.lead,r.laps,false)+(r.lead?' to P2':'')}</td><td class="r">${r.dnf?'0':'+'+r.pts}</td></tr>`).join('');
+      rows+=l.races.map(r=>`<tr class="${r.dnf?'d':r.pos===1&&!r.spr?'w':''}"><td class="k">${esc(r.n).toUpperCase()}</td><td>P${r.grid} → ${r.dnf?'DNF':'P'+r.pos}${r.spr?'<br><small>from sprint qualifying</small>':''}${r.dnf?`<br><small>${r.l1?'first-lap collision':r.cause==='error'?'driver error':'reliability'}</small>`:''}${r.late?'<br><small>retired late, still classified</small>':''}${r.stops?`<br><small>${r.stops}-stop (${r.comp})${r.scpit===1?', stopped under the safety car':r.scpit===2?', free tyres under the red flag':r.scpit===3?', stopped under the VSC':r.scpit===-1?', pitted just before the safety car':r.scpit===-3?', pitted just before the VSC':''}</small>`:''}${r.story&&!r.spr?`<br><small class="sto">${esc(r.story)}</small>`:''}${r.steward?`<br><small class="stw">⚖️ ${esc(r.steward.txt)} (+${r.steward.pts} pt${r.steward.pts>1?'s':''}, ${r.steward.act}/12)${r.steward.ban?' · RACE BAN':''}</small>`:''}${r.neut&&!r.spr?`<br><small>${r.neut==='red'?'red flag':r.neut==='sc'?'safety car':'virtual safety car'}</small>`:''}${r.pen?`<br><small>${r.pen==='back'?'sent to the back of the grid':r.pen+'-place grid penalty'}${r.qpos?` (qualified P${r.qpos})`:''}</small>`:''}</td><td class="g">${r.dnf?'':gp(r.gap,r.lead,r.laps,false)+(r.lead?' to P2':'')}</td><td class="r">${r.dnf?'0':'+'+r.pts}</td></tr>`).join('');
     }
     return `<div class="rd"><div class="rdh"><b>R${l.round}</b><span>${esc(l.name)}</span><em>${C.events&&C.events[l.ev]?esc(C.events[l.ev].n.toUpperCase())+' · ':''}${l.wet?'WET · ':''}${(modeName[l.mode]||'Balance').toUpperCase()}${l.sprint?' · SPRINT':''}</em></div><table class="ts">${rows}</table></div>`;}).join('');
   const modeDesc={push:'Push: faster, but more DNF risk (worse if your racecraft is low).',balance:'Balance: your normal form.',coast:'Coast: fewer DNFs, steadier finishes. A quick car lands P3–P6 with the odd win.'}[mode];
   return `${bar()}
   <div class="team"><div class="sw" style="background:${teamColor(G.team)}"></div><div class="tx"><b>${esc(G.team)}</b><div class="meta" style="margin:2px 0 0"><span>${esc(C.name)}</span><span>${G.year}</span><span>age <b>${G.age}</b></span></div></div><div class="rn">R${S.round}/${C.rounds}</div></div>
   <div class="strip"><div><b>${S.round?pos:'–'}</b><span>Pos</span></div><div><b>${P.w}</b><span>Wins</span></div><div><b>${P.p}</b><span>Podiums</span></div><div><b>${P.pts}</b><span>Points</span></div></div>
-  <div class="meta"><span>stage <b>${Math.min(3,S.spins+1)}/3</b></span><span>contract <b>${G.contract}y</b></span><span>poles <b>${P.pole}</b></span>${G.academy?`<span>academy <b>${esc(G.academy.n.split(' ')[0])}</b></span>`:''}</div>
+  <div class="meta"><span>stage <b>${Math.min(3,S.spins+1)}/3</b></span><span>contract <b>${G.contract}y</b></span><span>poles <b>${P.pole}</b></span>${['f1','f2','f3','f4','frec'].includes(S.cat)?`<span>penalty pts <b>${E.penActive(G)}/12</b></span>`:''}${G.academy?`<span>academy <b>${esc(G.academy.n.split(' ')[0])}</b></span>`:''}</div>
   ${S.carNow?(()=>{const r=S.carNow.rows.find(x=>x.t===G.team);if(!r)return '';const mv=r.k0-r.k;return `<div class="meta"><span>car pace <b>P${r.k}/${S.carNow.rows.length}</b></span><span>${r.k===1?'fastest car':'<b>+'+r.p.toFixed(2)+'%</b> a lap off'}</span>${mv?`<span class="${mv>0?'up':'dn'}">${mv>0?'▲':'▼'}${Math.abs(mv)} since R1</span>`:''}</div>`;})():''}
   <div class="row" style="margin:0 0 14px"><button class="btn sm" data-act="tbl">Standings</button>${S.carNow?'<button class="btn sm" data-act="cars">Car pace</button>':''}<button class="btn sm" data-act="drv">Driver file</button></div>
   ${compBlock(E.compTable(G))}
@@ -227,7 +228,18 @@ function licHtml(inDesk){
   <div class="rcb" style="margin:6px 0"><i style="width:${Math.min(100,L.pts/L.need*100)}%"></i></div>
   ${L.rows.length||L.bonus?`<div class="meta">${L.bonus?`<span>FP1 clean running: <b>${L.bonus}</b>/10</span>`:''}${L.rows.map(r=>`<span>${r.year}: <b>${r.pts+r.win}</b> ${esc(r.src||'winter')}${r.win?` (incl. ${r.win} winter)`:''}</span>`).join('')}</div>`:''}
   ${L.petition&&!inDesk?`<div class="note" style="margin-top:6px;border-style:solid"><b>${esc(L.petition)}</b></div>`:''}
-  <div class="note" style="margin-top:6px">${esc(L.note)}${L.rb?' Red Bull stacks winter series, TPC mileage and double FP1 slots to get there first.':''}${G.academy&&L.tpc?' TPC 300 km test: done.':''}</div>`;
+  <div class="note" style="margin-top:6px">${esc(L.note)}${L.blurb?' '+esc(L.blurb):''}${G.academy&&L.tpc?' TPC 300 km test: done.':''}</div>`;
+}
+function negHtml(){
+  const o=ui.sel>=0&&G.market&&G.market.options[ui.sel]; if(!o||o.cat!=='f1'||o.blocked||o.kind==='retire'||!E.negOdds) return '';
+  if(!ui.neg||ui.negFor!==ui.sel){ui.neg={ask:0,years:o.years,clause:0};ui.negFor=ui.sel;}
+  const od=E.negOdds(G,o),n=ui.neg,pc=x=>Math.round(x*100)+'%';
+  const chip=(k,v,label)=>`<div class="tile ${n[k]===v?'on':''}" data-act="neg" data-k="${k}" data-v="${v}" style="min-height:0;padding:7px"><b style="font-size:12px">${label}</b></div>`;
+  return `<div class="cap" style="margin-top:6px">Contract talks · ${esc(o.team)}</div><div class="sheet flat" style="padding:10px">
+  <div class="cap">Ask</div><div class="tiles">${chip('ask',0,'Going rate')}${chip('ask',1,'+15% ('+pc(od.ask[1])+')')}${chip('ask',2,'+30% ('+pc(od.ask[2])+')')}</div>
+  <div class="cap" style="margin-top:8px">Length</div><div class="tiles">${chip('years',1,'1 yr (+4%)')}${chip('years',2,'2 yr')}${chip('years',3,'3 yr (−4%)')}</div>
+  <div class="cap" style="margin-top:8px">Clause</div><div class="tiles">${chip('clause',0,'None')}${o.team==='Red Bull Racing'?chip('clause','lead','Number 1 ('+pc(od.lead)+')'):''}${chip('clause','bonus','Win bonus (−12% base)')}</div>
+  <small style="display:block;margin-top:6px;opacity:.8">A greedy ask can make the team walk away. Number 1 status stops Red Bull prioritising a team-mate over you.${ui.negMsg?'<br><b>'+esc(ui.negMsg)+'</b>':''}</small></div>`;
 }
 function vMarket(){
   const M=G.market,last=G.history[G.history.length-1];
@@ -241,6 +253,7 @@ function vMarket(){
   ${licHtml(true)}
   ${(G.sponsorDeals||[]).length?`<div class="meta"><span>active sponsors:</span>${G.sponsorDeals.map(d=>`<span><b>${esc(d.name)}</b> (to ${d.until})</span>`).join('')}</div>`:''}
   ${sponsorCards()}${ac}${opts}${ret}
+  ${negHtml()}
   <div class="cap" style="margin-top:6px">Simulator block · +2 to one attribute</div><div class="sim">${sim()}</div>
   <div class="dock"><div><button class="btn go" data-act="go" ${ok?'':'disabled'}>${ui.sel==='ret'?'Retire':'Sign and start season '+(G.season+1)+' ▶'}</button></div></div>`;
 }
@@ -251,9 +264,10 @@ function vRetired(){
   <div style="margin:0 0 14px">${tierStamp(G.tier)} ${stamp(E.WEALTH[G.wealth].n,'#5a5244')}</div>
   ${R.cause?`<div class="note">${R.cause==='fatal'?'A tragic accident ended the career. The paddock mourns.':'A career-ending injury cut it short.'}${R.why?' Cause: '+esc(R.why)+'.':''}</div>`:''}
   ${(()=>{const F=E.careerFile(G);return `<div class="sheet"><div class="cap">The career in brief</div>${F.story.map(x=>`<p>${esc(x)}</p>`).join('')}</div>
+  ${F.after?`<div class="sheet"><div class="cap">Life after racing · ${esc(F.after.title)}</div><p>${esc(F.after.text)}</p></div>`:''}
   <div class="cap">By category</div><div class="sheet flat sc" style="padding:0"><table class="tbl"><tr><th class="l">Series</th><th>Races</th><th>W</th><th>Pod</th><th>Pole</th><th>DNF</th><th>Pts</th><th>Avg</th></tr>${F.rows.map(r=>`<tr><td class="l"><b>${esc(r.n)}</b><br><small>${r.from===r.to?r.from:r.from+'–'+r.to} · ${r.seasons} season${r.seasons===1?'':'s'}${r.titles?` · ${r.titles}× champion`:''}</small></td><td>${r.races}</td><td>${r.wins}</td><td>${r.podiums}</td><td>${r.poles}</td><td>${r.dnf}</td><td>${Math.round(r.pts)}</td><td>${r.grade?`<b class="g${r.grade[0]}">${r.grade}</b><br><small>${r.rating}</small>`:'–'}</td></tr>${r.spr?`<tr class="spr"><td class="l"><small>↳ sprints (not in the main-race totals)</small></td><td>${r.spr.races}</td><td>${r.spr.wins}</td><td>${r.spr.podiums}</td><td>–</td><td>${r.spr.dnf}</td><td>${Math.round(r.spr.pts)}</td><td></td></tr>`:''}`).join('')}</table></div>
   ${F.allTime?`<div class="sheet"><div class="cap">Projected all-time F1 ranking</div><div class="big">#${F.allTime.rank}</div><p>${esc(F.allTime.verdict)}</p><small>Measured against the all-time list (end of 2025) on world titles, grand prix wins, poles, podiums and win rate. Sprints don't count, as in the record books.</small></div>`:''}
-  ${F.injuries.length?`<div class="cap">Injuries</div><div class="sheet flat" style="padding:0"><table class="tbl"><tr><th class="l">Year</th><th class="l">What happened</th><th>Missed</th></tr>${F.injuries.map(x=>`<tr${x.kind!=='injury'?' class="d"':''}><td class="l">${x.year}<br><small>${esc(x.cat)} · age ${x.age}</small></td><td class="l">${esc(x.why[0].toUpperCase()+x.why.slice(1))}</td><td>${x.kind==='career'?'career over':x.kind==='fatal'?'fatal':x.missed+' round'+(x.missed>1?'s':'')}</td></tr>`).join('')}</table></div>`:''}`;})()}
+  ${F.injuries.length?`<div class="cap">Injuries</div><div class="sheet flat" style="padding:0"><table class="tbl"><tr><th class="l">Year</th><th class="l">What happened</th><th>Missed</th></tr>${F.injuries.map(x=>`<tr${x.kind==='career'||x.kind==='fatal'?' class="d"':''}><td class="l">${x.year}<br><small>${esc(x.cat)} · age ${x.age}</small></td><td class="l">${esc(x.why[0].toUpperCase()+x.why.slice(1))}</td><td>${x.kind==='career'?'career over':x.kind==='fatal'?'fatal':x.kind==='ban'?'1 race (ban)':x.missed+' round'+(x.missed>1?'s':'')}</td></tr>`).join('')}</table></div>`:''}`;})()}
   <div class="sheet"><div class="cap">Career wins</div><div class="big">${T.wins}</div>
   <div class="meta" style="margin:6px 0 12px">${Object.entries(R.winsBy||{}).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<span><b>${c}</b> ${esc(n)}</span>`).join('')||'<span>No wins</span>'}</div>
   <div class="kv"><div>Races<b>${T.races}</b></div><div>Podiums<b>${T.podiums}</b></div><div>Poles<b>${T.poles}</b></div><div>Titles<b>${Object.values(T.titles).reduce((a,x)=>a+x,0)}</b></div><div>Peak rating<b>${T.peak}</b></div><div>Earned<b>${money(T.earn)}</b></div></div>
@@ -285,7 +299,7 @@ function modal(){
   }
   if(m==='drv'){
     const C=CATS[G.cat];
-    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="id"><div class="ovr">${E.ovrOf(G.stats)}<small>RTG</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>age ${G.age}</span><span>${C.pay?money(G.deal.cost)+' seat':money(G.deal.sal)+'/yr'}</span></div>${tierStamp(G.tier)}</div></div>${meters(G.stats)}${licHtml()}<div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
+    return `<div class="modalbg" data-act="close"><div class="modal" data-stop="1"><div class="id"><div class="ovr">${E.ovrOf(G.stats)}<small>RTG</small></div><div><h3>${esc(G.name)}</h3><div class="meta" style="margin:4px 0 8px"><span>age ${G.age}</span><span>${C.pay?money(G.deal.cost)+' seat':money(G.deal.sal)+'/yr'}</span></div>${tierStamp(G.tier)}</div></div>${meters(G.stats)}${E.hungerOf&&E.hungerOf(G)>0.2?`<div class="note" style="margin-top:8px">💪 <b>Underdog work ethic +${E.hungerOf(G).toFixed(1)}</b>: ${G.wealth==='poor'?'drivers from poor families':'drivers from modest backgrounds'} work harder than their peers, whatever their talent.</div>`:''}${licHtml()}<div style="height:12px"></div><button class="btn go" data-act="close">Close</button></div></div>`;
   }
   if(m==='wheel'){
     const r=ui.wheelRes, L=ui.wlist||[];
@@ -355,10 +369,12 @@ document.addEventListener('click',e=>{
     case 'stev': ui.stEv=+el.dataset.i; rerender(); return;
     case 'sttab': ui.stTab=el.dataset.v; rerender(); return;
     case 'spon': E.takeSponsor(G,+el.dataset.i); save(); rerender(); return;
-    case 'sel': ui.sel=el.dataset.i==='ret'?'ret':+el.dataset.i; rerender(); return;
+    case 'sel': ui.sel=el.dataset.i==='ret'?'ret':+el.dataset.i; ui.neg=null; ui.negMsg=null; rerender(); return;
+    case 'neg': { const k=el.dataset.k; ui.neg[k]=(k==='ask'||k==='years')?+el.dataset.v:(el.dataset.v==='0'?0:el.dataset.v); rerender(); return; }
     case 'acad': ui.acad=!ui.acad; rerender(); return;
     case 'train': ui.train=ui.train===el.dataset.k?null:el.dataset.k; rerender(); return;
     case 'go':
+      if(ui.sel!=='ret'&&ui.neg&&G.market.options[ui.sel]&&G.market.options[ui.sel].cat==='f1'){ const r=E.negotiate(G,ui.sel,ui.neg); if(r.withdrawn){ G.market.note=r.msg; ui.negMsg=null; ui.sel=-1; ui.neg=null; save(); render(); return; } }
       if(ui.sel==='ret'){E.retire(G);} else { E.chooseOption(G,ui.sel,ui.train,ui.acad); if(G.age>=E.MAX_AGE) E.retire(G); }
       ui.sel=-1; ui.train=null; ui.acad=false; save(); render(true); return;
     case 'again': clear(); G=null; ui.screen='start'; render(true); return;

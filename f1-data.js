@@ -423,18 +423,20 @@
       ] },
   };
 
+  // each academy's edge on the road to F1: winter-series licence points (and how often it sends its juniors), FP1 slot weight (more F1 teams = more slots), skip-a-rung odds, petition odds
+  // for a 17-year-old / a force majeure case, and what it is known for
   const ACADEMIES = [
-    { n: 'Red Bull Junior Team', f1: ['Red Bull Racing', 'Racing Bulls'], feeder: 'Racing Bulls' },
-    { n: 'Ferrari Driver Academy', f1: ['Ferrari', 'Haas'], feeder: 'Haas' },
-    { n: 'Mercedes Junior Team', f1: ['Mercedes', 'Williams'], feeder: 'Williams' },
-    { n: 'McLaren Driver Development Programme', f1: ['McLaren', 'Williams'], feeder: 'Williams' },
-    { n: 'Alpine Academy', f1: ['Alpine'], feeder: 'Alpine' },
-    { n: 'Williams Driver Academy', f1: ['Williams'], feeder: 'Williams' },
-    { n: 'Aston Martin Driver Development', f1: ['Aston Martin'], feeder: 'Aston Martin' },
+    { n: 'Red Bull Junior Team', f1: ['Red Bull Racing', 'Racing Bulls'], feeder: 'Racing Bulls', perk: { winter: 13, winterP: 1, fp1: 14, skip: 1.8, pet17: 0.7, petFM: 0.45, young17: true, blurb: 'Red Bull stacks winter series, TPC mileage and double FP1 slots, and petitions the FIA harder than anyone.' } },
+    { n: 'Ferrari Driver Academy', f1: ['Ferrari', 'Haas'], feeder: 'Haas', perk: { winter: 9, winterP: 0.8, fp1: 12, skip: 1.3, pet17: 0.5, petFM: 0.35, blurb: 'Ferrari and Haas share the FP1 slots, the winter programme is solid and the academy is patient with its juniors (Leclerc, Bearman).' } },
+    { n: 'Mercedes Junior Team', f1: ['Mercedes', 'Williams'], feeder: 'Williams', perk: { winter: 7, winterP: 0.65, fp1: 11, skip: 1.2, pet17: 0.4, petFM: 0.3, blurb: 'Mercedes and its Williams customer deal give two FP1 teams; the programme is long-term and rarely drops a driver early (Russell, Antonelli).' } },
+    { n: 'McLaren Driver Development Programme', f1: ['McLaren', 'Williams'], feeder: 'Williams', perk: { winter: 6, winterP: 0.6, fp1: 10, skip: 1.15, pet17: 0.38, petFM: 0.3, blurb: 'McLaren back their juniors for the long haul (Norris, Piastri) and run them in FP1 early.' } },
+    { n: 'Alpine Academy', f1: ['Alpine'], feeder: 'Alpine', perk: { winter: 6, winterP: 0.6, fp1: 8, skip: 1.1, pet17: 0.3, petFM: 0.28, blurb: 'A single F1 team means few FP1 slots, but a quick route to a seat for the best.' } },
+    { n: 'Williams Driver Academy', f1: ['Williams'], feeder: 'Williams', perk: { winter: 5, winterP: 0.5, fp1: 8, skip: 1.05, pet17: 0.25, petFM: 0.25, blurb: 'A small academy with limited slots.' } },
+    { n: 'Aston Martin Driver Development', f1: ['Aston Martin'], feeder: 'Aston Martin', perk: { winter: 5, winterP: 0.5, fp1: 8, skip: 1.05, pet17: 0.25, petFM: 0.25, blurb: 'A small academy with limited slots.' } },
   ];
 
   // FIA Super Licence points by finishing position (2025 table, rounded): 40 points over the three seasons before the F1 season, plus age 18
-  const SLP = { f2: [40, 40, 40, 30, 20, 10, 8, 6, 4, 3], indy: [40, 30, 20, 10, 8, 6, 4, 3, 2, 1], f3: [30, 25, 20, 15, 10, 7, 5, 3, 2, 1], fe: [30, 24, 18, 12, 8, 6, 4, 3, 2, 1], frec: [25, 20, 15, 10, 7, 5, 3, 2, 1], sf: [25, 20, 15, 10, 7, 5, 3, 2, 1], f4: [12, 10, 8, 6, 4, 2, 1] };
+  const SLP = { f2: [40, 40, 40, 30, 20, 10, 8, 6, 4, 3], indy: [40, 30, 20, 10, 8, 6, 4, 3, 2, 1], f3: [30, 25, 20, 15, 10, 7, 5, 3, 2, 1], wec: [15, 12, 10, 8, 6, 4, 3, 2, 1], fe: [30, 24, 18, 12, 8, 6, 4, 3, 2, 1], frec: [25, 20, 15, 10, 7, 5, 3, 2, 1], sf: [25, 20, 15, 10, 7, 5, 3, 2, 1], f4: [12, 10, 8, 6, 4, 2, 1] };
 
   // ladder logic
   const PROMO = { f4: ['frec'], frec: ['f3'], gt4: ['gt3'], f3: ['f2'], sfl: ['sf'], nxt: ['indy'], gt3: ['wec'], f2: ['f1'], sf: ['f1'], indy: ['f1'], wec: ['f1'], fe: ['f1'] };
@@ -502,9 +504,11 @@
   const ROOKIES = ['Rafael Câmara', 'Dino Beganovic', 'Nikola Tsolov', 'Sebastián Montoya', 'Kush Maini', 'Gabriele Minì', 'Ugo Ugochukwu', 'Martinius Stenshorne', 'Noah Strømsted', 'Freddie Slater', 'Théophile Naël', 'Tuukka Taponen', 'Ritomo Miyata', 'Oliver Goethe', 'Laurens van Hoepen', 'Mari Boya'];
   const RETIRE_2028 = ['Lewis Hamilton', 'Fernando Alonso'];
 
-    // TEST SWITCH: every generational talent is signed by the Red Bull Junior Team when they reach the single-seater ladder (set false to go back to the random academy draw)
+    // underdog work ethic: drivers from poor families work harder than their peers, whatever their talent (rating points on top of the talent curve)
+  const HUNGER = { poor: 1.6, middle: 0.3, rich: 0, dynasty: 0 };
+  // TEST SWITCH: every generational talent is signed by the Red Bull Junior Team when they reach the single-seater ladder (set false to go back to the random academy draw)
   const TEST = { genRedBull: true };
 
-const D = { TEST, SLP, SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 };
+const D = { HUNGER, TEST, SLP, SENIOR, TEAM_COLORS, NATS, CATS, ACADEMIES, PROMO, LATERAL, STUCK_CATS, TIER3_SIDE, STATS, STAT_NAMES, TIERS, PROMO_P, STEP_P, STEP_TIER, F1P, ROOKIES, RETIRE_2028 };
   if (typeof module !== 'undefined' && module.exports) module.exports = D; else root.F1D = D;
 })(typeof window !== 'undefined' ? window : globalThis);
